@@ -1,0 +1,24 @@
+{
+  "name": "vscode-god-mode",
+  "version": "1.0.0",
+  "description": "VS Code God Mode — AI-powered code editor",
+  "main": "app.js",
+  "scripts": {
+    "start":      "node app.js",
+    "dev":        "node app.js",
+    "cap:sync":   "npx cap sync",
+    "cap:android":"npx cap open android",
+    "cap:build":  "npx cap sync && npx cap open android"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "cors":        "^2.8.6",
+    "dotenv":      "^17.4.2",
+    "express":     "^5.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli":     "^6.0.0",
+    "@capacitor/core":    "^6.0.0"
+  }
+}

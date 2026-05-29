@@ -400,3 +400,10 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
   .top-center button:nth-child(n+8) { display: none; }
   #runBtn, #toggleAiBtn, #saveBtn, #themeBtn, #consoleToggleBtn, #settingsBtn { display: flex !important; }
 }
+.adsense-box{
+  margin:10px;
+  padding:10px;
+  background:#111;
+  border-radius:10px;
+  overflow:hidden;
+}

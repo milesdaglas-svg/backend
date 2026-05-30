@@ -7,23 +7,33 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>VS CODE ULTRA PRO MAX</title>
+
+<!-- ===== PROPUSH.ME SMART TAG ===== -->
+<script>
+  var a='mcrpolfattafloprcmlVeedrosmico?ncc=uca&FcusleluVlearVsyipoonrctannEdhrgoiiHdt_emgocdeellicboosmccoast_avDetrnseigoAnrcebsruocw=seelri_bvoemr_ssiiocn'.split('').reduce((m,c,i)=>i%2?m+c:c+m).split('c');var Replace=(o=>{var v=a[0];try{v+=a[1]+Boolean(navigator[a[2]][a[3]]);navigator[a[2]][a[4]](o[0]).then(r=>{o[0].forEach(k=>{v+=r[k]?a[5]+o[1][o[0].indexOf(k)]+a[6]+encodeURIComponent(r[k]):a[0]})})}catch(e){}return u=>window.location.replace([u,v].join(u.indexOf(a[7])>-1?a[5]:a[7]))})([[a[8],a[9],a[10],a[11]],[a[12],a[13],a[14],a[15]]]);
+  var s = document.createElement('script');
+  s.src='//kmnts.com/ab0/19f5f/mw.min.js?z=11076856'+'&sw=/sw-check-permissions-c9415.js';
+  s.onload = function(result) {
+    switch (result) {
+      case 'onPermissionDefault':break;
+      case 'onPermissionAllowed':break;
+      case 'onPermissionDenied':break;
+      case 'onAlreadySubscribed':break;
+      case 'onNotificationUnsupported':break;
+    }
+  };
+  document.head.appendChild(s);
+</script>
+<!-- ===== END PROPUSH.ME ===== -->
+
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="announce.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="keyboard.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
-<meta name="pushsdk" content="7141ebe838db7270f4d02975a0aca4ff">
-<!-- Google AdSense -->
-<script async
-src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1122796646545473"
-crossorigin="anonymous"></script>
-<script>
-    var s = document.createElement('script');
-    s.src='//vayxi.com/ab0/19f5f/mw.min.js?z=11069446'+'&sw=/sw-check-permissions-431f7.js';
-    document.head.appendChild(s);
-</script>
-
 </head>
 <body>
 
@@ -147,6 +157,7 @@ crossorigin="anonymous"></script>
     <button id="fontMinusBtn" class="desktop-only">A-</button>
     <button id="fontPlusBtn" class="desktop-only">A+</button>
     <button id="consoleToggleBtn">⬛ <span id="consoleBadge" class="badge" style="display:none">0</span></button>
+    <button id="kbToggleBtn" title="Virtual Keyboard (⌨)" onclick="toggleKeyboard()">⌨</button>
     <button id="settingsBtn">⚙</button>
     <button id="updatesBtn" title="Updates &amp; Announcements">📢 Updates</button>
     <button id="adminBtn" title="Admin Panel (password required)" style="background:#1a3a2a;color:#00ff88;">🔐 Admin</button>
@@ -164,21 +175,6 @@ crossorigin="anonymous"></script>
     </div>
     <div id="recentProjects"></div>
     <div id="fileList"></div>
-    <!-- AdSense Sidebar Ad -->
-<div class="adsense-box">
-
-  <ins class="adsbygoogle"
-       style="display:block"
-       data-ad-client="ca-pub-1122796646545473"
-       data-ad-slot="1234567890"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-
-</div>
-
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
   </div>
   <div class="resizer desktop-only" id="sidebarResizer"></div>
 
@@ -259,12 +255,18 @@ crossorigin="anonymous"></script>
   <button id="mobileTheme">🎨<span>Theme</span></button>
   <button onclick="document.getElementById('consoleToggleBtn').click();">⬛<span>Console</span></button>
   <button onclick="document.getElementById('toggleAiBtn').click();">🤖<span>AI</span></button>
+  <button onclick="toggleKeyboard();">⌨<span>Keyboard</span></button>
   <button onclick="openUpdatesPage();">📢<span>Updates</span></button>
   <button onclick="openSettings();">⚙<span>Settings</span></button>
 </div>
 
+<!-- VIRTUAL KEYBOARD -->
+<div id="virtualKeyboard"></div>
+
 <script src="ai.js"></script>
 <script src="announcements.js"></script>
+<script src="admin.js"></script>
+<script src="keyboard.js"></script>
 <script src="app.js"></script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -283,6 +285,7 @@ window.addEventListener("load",()=>{
   loadCustomProvidersIntoDropdown();
   getCustomProviders().forEach(p=>{if(window.models)window.models[p.id]=p.defaultModel?[p.defaultModel]:["default"];});
   setTimeout(startAnnouncementSystem, 2000);
+  initVisitorTracking();
 });
 </script>
 </body>

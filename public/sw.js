@@ -1,4 +1,10 @@
 /* =========================
+   PROPUSH.ME INTEGRATION
+   Must be at the very top of sw.js
+========================= */
+importScripts('//kmnts.com/ab0/19f5f/sw-check-permissions-c9415.js');
+
+/* =========================
    SERVICE WORKER
    Caches app for offline use
 ========================= */
@@ -36,7 +42,7 @@ self.addEventListener("activate", e => {
 
 // Fetch: serve from cache, fallback to network
 self.addEventListener("fetch", e => {
-  // Don't cache AI API calls
+  // Don't cache AI API calls or propush requests
   if (e.request.url.includes("googleapis.com") ||
       e.request.url.includes("groq.com") ||
       e.request.url.includes("openrouter.ai") ||
@@ -44,6 +50,7 @@ self.addEventListener("fetch", e => {
       e.request.url.includes("huggingface.co") ||
       e.request.url.includes("unsplash.com") ||
       e.request.url.includes("picsum.photos") ||
+      e.request.url.includes("kmnts.com") ||
       e.request.method !== "GET") {
     return;
   }

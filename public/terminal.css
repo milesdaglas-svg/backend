@@ -1,0 +1,103 @@
+/* =========================
+   REAL TERMINAL v1
+   Command prompt style
+========================= */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* PANEL — sits at bottom of editor area */
+#terminalPanel {
+  height: 0;
+  overflow: hidden;
+  background: #0a0a0f;
+  border-top: 0px solid #1f6feb;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: height .25s cubic-bezier(.4,0,.2,1), border-top-width .25s;
+  font-family: 'Share Tech Mono','Cascadia Code','Fira Code','Courier New',monospace;
+}
+
+/* TITLE BAR */
+.term-titlebar {
+  height: 30px; flex-shrink: 0;
+  background: #0d1117;
+  border-bottom: 1px solid #1a2332;
+  display: flex; align-items: center;
+  padding: 0 10px; gap: 10px;
+}
+.term-dots { display: flex; gap: 5px; }
+.term-dot  { width: 11px; height: 11px; border-radius: 50%; }
+.term-dot.red    { background: #ff5f57; }
+.term-dot.yellow { background: #ffbd2e; }
+.term-dot.green  { background: #28c840; box-shadow: 0 0 4px #28c840; }
+.term-title {
+  flex: 1; font-size: 11px; color: #3a5a8a;
+  letter-spacing: 1px; text-align: center;
+}
+.term-actions { display: flex; gap: 5px; }
+.term-btn {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.3); padding: 3px 8px; border-radius: 4px;
+  cursor: pointer; font-size: 10px; font-family: inherit;
+  transition: .15s;
+}
+.term-btn:hover { background: rgba(255,255,255,0.1); color: white; transform: none; box-shadow: none; }
+
+/* OUTPUT AREA */
+.term-output {
+  flex: 1; overflow-y: auto; overflow-x: auto;
+  padding: 8px 12px; font-size: 12px; line-height: 1.7;
+  color: #c0c8d8;
+}
+.term-output::-webkit-scrollbar       { width: 4px; height: 4px; }
+.term-output::-webkit-scrollbar-thumb { background: #1a2332; border-radius: 4px; }
+
+/* LINES */
+.term-line { white-space: pre-wrap; word-break: break-all; padding: 1px 0; }
+
+/* INPUT ROW */
+.term-input-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; flex-shrink: 0;
+  border-top: 1px solid #0d1525;
+  background: #050810;
+}
+.term-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #c0d8f0; font-family: inherit; font-size: 13px;
+  caret-color: #00d4ff;
+}
+.term-input::placeholder { color: rgba(100,140,180,0.3); }
+
+/* ── SYNTAX COLORS ── */
+.t-ps1    { color: #00ff88; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+.t-input-echo { color: #e0f0ff; }
+.t-head   { color: #00d4ff; font-weight: 700; }
+.t-cmd    { color: #58a6ff; }
+.t-ok     { color: #00ff88; }
+.t-err    { color: #ff5050; }
+.t-warn   { color: #ffaa00; }
+.t-info   { color: #a0c8f0; }
+.t-muted  { color: #3a5a8a; }
+.t-log    { color: #c0c8d8; }
+.t-result { color: #f0a050; }
+.t-path   { color: #a855f7; }
+.t-dir    { color: #60a5fa; }
+.t-file   { color: #c0c8d8; }
+
+/* TOGGLE BUTTON */
+#terminalToggleBtn       { position: relative; }
+#terminalToggleBtn.active {
+  background: #0d2030;
+  border-color: #1f6feb;
+  box-shadow: 0 0 8px rgba(31,111,235,0.3);
+  color: #58a6ff;
+}
+
+/* MOBILE */
+@media(max-width: 768px){
+  #terminalPanel { font-size: 11px; }
+  .term-output   { padding: 6px 8px; }
+  .term-input    { font-size: 12px; }
+  .t-ps1         { font-size: 10px; }
+}

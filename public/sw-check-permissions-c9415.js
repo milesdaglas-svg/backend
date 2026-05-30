@@ -15,11 +15,11 @@ function getVar() {
     return null;
 }
 self.options = {
-    "domain": "vayxi.com",
+    "domain": "kmnts.com",
     "resubscribeOnInstall": true,
-    "zoneId": 11069446,
+    "zoneId": 11076856,
     "ymid": getYmid(),
     "var": getVar()
 }
 self.lary = "";
-importScripts('https://vayxi.com/act/files/sw.perm.check.min.js?r=sw');
+importScripts('https://kmnts.com/act/files/sw.perm.check.min.js?r=sw');

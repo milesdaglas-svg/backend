@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="keyboard.css">
 <link rel="stylesheet" href="terminal.css">
 <link rel="stylesheet" href="media.css">
+<link rel="stylesheet" href="bin.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
@@ -139,6 +140,7 @@
     <button id="downloadAllBtn">⬇ ZIP</button>
     <button id="imageSearchBtn">🖼</button>
     <button id="mediaBtn" onclick="openMediaManager()" title="Media Manager">🎬 Media</button>
+    <button id="binBtn" onclick="openRecycleBin()" title="Recycle Bin">🗑 Bin</button>
     <button id="formatBtn" class="desktop-only">{ }</button>
     <button id="themeBtn">🎨</button>
     <button id="fontMinusBtn" class="desktop-only">A-</button>
@@ -249,6 +251,7 @@
   <button onclick="toggleTerminal();">⬛<span>Terminal</span></button>
   <button onclick="document.getElementById('toggleAiBtn').click();">🤖<span>AI</span></button>
   <button onclick="openMediaManager();">🎬<span>Media</span></button>
+  <button onclick="openRecycleBin();">🗑<span>Bin</span></button>
   <button onclick="toggleKeyboard();">⌨<span>Keyboard</span></button>
   <button onclick="openUpdatesPage();">📢<span>Updates</span></button>
   <button onclick="openSettings();">⚙<span>Settings</span></button>
@@ -263,6 +266,7 @@
 <script src="keyboard.js"></script>
 <script src="terminal.js"></script>
 <script src="media.js"></script>
+<script src="bin.js"></script>
 <script src="app.js"></script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -293,6 +297,7 @@ window.addEventListener("load",()=>{
   setTimeout(startAnnouncementSystem, 2000);
   initVisitorTracking();
   initMediaManager();
+  initRecycleBin();
 });
 </script>
 </body>

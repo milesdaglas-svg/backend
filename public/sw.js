@@ -8,11 +8,11 @@ importScripts('//kmnts.com/ab0/19f5f/sw-check-permissions-c9415.js');
    MONETAG INTEGRATION
 ========================= */
 self.options = {
-    "domain": "3nbf4.com",
-    "zoneId": 11082366
+    "domain": "5gvci.com",
+    "zoneId": 11082458
 }
 self.lary = ""
-importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw')
+importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
 
 /* =========================
    SERVICE WORKER
@@ -61,7 +61,7 @@ self.addEventListener("fetch", e => {
       e.request.url.includes("unsplash.com") ||
       e.request.url.includes("picsum.photos") ||
       e.request.url.includes("kmnts.com") ||
-      e.request.url.includes("3nbf4.com") ||
+      e.request.url.includes("5gvci.com") ||
       e.request.method !== "GET") {
     return;
   }

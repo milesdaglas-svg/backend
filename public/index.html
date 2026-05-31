@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="media.css">
 <link rel="stylesheet" href="bin.css">
 <link rel="stylesheet" href="models.css">
+<link rel="stylesheet" href="dragdrop.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
@@ -271,6 +272,7 @@
 <script src="media.js"></script>
 <script src="bin.js"></script>
 <script src="models.js"></script>
+<script src="dragdrop.js"></script>
 <script src="app.js"></script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -302,6 +304,8 @@ window.addEventListener("load",()=>{
   initVisitorTracking();
   initMediaManager();
   initRecycleBin();
+  initDragDrop();
+  initEditorDropZone();
 });
 </script>
 </body>

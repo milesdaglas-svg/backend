@@ -1,0 +1,93 @@
+/* =========================
+   DRAG & DROP v1
+========================= */
+
+/* ── DRAGGING FILE ── */
+.file-item.dd-dragging,
+.folder-item.dd-dragging {
+  opacity: 0.35;
+  background: rgba(88,166,255,0.05) !important;
+  border: 1px dashed rgba(88,166,255,0.3) !important;
+  border-radius: 6px;
+}
+
+/* ── DROP TARGET FOLDER ── */
+.folder-item.dd-target {
+  background: rgba(0,200,100,0.1) !important;
+  border: 1px dashed #00cc88 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 12px rgba(0,200,100,0.15) !important;
+  transform: scale(1.02);
+  transition: all .15s ease !important;
+}
+.folder-item.dd-target .folder-name {
+  color: #00cc88 !important;
+}
+.folder-item.dd-target .folder-arrow {
+  color: #00cc88 !important;
+}
+
+/* ── GHOST DRAG IMAGE ── */
+.dd-ghost {
+  position: fixed; top: -100px; left: -100px;
+  background: #1f2937; border: 1px solid #58a6ff;
+  color: #58a6ff; padding: 6px 12px; border-radius: 8px;
+  font-size: 12px; font-family: 'Poppins', sans-serif;
+  pointer-events: none; z-index: 99999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  white-space: nowrap;
+}
+
+/* ── TOUCH CLONE ── */
+.dd-touch-clone {
+  background: #1f2937 !important;
+  border: 1px solid #58a6ff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  transition: none !important;
+  transform: scale(1.05) !important;
+}
+
+/* ── EDITOR DROP ZONE ── */
+.editor-area.dd-editor-target {
+  outline: 2px dashed #58a6ff;
+  outline-offset: -4px;
+  background: rgba(88,166,255,0.03);
+}
+.editor-area.dd-editor-target::after {
+  content: "Drop files here to add to project";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15,20,30,0.92);
+  border: 1px solid #58a6ff;
+  color: #58a6ff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+}
+.editor-area { position: relative; }
+
+/* ── FILE ITEM DRAG CURSOR ── */
+.file-item[draggable="true"]   { cursor: grab; }
+.file-item[draggable="true"]:active { cursor: grabbing; }
+.folder-item[draggable="true"] { cursor: grab; }
+.folder-item[draggable="true"]:active { cursor: grabbing; }
+
+/* ── UNDO TOAST hint ── */
+.toast.success::after {
+  content: " (Ctrl+Z to undo)";
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* ── MOBILE: touch drag ── */
+@media(max-width:768px){
+  .file-item[draggable="true"]   { cursor: default; }
+  .folder-item[draggable="true"] { cursor: default; }
+  .toast.success::after { display: none; }
+}

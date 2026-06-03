@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="bin.css">
 <link rel="stylesheet" href="models.css">
 <link rel="stylesheet" href="dragdrop.css">
+<link rel="stylesheet" href="ad_control.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
@@ -258,6 +259,7 @@
 <script src="bin.js"></script>
 <script src="models.js"></script>
 <script src="dragdrop.js"></script>
+<script src="ad_control.js"></script>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -295,28 +297,8 @@ window.addEventListener("load", () => {
   initDragDrop();
   initEditorDropZone();
 
-  /* =============================================
-     LAZY AD LOADING — fixes lag
-     Ads load 3.5s after page is ready
-     so Monaco editor initializes first
-     Your Propush + Monetag both load here
-  ============================================= */
-  setTimeout(() => {
-    // PROPUSH — push notification ads
-    const propush = document.createElement("script");
-    propush.src = "//kmnts.com/ab0/19f5f/mw.min.js?z=11076856&sw=/sw-check-permissions-c9415.js";
-    propush.async = true;
-    document.head.appendChild(propush);
-
-    // MONETAG — display ads
-    const monetag = document.createElement("script");
-    monetag.src = "https://quge5.com/88/tag.min.js";
-    monetag.dataset.zone = "244827";
-    monetag.async = true;
-    monetag.dataset.cfasync = "false";
-    document.head.appendChild(monetag);
-
-  }, 3500); // 3.5 seconds after load
+  // Ads loaded by ad_control.js — Admin → 📢 Ads tab to manage
+  initAdSystem();
 });
 </script>
 </body>

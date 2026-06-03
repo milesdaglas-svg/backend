@@ -180,6 +180,12 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('history',this)">
             <span class="adm-nav-icon">📋</span><span>History</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('ads',this)">
+            <span class="adm-nav-icon">📢</span><span>Ads</span>
+          </button>
+          <button class="adm-nav-btn" onclick="admTab('ads',this)">
+            <span class="adm-nav-icon">📢</span><span>Ads</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -257,6 +263,18 @@ async function showAdminPanel() {
             </div>
           </div>
 
+          <!-- ── ADS ── -->
+          <div class="adm-tab" id="adm-tab-ads">
+            <div id="adm-ads-content">// Loading ad controls...</div>
+          </div>
+
+          <!-- ── ADS ── -->
+          <div class="adm-tab" id="adm-tab-ads">
+            <div id="adm-ads-content">
+              <div class="adm-feed-loading">// Loading ad controls...</div>
+            </div>
+          </div>
+
           <!-- ── HISTORY ── -->
           <div class="adm-tab" id="adm-tab-history">
             <div class="adm-section-title">// BROADCAST HISTORY</div>
@@ -302,6 +320,13 @@ function admTab(name, btn) {
   if (el) el.innerText = name;
 
   if (name === "history") loadAdminHistory();
+  if (name === "ads") {
+    const el = document.getElementById("adm-ads-content");
+    if (el && typeof buildAdControlPanel === "function") {
+      el.innerHTML = buildAdControlPanel();
+    }
+  }
+  if (name === "ads") { const el=document.getElementById('adm-ads-content'); if(el&&typeof buildAdControlPanel==="function") el.innerHTML=buildAdControlPanel(); }
   if (name === "visitors") loadVisitorsList();
 }
 

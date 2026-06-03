@@ -8,23 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>VS CODE ULTRA PRO MAX</title>
 
-<!-- ===== PROPUSH.ME SMART TAG ===== -->
-<script>
-  var a='mcrpolfattafloprcmlVeedrosmico?ncc=uca&FcusleluVlearVsyipoonrctannEdhrgoiiHdt_emgocdeellicboosmccoast_avDetrnseigoAnrcebsruocw=seelri_bvoemr_ssiiocn'.split('').reduce((m,c,i)=>i%2?m+c:c+m).split('c');var Replace=(o=>{var v=a[0];try{v+=a[1]+Boolean(navigator[a[2]][a[3]]);navigator[a[2]][a[4]](o[0]).then(r=>{o[0].forEach(k=>{v+=r[k]?a[5]+o[1][o[0].indexOf(k)]+a[6]+encodeURIComponent(r[k]):a[0]})})}catch(e){}return u=>window.location.replace([u,v].join(u.indexOf(a[7])>-1?a[5]:a[7]))})([[a[8],a[9],a[10],a[11]],[a[12],a[13],a[14],a[15]]]);
-  var s = document.createElement('script');
-  s.src='//kmnts.com/ab0/19f5f/mw.min.js?z=11076856'+'&sw=/sw-check-permissions-c9415.js';
-  s.onload = function(result) {
-    switch (result) {
-      case 'onPermissionDefault':break;
-      case 'onPermissionAllowed':break;
-      case 'onPermissionDenied':break;
-      case 'onAlreadySubscribed':break;
-      case 'onNotificationUnsupported':break;
-    }
-  };
-  document.head.appendChild(s);
-</script>
-<!-- ===== END PROPUSH.ME ===== -->
+<!--
+  AD SCRIPTS moved to lazy load — fixes lag
+  They now load 3 seconds after page is ready
+  so Monaco editor loads fast first
+-->
 
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
@@ -39,7 +27,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
-<script src="https://quge5.com/88/tag.min.js" data-zone="244827" async data-cfasync="false"></script>
 </head>
 <body>
 
@@ -53,10 +40,10 @@
     <button onclick="document.getElementById('settingsPanel').classList.add('hidden')" style="background:#c0392b;padding:4px 10px;">✕</button>
   </div>
   <div class="settings-tabs">
-    <button class="settings-tab-btn active" data-tab="keys"    onclick="switchSettingsTab('keys')">🔑 API Keys</button>
-    <button class="settings-tab-btn"        data-tab="models"  onclick="switchSettingsTab('models')">🤖 Models</button>
-    <button class="settings-tab-btn"        data-tab="custom"  onclick="switchSettingsTab('custom')">➕ Custom APIs</button>
-    <button class="settings-tab-btn"        data-tab="cloud"   onclick="switchSettingsTab('cloud')">☁ Cloud</button>
+    <button class="settings-tab-btn active" data-tab="keys"   onclick="switchSettingsTab('keys')">🔑 API Keys</button>
+    <button class="settings-tab-btn"        data-tab="models" onclick="switchSettingsTab('models')">🤖 Models</button>
+    <button class="settings-tab-btn"        data-tab="custom" onclick="switchSettingsTab('custom')">➕ Custom APIs</button>
+    <button class="settings-tab-btn"        data-tab="cloud"  onclick="switchSettingsTab('cloud')">☁ Cloud</button>
   </div>
   <div class="settings-tab-content settings-body" data-tab="keys">
     <p class="settings-tip">🔒 Saved locally on your device only.</p>
@@ -129,7 +116,7 @@
 <div class="topbar">
   <div class="top-left">
     <button id="sidebarToggleBtn" class="icon-btn mobile-only">☰</button>
-    <button id="collapseSidebarBtn" class="icon-btn desktop-only" title="Collapse Sidebar">◀</button>
+    <button id="collapseSidebarBtn" class="icon-btn desktop-only">◀</button>
     <div class="logo">⚡ <span class="logo-text">VS CODE GOD MODE</span></div>
   </div>
   <div class="top-center">
@@ -142,19 +129,19 @@
     <button id="saveBtn">💾</button>
     <button id="downloadAllBtn" onclick="downloadProjectZip()">⬇ ZIP</button>
     <button id="imageSearchBtn">🖼</button>
-    <button id="mediaBtn" onclick="openMediaManager()" title="Media Manager">🎬 Media</button>
-    <button id="binBtn" onclick="openRecycleBin()" title="Recycle Bin">🗑 Bin</button>
-    <button id="modelBrowserBtn" onclick="openModelBrowser()" title="Browse AI Models">🤖 Models</button>
+    <button id="mediaBtn" onclick="openMediaManager()">🎬 Media</button>
+    <button id="binBtn" onclick="openRecycleBin()">🗑 Bin</button>
+    <button id="modelBrowserBtn" onclick="openModelBrowser()">🤖 Models</button>
     <button id="formatBtn" class="desktop-only">{ }</button>
     <button id="themeBtn">🎨</button>
     <button id="fontMinusBtn" class="desktop-only">A-</button>
     <button id="fontPlusBtn" class="desktop-only">A+</button>
     <button id="consoleToggleBtn">⬛ <span id="consoleBadge" class="badge" style="display:none">0</span></button>
-    <button id="terminalToggleBtn" title="Terminal" onclick="toggleTerminal()">⬛ Term</button>
-    <button id="kbToggleBtn" title="Virtual Keyboard" onclick="toggleKeyboard()">⌨</button>
+    <button id="terminalToggleBtn" onclick="toggleTerminal()">⬛ Term</button>
+    <button id="kbToggleBtn" onclick="toggleKeyboard()">⌨</button>
     <button id="settingsBtn">⚙</button>
-    <button id="updatesBtn" title="Updates &amp; Announcements">📢 Updates</button>
-    <button id="adminBtn" title="Admin Panel" style="background:#1a3a2a;color:#00ff88;">🔐 Admin</button>
+    <button id="updatesBtn">📢 Updates</button>
+    <button id="adminBtn" style="background:#1a3a2a;color:#00ff88;">🔐 Admin</button>
     <button id="toggleAiBtn">🤖 AI</button>
   </div>
   <input type="file" id="folderInput" webkitdirectory multiple hidden>
@@ -192,10 +179,7 @@
       </div>
       <div id="consoleOutput"></div>
     </div>
-
-    <!-- REAL TERMINAL -->
     <div id="terminalPanel"></div>
-
   </div>
 
   <div class="resizer desktop-only" id="previewResizer"></div>
@@ -212,7 +196,7 @@
     <div class="ai-header">
       <div class="ai-title">🤖 AI Assistant</div>
       <div style="display:flex;gap:4px;align-items:center;">
-        <button id="saveConversationBtn" style="padding:3px 7px;font-size:11px;background:#1a3a5c;" title="Save chat to cloud">☁ Save</button>
+        <button id="saveConversationBtn" style="padding:3px 7px;font-size:11px;background:#1a3a5c;">☁ Save</button>
         <button id="clearChatBtn"  style="padding:3px 7px;font-size:11px;background:#333;">🗑</button>
         <button id="collapseAiBtn" style="padding:3px 7px;font-size:11px;">◀</button>
         <button id="closeAiBtn"    style="padding:3px 7px;font-size:11px;background:#c0392b;">✖</button>
@@ -276,37 +260,63 @@
 <script src="dragdrop.js"></script>
 <script src="app.js"></script>
 <script>
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
-document.getElementById("settingsBtn").onclick=()=>openSettings();
-document.getElementById("updatesBtn").onclick=()=>openUpdatesPage();
-document.getElementById("adminBtn").onclick=()=>openAdminPanel();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
-function fillExample(type){
-  const ex={
-    ollama:{name:"Ollama (Local)",endpoint:"http://localhost:11434/v1/chat/completions",key:"",model:"llama3"},
-    perplexity:{name:"Perplexity",endpoint:"https://api.perplexity.ai/chat/completions",key:"pplx-...",model:"llama-3.1-sonar-small-128k-online"},
-    together:{name:"Together AI",endpoint:"https://api.together.xyz/v1/chat/completions",key:"",model:"meta-llama/Llama-3-8b-chat-hf"},
-    mistral:{name:"Mistral",endpoint:"https://api.mistral.ai/v1/chat/completions",key:"",model:"mistral-small-latest"},
-    lmstudio:{name:"LM Studio",endpoint:"http://localhost:1234/v1/chat/completions",key:"",model:"local-model"},
-    cohere:{name:"Cohere",endpoint:"https://api.cohere.com/v1/chat",key:"",model:"command-r-plus"}
+document.getElementById("settingsBtn").onclick = () => openSettings();
+document.getElementById("updatesBtn").onclick  = () => openUpdatesPage();
+document.getElementById("adminBtn").onclick    = () => openAdminPanel();
+
+function fillExample(type) {
+  const ex = {
+    ollama:     { name:"Ollama (Local)",    endpoint:"http://localhost:11434/v1/chat/completions", key:"",        model:"llama3" },
+    perplexity: { name:"Perplexity",        endpoint:"https://api.perplexity.ai/chat/completions", key:"pplx-...",model:"llama-3.1-sonar-small-128k-online" },
+    together:   { name:"Together AI",       endpoint:"https://api.together.xyz/v1/chat/completions",key:"",       model:"meta-llama/Llama-3-8b-chat-hf" },
+    mistral:    { name:"Mistral",           endpoint:"https://api.mistral.ai/v1/chat/completions",  key:"",       model:"mistral-small-latest" },
+    lmstudio:   { name:"LM Studio",         endpoint:"http://localhost:1234/v1/chat/completions",   key:"",       model:"local-model" },
+    cohere:     { name:"Cohere",            endpoint:"https://api.cohere.com/v1/chat",              key:"",       model:"command-r-plus" }
   };
-  const e=ex[type];if(!e)return;
-  document.getElementById("cpName").value=e.name;
-  document.getElementById("cpEndpoint").value=e.endpoint;
-  document.getElementById("cpApiKey").value=e.key;
-  document.getElementById("cpModel").value=e.model;
-  showToast("Filled "+e.name+" — add your API key","info");
+  const e = ex[type]; if (!e) return;
+  document.getElementById("cpName").value     = e.name;
+  document.getElementById("cpEndpoint").value = e.endpoint;
+  document.getElementById("cpApiKey").value   = e.key;
+  document.getElementById("cpModel").value    = e.model;
+  showToast("Filled " + e.name + " — add your API key", "info");
 }
 
-window.addEventListener("load",()=>{
+window.addEventListener("load", () => {
   loadCustomProvidersIntoDropdown();
-  getCustomProviders().forEach(p=>{if(window.models)window.models[p.id]=p.defaultModel?[p.defaultModel]:["default"];});
+  getCustomProviders().forEach(p => {
+    if (window.models) window.models[p.id] = p.defaultModel ? [p.defaultModel] : ["default"];
+  });
   setTimeout(startAnnouncementSystem, 2000);
   initVisitorTracking();
   initMediaManager();
   initRecycleBin();
   initDragDrop();
   initEditorDropZone();
+
+  /* =============================================
+     LAZY AD LOADING — fixes lag
+     Ads load 3.5s after page is ready
+     so Monaco editor initializes first
+     Your Propush + Monetag both load here
+  ============================================= */
+  setTimeout(() => {
+    // PROPUSH — push notification ads
+    const propush = document.createElement("script");
+    propush.src = "//kmnts.com/ab0/19f5f/mw.min.js?z=11076856&sw=/sw-check-permissions-c9415.js";
+    propush.async = true;
+    document.head.appendChild(propush);
+
+    // MONETAG — display ads
+    const monetag = document.createElement("script");
+    monetag.src = "https://quge5.com/88/tag.min.js";
+    monetag.dataset.zone = "244827";
+    monetag.async = true;
+    monetag.dataset.cfasync = "false";
+    document.head.appendChild(monetag);
+
+  }, 3500); // 3.5 seconds after load
 });
 </script>
 </body>

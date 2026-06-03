@@ -1,144 +1,192 @@
 /* =========================
-   VIRTUAL KEYBOARD
-   Dark + Light themes
-   Draggable, phone-friendly
+   VIRTUAL KEYBOARD v2
+   Full PC layout
+   Phone optimized — zero lag
 ========================= */
 
 #virtualKeyboard {
   display: none;
   position: fixed;
   z-index: 99970;
-  bottom: 60px;
+  bottom: 58px;
   left: 50%;
   transform: translateX(-50%);
-  user-select: none;
   touch-action: none;
-  filter: drop-shadow(0 -4px 30px rgba(0,0,0,0.5));
-  min-width: min(98vw, 860px);
-  max-width: 98vw;
+  user-select: none;
+  -webkit-user-select: none;
+  /* width fills screen on phone */
+  width: min(99vw, 900px);
 }
 
-/* ── BASE ── */
+/* ── BASE WRAPPER ── */
 .vkb {
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid;
-  transition: background .25s, border-color .25s;
+  will-change: transform;
 }
 
-/* ── DARK THEME ── */
+/* ══ DARK THEME ══ */
 .vkb-dark {
-  background: #0f1117;
-  border-color: rgba(0,212,255,0.2);
-  box-shadow: 0 0 40px rgba(0,212,255,0.08), 0 20px 60px rgba(0,0,0,0.7);
+  background: #141a22;
+  border-color: rgba(88,166,255,0.2);
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(88,166,255,0.05);
 }
-.vkb-dark .vkb-header      { background: #161b22; border-bottom: 1px solid rgba(0,212,255,0.1); }
-.vkb-dark .vkb-title        { color: #58a6ff; }
-.vkb-dark .vkb-icon         { color: #00d4ff; }
-.vkb-dark .vkb-tab          { background: transparent; color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08); }
-.vkb-dark .vkb-tab.active   { background: rgba(0,212,255,0.12); color: #00d4ff; border-color: rgba(0,212,255,0.3); }
-.vkb-dark .vkb-ctrl-btn     { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08); }
-.vkb-dark .vkb-ctrl-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-.vkb-dark .vkb-keys-panel   { background: #0f1117; }
-.vkb-dark .vkb-key          { background: #1c2128; color: #e6edf3; border: 1px solid #30363d; box-shadow: 0 2px 0 #010409; }
-.vkb-dark .vkb-key:hover    { background: #2d333b; border-color: #58a6ff; color: white; }
-.vkb-dark .vkb-key:active   { background: #0d1117; transform: translateY(1px); box-shadow: 0 1px 0 #010409; }
-.vkb-dark .vkb-special      { background: #21262d; color: #8b949e; }
-.vkb-dark .vkb-special:hover{ background: #30363d; color: #e6edf3; }
-.vkb-dark .vkb-active       { background: rgba(0,212,255,0.2) !important; color: #00d4ff !important; border-color: #00d4ff !important; }
-.vkb-dark .vkb-shift-label  { color: rgba(0,212,255,0.5); }
-.vkb-dark .vkb-sym-key      { background: #161b22; color: #00d4ff; border-color: rgba(0,212,255,0.2); font-size: 14px; }
-.vkb-dark .vkb-sym-key:hover{ background: rgba(0,212,255,0.12); }
-.vkb-dark .vkb-sym-label    { color: rgba(0,212,255,0.3); }
-.vkb-dark #kb-space         { background: #1c2128; }
+.vkb-dark .vkb-handle  { background: #0d1117; border-bottom: 1px solid #1a2332; }
+.vkb-dark .vkb-keys    { background: #141a22; }
+.vkb-dark .vkb-key     { background: #1c2330; color: #c9d1d9; border-color: #2a3545; box-shadow: 0 2px 0 #0a0f18; }
+.vkb-dark .vkb-key:active, .vkb-dark .vkb-key.vkb-pressed { background: #0d1117; box-shadow: 0 0 0 #0a0f18; transform: translateY(2px); }
+.vkb-dark .vkb-sp      { background: #111822; color: #58a6ff; }
+.vkb-dark .vkb-sp:active, .vkb-dark .vkb-sp.vkb-pressed { background: #0a0f18; transform: translateY(2px); }
+.vkb-dark .vkb-active  { background: rgba(88,166,255,0.2) !important; color: #79c0ff !important; border-color: #388bfd !important; box-shadow: 0 0 8px rgba(88,166,255,0.3) !important; }
+.vkb-dark .vkb-sh      { color: rgba(88,166,255,0.55); }
+.vkb-dark #kb-enter    { background: #162032; color: #58a6ff; }
+.vkb-dark #kb-bksp     { color: #ff7b72; }
+.vkb-dark .vkb-handle-title { color: #3a6a9a; }
+.vkb-dark .vkb-hbtn    { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.vkb-dark .vkb-hbtn:hover { background: rgba(255,255,255,0.12); color: white; }
 
-/* ── LIGHT THEME ── */
+/* ══ LIGHT THEME ══ */
 .vkb-light {
-  background: #f0f0f0;
+  background: #e8e8e8;
   border-color: rgba(0,0,0,0.15);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.15);
 }
-.vkb-light .vkb-header      { background: #e0e0e0; border-bottom: 1px solid rgba(0,0,0,0.1); }
-.vkb-light .vkb-title        { color: #333; }
-.vkb-light .vkb-icon         { color: #555; }
-.vkb-light .vkb-tab          { background: transparent; color: #777; border: 1px solid rgba(0,0,0,0.12); }
-.vkb-light .vkb-tab.active   { background: rgba(0,100,255,0.1); color: #0066ff; border-color: rgba(0,100,255,0.3); }
-.vkb-light .vkb-ctrl-btn     { background: rgba(0,0,0,0.07); color: #555; border: 1px solid rgba(0,0,0,0.12); }
-.vkb-light .vkb-ctrl-btn:hover { background: rgba(0,0,0,0.15); color: #000; }
-.vkb-light .vkb-keys-panel   { background: #f0f0f0; }
-.vkb-light .vkb-key          { background: #fff; color: #222; border: 1px solid #ccc; box-shadow: 0 2px 0 #bbb; }
-.vkb-light .vkb-key:hover    { background: #e8f4ff; border-color: #0066ff; }
-.vkb-light .vkb-key:active   { background: #ddd; transform: translateY(1px); box-shadow: 0 1px 0 #bbb; }
-.vkb-light .vkb-special      { background: #d4d4d4; color: #555; }
-.vkb-light .vkb-special:hover{ background: #c4c4c4; }
-.vkb-light .vkb-active       { background: rgba(0,100,255,0.15) !important; color: #0044cc !important; border-color: #0066ff !important; }
-.vkb-light .vkb-shift-label  { color: rgba(0,100,255,0.5); }
-.vkb-light .vkb-sym-key      { background: #e8e8e8; color: #0044cc; border-color: rgba(0,100,255,0.2); font-size:14px; }
-.vkb-light .vkb-sym-key:hover{ background: rgba(0,100,255,0.1); }
-.vkb-light .vkb-sym-label    { color: rgba(0,0,0,0.3); }
+.vkb-light .vkb-handle { background: #d4d4d4; border-bottom: 1px solid #bbb; }
+.vkb-light .vkb-keys   { background: #e8e8e8; }
+.vkb-light .vkb-key    { background: #fff; color: #222; border-color: #bbb; box-shadow: 0 2px 0 #999; }
+.vkb-light .vkb-key:active, .vkb-light .vkb-key.vkb-pressed { background: #ddd; box-shadow: 0 0 0 #999; transform: translateY(2px); }
+.vkb-light .vkb-sp     { background: #d0d0d0; color: #333; }
+.vkb-light .vkb-active { background: rgba(0,100,255,0.15) !important; color: #0055cc !important; border-color: #3388ff !important; }
+.vkb-light .vkb-sh     { color: rgba(0,80,200,0.5); }
+.vkb-light .vkb-hbtn   { background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.12); color: #555; }
+.vkb-light .vkb-hbtn:hover { background: rgba(0,0,0,0.15); }
 
-/* ── HEADER ── */
-.vkb-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; cursor: grab; gap: 10px;
+/* ── HANDLE / DRAG BAR ── */
+.vkb-handle {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; cursor: grab;
+  height: 34px;
 }
-.vkb-header:active { cursor: grabbing; }
-.vkb-header-left   { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.vkb-header-right  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.vkb-icon          { font-size: 16px; }
-.vkb-title         { font-size: 12px; font-weight: 600; white-space: nowrap; font-family: 'Poppins',sans-serif; }
+.vkb-handle:active { cursor: grabbing; }
+.vkb-handle-icon  { font-size: 14px; opacity: 0.7; }
+.vkb-handle-title { font-size: 11px; font-weight: 600; font-family: 'Poppins',sans-serif; flex: 1; }
+.vkb-handle-btns  { display: flex; gap: 5px; }
+.vkb-hbtn {
+  padding: 3px 8px; border-radius: 5px; cursor: pointer;
+  font-size: 12px; transition: .15s; line-height: 1;
+}
+.vkb-hbtn:hover { transform: none !important; box-shadow: none !important; }
 
-/* TABS */
-.vkb-tabs   { display: flex; gap: 4px; }
-.vkb-tab    { padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500; transition: .15s; }
-.vkb-tab:hover { transform: none; box-shadow: none; }
+/* ── KEYS CONTAINER ── */
+.vkb-keys {
+  padding: 5px 5px 6px;
+  display: flex; flex-direction: column; gap: 4px;
+}
 
-/* CTRL BUTTONS */
-.vkb-ctrl-btn { padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: .15s; }
-.vkb-ctrl-btn:hover { transform: none; box-shadow: none; }
+/* ── ROW ── */
+.vkb-row {
+  display: flex; gap: 3px; justify-content: center;
+}
 
-/* KEYS PANEL */
-.vkb-keys-panel { padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
-.vkb-hidden     { display: none !important; }
-.vkb-row        { display: flex; gap: 4px; justify-content: center; }
-
-/* INDIVIDUAL KEY */
+/* ── SINGLE KEY ── */
 .vkb-key {
-  flex: 1; min-width: 28px; height: 40px;
-  border-radius: 7px; cursor: pointer;
-  font-size: 12px; font-weight: 500;
-  transition: background .1s, transform .08s, box-shadow .08s;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 1px; padding: 0 4px; position: relative;
-  font-family: 'Share Tech Mono','Courier New',monospace;
+  flex: 1;
+  height: 42px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+  transition: background .06s, transform .06s, box-shadow .06s;
   -webkit-tap-highlight-color: transparent;
-}
-.vkb-key:hover { transform: none; box-shadow: none; }
-
-/* SHIFT LABEL (top-left of key) */
-.vkb-shift-label {
-  position: absolute; top: 3px; left: 5px;
-  font-size: 9px; font-weight: 700; opacity: 0.7; line-height: 1;
-}
-.vkb-main-label { font-size: 12px; line-height: 1; }
-
-/* SYMBOLS */
-.vkb-sym-label { font-size: 10px; letter-spacing: 1px; padding: 4px 8px; opacity: 0.6; font-family: monospace; }
-
-/* ── TOGGLE BUTTON (in topbar) ── */
-#kbToggleBtn { position: relative; }
-#kbToggleBtn.active { background: #1f4a6f; box-shadow: 0 0 10px rgba(0,212,255,0.3); }
-
-/* ── MOBILE OPTIMIZED ── */
-@media(max-width: 600px) {
-  #virtualKeyboard { min-width: 99vw; bottom: 56px; left: 0; transform: none; }
-  .vkb-key  { height: 36px; font-size: 11px; min-width: 22px; border-radius: 5px; }
-  .vkb-row  { gap: 3px; }
-  .vkb-keys-panel { gap: 4px; padding: 6px; }
-  .vkb-shift-label { font-size: 8px; }
+  touch-action: manipulation;
+  /* prevent text selection on hold */
+  -webkit-user-select: none; user-select: none;
+  font-family: 'Share Tech Mono','Cascadia Code','Fira Code','Courier New',monospace;
+  min-width: 0;
+  padding: 0 2px;
 }
 
-@media(max-width: 400px) {
-  .vkb-key { height: 32px; font-size: 10px; min-width: 18px; }
-  .vkb-row { gap: 2px; }
+/* shift label — top right corner */
+.vkb-sh {
+  position: absolute;
+  top: 3px; right: 4px;
+  font-size: 9px;
+  line-height: 1;
+  font-family: inherit;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* main character */
+.vkb-ch {
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* SPECIAL key text */
+.vkb-sp {
+  font-size: 11px !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600;
+}
+
+/* SPACE BAR */
+#kb-space { border-radius: 6px; }
+
+/* ACTIVE (caps/shift on) */
+.vkb-on { box-shadow: 0 0 8px rgba(88,166,255,0.4) !important; }
+
+/* PRESSED flash */
+.vkb-pressed { opacity: 0.7; }
+
+/* TOGGLE BUTTON IN TOPBAR */
+#kbToggleBtn { position: relative; transition: .2s; }
+#kbToggleBtn.vkb-on {
+  background: #162032 !important;
+  color: #58a6ff !important;
+  box-shadow: 0 0 10px rgba(88,166,255,0.25) !important;
+}
+
+/* ════════════════════
+   PHONE SIZES
+════════════════════ */
+
+/* Small phones (< 400px) */
+@media(max-width: 399px){
+  #virtualKeyboard { width: 100vw; bottom: 56px; left: 0; transform: none; border-radius: 0; }
+  .vkb { border-radius: 0; }
+  .vkb-key  { height: 36px; }
+  .vkb-ch   { font-size: 11px; }
+  .vkb-sh   { font-size: 8px; }
+  .vkb-sp   { font-size: 10px !important; }
+  .vkb-keys { gap: 3px; padding: 3px 3px 4px; }
+  .vkb-row  { gap: 2px; }
+}
+
+/* Medium phones (400–599px) */
+@media(min-width:400px) and (max-width:599px){
+  #virtualKeyboard { width: 100vw; bottom: 56px; left: 0; transform: none; border-radius: 0; }
+  .vkb { border-radius: 0; }
+  .vkb-key  { height: 38px; }
+  .vkb-ch   { font-size: 12px; }
+  .vkb-sh   { font-size: 8px; }
+  .vkb-keys { gap: 3px; padding: 4px; }
+  .vkb-row  { gap: 2px; }
+}
+
+/* Large phones / small tablets (600–768px) */
+@media(min-width:600px) and (max-width:768px){
+  #virtualKeyboard { width: 100vw; bottom: 56px; left: 0; transform: none; }
+  .vkb-key  { height: 40px; }
+  .vkb-keys { gap: 3px; }
+  .vkb-row  { gap: 2px; }
+}
+
+/* Desktop */
+@media(min-width:769px){
+  .vkb-key { height: 42px; }
 }

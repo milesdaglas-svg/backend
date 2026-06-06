@@ -180,6 +180,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('history',this)">
             <span class="adm-nav-icon">📋</span><span>History</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('stats',this)">
+                <span class="adm-nav-icon">📈</span><span>Stats</span>
+              </button>
           <button class="adm-nav-btn" onclick="admTab('ads',this)">
             <span class="adm-nav-icon">📢</span><span>Ads</span>
           </button>
@@ -277,6 +280,12 @@ async function showAdminPanel() {
 
           <!-- ── HISTORY ── -->
           <div class="adm-tab" id="adm-tab-history">
+          <!-- ── STATS ── -->
+<div class="adm-tab" id="adm-tab-stats">
+  <div id="adm-stats-content">
+    <div class="adm-feed-loading">// Click to load stats...</div>
+  </div>
+</div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
               <div class="adm-feed-loading">// Loading...</div>
@@ -320,6 +329,10 @@ function admTab(name, btn) {
   if (el) el.innerText = name;
 
   if (name === "history") loadAdminHistory();
+  if (name === "stats") {
+  const el = document.getElementById("adm-stats-content");
+  if (el) { el.innerHTML = "<div class='adm-feed-loading'>// Loading stats...</div>"; buildAdStatsDashboard().then(html => { el.innerHTML = html; }); }
+}
   if (name === "ads") {
     const el = document.getElementById("adm-ads-content");
     if (el && typeof buildAdControlPanel === "function") {

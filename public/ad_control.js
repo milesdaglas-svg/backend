@@ -119,6 +119,7 @@ function removeAllAds() {
 function reloadAds() {
   removeAllAds();
   initAdSystem();
+  trackAdPageView();
   if (typeof showToast === "function") showToast("✓ Ad settings applied", "success");
 }
 

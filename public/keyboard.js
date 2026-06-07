@@ -14,14 +14,18 @@ let kbTheme    = localStorage.getItem("kb_theme") || "dark";
 let kbCaps     = false;
 let kbShift    = false;
 let kbBuilt    = false;
+let kbLastFocus = null;
+
+document.addEventListener("focusin", function(e) {
+  if (!e.target.closest("#virtualKeyboard")) {
+    kbLastFocus = e.target;
+  }
+});
 
 /* ══════════════════════
    FULL PC LAYOUT
-   Each key: { main, shift, w }
-   w = flex width multiplier
 ══════════════════════ */
 const KB_LAYOUT = [
-  // ── ROW 0: ESC + F KEYS ──
   [
     {main:"Esc",  fn:"Escape",   w:1.0, sp:true},
     {main:"F1",   fn:"F1",       w:1.0, sp:true},
@@ -38,7 +42,6 @@ const KB_LAYOUT = [
     {main:"F12",  fn:"F12",      w:1.0, sp:true},
     {main:"Del",  fn:"Delete",   w:1.0, sp:true},
   ],
-  // ── ROW 1: NUMBERS ──
   [
     {main:"`",  shift:"~",  w:1.0},
     {main:"1",  shift:"!",  w:1.0},
@@ -53,9 +56,8 @@ const KB_LAYOUT = [
     {main:"0",  shift:")",  w:1.0},
     {main:"-",  shift:"_",  w:1.0},
     {main:"=",  shift:"+",  w:1.0},
-    {main:"⌫",  fn:"Backspace", w:1.8, sp:true, id:"kb-bksp"},
+    {main:"Bksp", fn:"Backspace", w:1.8, sp:true, id:"kb-bksp"},
   ],
-  // ── ROW 2: QWERTY ──
   [
     {main:"Tab", fn:"Tab",  w:1.4, sp:true},
     {main:"q",  shift:"Q",  w:1.0},
@@ -72,7 +74,6 @@ const KB_LAYOUT = [
     {main:"]",  shift:"}",  w:1.0},
     {main:"\\", shift:"|",  w:1.4},
   ],
-  // ── ROW 3: ASDF ──
   [
     {main:"Caps", fn:"Caps", w:1.6, sp:true, id:"kb-caps"},
     {main:"a",  shift:"A",  w:1.0},
@@ -86,11 +87,10 @@ const KB_LAYOUT = [
     {main:"l",  shift:"L",  w:1.0},
     {main:";",  shift:":",  w:1.0},
     {main:"'",  shift:'"',  w:1.0},
-    {main:"↵",  fn:"Enter", w:2.2, sp:true, id:"kb-enter"},
+    {main:"Enter", fn:"Enter", w:2.2, sp:true, id:"kb-enter"},
   ],
-  // ── ROW 4: ZXCV ──
   [
-    {main:"⇧",  fn:"Shift", w:2.0, sp:true, id:"kb-shift"},
+    {main:"Shift", fn:"Shift", w:2.0, sp:true, id:"kb-shift"},
     {main:"z",  shift:"Z",  w:1.0},
     {main:"x",  shift:"X",  w:1.0},
     {main:"c",  shift:"C",  w:1.0},
@@ -101,18 +101,17 @@ const KB_LAYOUT = [
     {main:",",  shift:"<",  w:1.0},
     {main:".",  shift:">",  w:1.0},
     {main:"/",  shift:"?",  w:1.0},
-    {main:"⇧",  fn:"Shift", w:2.6, sp:true},
+    {main:"Shift", fn:"Shift", w:2.6, sp:true},
   ],
-  // ── ROW 5: BOTTOM ──
   [
     {main:"Ctrl", fn:"Ctrl", w:1.4, sp:true},
     {main:"Alt",  fn:"Alt",  w:1.2, sp:true},
-    {main:"",     fn:"Space",w:5.5, sp:true, id:"kb-space"},
+    {main:"Space", fn:"Space", w:5.5, sp:true, id:"kb-space"},
     {main:"Alt",  fn:"Alt",  w:1.2, sp:true},
-    {main:"◀",   fn:"ArrowLeft",  sp:true},
-    {main:"▲",   fn:"ArrowUp",    sp:true},
-    {main:"▼",   fn:"ArrowDown",  sp:true},
-    {main:"▶",   fn:"ArrowRight", sp:true},
+    {main:"<",   fn:"ArrowLeft",  sp:true},
+    {main:"^",   fn:"ArrowUp",    sp:true},
+    {main:"v",   fn:"ArrowDown",  sp:true},
+    {main:">",   fn:"ArrowRight", sp:true},
   ],
 ];
 
@@ -124,21 +123,21 @@ function buildKeyboard() {
   if (!kb) return;
   kb.className = "vkb vkb-" + kbTheme;
 
-  const rows = KB_LAYOUT.map(row => {
-    const keys = row.map(k => buildKey(k)).join("");
-    return `<div class="vkb-row">${keys}</div>`;
+  const rows = KB_LAYOUT.map(function(row) {
+    const keys = row.map(function(k) { return buildKey(k); }).join("");
+    return '<div class="vkb-row">' + keys + '</div>';
   }).join("");
 
-  kb.innerHTML = `
-    <div class="vkb-handle" id="vkb-handle">
-      <span class="vkb-handle-icon">⌨</span>
-      <span class="vkb-handle-title">Keyboard</span>
-      <div class="vkb-handle-btns">
-        <button class="vkb-hbtn" onclick="vkbToggleTheme()" title="Toggle theme">${kbTheme==="dark"?"☀":"🌙"}</button>
-        <button class="vkb-hbtn" onclick="toggleKeyboard()" title="Close">✕</button>
-      </div>
-    </div>
-    <div class="vkb-keys">${rows}</div>`;
+  kb.innerHTML =
+    '<div class="vkb-handle" id="vkb-handle">' +
+      '<span class="vkb-handle-icon">&#9000;</span>' +
+      '<span class="vkb-handle-title">Keyboard</span>' +
+      '<div class="vkb-handle-btns">' +
+        '<button class="vkb-hbtn" onclick="vkbToggleTheme()" title="Toggle theme">' + (kbTheme === "dark" ? "☀" : "🌙") + '</button>' +
+        '<button class="vkb-hbtn" onclick="toggleKeyboard()" title="Close">✕</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="vkb-keys">' + rows + '</div>';
 
   kbBuilt = true;
   setupKbDrag();
@@ -146,75 +145,69 @@ function buildKeyboard() {
 }
 
 function buildKey(k) {
-  const style = k.w ? `style="flex:${k.w}"` : "";
-  const id    = k.id ? `id="${k.id}"` : "";
-  const cls   = "vkb-key" + (k.sp ? " vkb-sp" : "");
+  var style = k.w ? ('style="flex:' + k.w + '"') : "";
+  var id    = k.id ? ('id="' + k.id + '"') : "";
+  var cls   = "vkb-key" + (k.sp ? " vkb-sp" : "");
 
   if (k.fn) {
-    // special / action key
-    return `<button class="${cls}" ${style} ${id} data-fn="${k.fn}">${k.main}</button>`;
+    return '<button class="' + cls + '" ' + style + ' ' + id + ' data-fn="' + k.fn + '">' + k.main + '</button>';
   }
-  // typeable key — show shift char top-right
-  return `<button class="${cls}" ${style} data-ch="${esc(k.main)}" data-sh="${esc(k.shift||"")}">
-    <span class="vkb-sh">${k.shift||""}</span>
-    <span class="vkb-ch">${k.main}</span>
-  </button>`;
+  return '<button class="' + cls + '" ' + style + ' data-ch="' + esc(k.main) + '" data-sh="' + esc(k.shift || "") + '">' +
+    '<span class="vkb-sh">' + (k.shift || "") + '</span>' +
+    '<span class="vkb-ch">' + k.main + '</span>' +
+  '</button>';
 }
 
-function esc(s){ return String(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function esc(s) {
+  return String(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 /* ══════════════════════
    SINGLE EVENT LISTENER
-   on the whole keyboard
-   (no per-key listeners
-    = zero lag)
 ══════════════════════ */
 function attachKbEvents() {
-  const kb = document.getElementById("virtualKeyboard");
+  var kb = document.getElementById("virtualKeyboard");
   if (!kb || kb._eventsAttached) return;
   kb._eventsAttached = true;
 
-  // Unified handler for both mouse and touch
   function handlePress(e) {
-    const btn = e.target.closest("button.vkb-key");
+    var btn = e.target.closest("button.vkb-key");
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
 
-    // visual feedback
     btn.classList.add("vkb-pressed");
-    setTimeout(() => btn.classList.remove("vkb-pressed"), 120);
+    setTimeout(function() { btn.classList.remove("vkb-pressed"); }, 120);
 
-    const fn = btn.dataset.fn;
-    const ch = btn.dataset.ch;
-    const sh = btn.dataset.sh;
+    var fn = btn.dataset.fn;
+    var ch = btn.dataset.ch;
+    var sh = btn.dataset.sh;
 
     if (fn) {
       handleFn(fn, btn);
     } else if (ch !== undefined) {
-      const char = (kbShift || kbCaps) && sh ? sh : ch;
+      var char = (kbShift || kbCaps) && sh ? sh : ch;
       typeChar(char);
       if (kbShift) { kbShift = false; updateKbState(); }
     }
   }
 
-  kb.addEventListener("mousedown",  handlePress, {passive:false});
-  kb.addEventListener("touchstart", handlePress, {passive:false});
+  kb.addEventListener("mousedown",  handlePress, {passive: false});
+  kb.addEventListener("touchstart", handlePress, {passive: false});
 
-  // backspace repeat on hold
-  let bkspInterval = null;
-  kb.addEventListener("mousedown", e => {
+  var bkspInterval = null;
+  kb.addEventListener("mousedown", function(e) {
     if (e.target.closest("#kb-bksp")) {
-      bkspInterval = setInterval(() => doBackspace(), 80);
+      bkspInterval = setInterval(function() { doBackspace(); }, 80);
     }
   });
-  kb.addEventListener("touchstart", e => {
+  kb.addEventListener("touchstart", function(e) {
     if (e.target.closest("#kb-bksp")) {
-      bkspInterval = setInterval(() => doBackspace(), 80);
+      bkspInterval = setInterval(function() { doBackspace(); }, 80);
     }
-  }, {passive:true});
-  document.addEventListener("mouseup",  () => clearInterval(bkspInterval));
-  document.addEventListener("touchend", () => clearInterval(bkspInterval));
+  }, {passive: true});
+  document.addEventListener("mouseup",  function() { clearInterval(bkspInterval); });
+  document.addEventListener("touchend", function() { clearInterval(bkspInterval); });
 }
 
 /* ══════════════════════
@@ -222,10 +215,10 @@ function attachKbEvents() {
 ══════════════════════ */
 function handleFn(fn, btn) {
   switch(fn) {
-    case "Backspace":  doBackspace();                break;
-    case "Enter":      typeChar("\n");               break;
-    case "Tab":        typeChar("\t");               break;
-    case "Space":      typeChar(" ");                break;
+    case "Backspace":  doBackspace();             break;
+    case "Enter":      typeChar("\n");            break;
+    case "Tab":        typeChar("\t");            break;
+    case "Space":      typeChar(" ");             break;
     case "Caps":
       kbCaps = !kbCaps;
       updateKbState();
@@ -234,98 +227,112 @@ function handleFn(fn, btn) {
       kbShift = !kbShift;
       updateKbState();
       break;
-    case "ArrowLeft":  moveCursor("cursorLeft");     break;
-    case "ArrowRight": moveCursor("cursorRight");    break;
-    case "ArrowUp":    moveCursor("cursorUp");       break;
-    case "ArrowDown":  moveCursor("cursorDown");     break;
+    case "ArrowLeft":  moveCursor("cursorLeft");  break;
+    case "ArrowRight": moveCursor("cursorRight"); break;
+    case "ArrowUp":    moveCursor("cursorUp");    break;
+    case "ArrowDown":  moveCursor("cursorDown");  break;
     case "Delete":
-      if (window.editor1) window.editor1.trigger("kb","deleteRight",{});
+      if (window.editor1 && typeof window.editor1.trigger === "function") {
+        window.editor1.trigger("kb", "deleteRight", {});
+      }
       break;
     case "Escape":
-      if (window.editor1) window.editor1.trigger("kb","editor.action.inlineSuggest.hide",{});
+      if (window.editor1 && typeof window.editor1.trigger === "function") {
+        window.editor1.trigger("kb", "editor.action.inlineSuggest.hide", {});
+      }
       break;
     default:
-      // F1-F12, Ctrl, Alt — fire real keyboard event
       fireKey(fn);
   }
 }
 
 /* ══════════════════════
    TYPE INTO EDITOR
-   Uses execCommand for
-   instant no-lag insert
 ══════════════════════ */
 function typeChar(char) {
-  // Monaco editor — fastest path
-  if (window.editor1 && window.editor1.hasTextFocus()) {
-    window.editor1.trigger("kb", "type", { text: char });
+  var ed1 = window.editor1;
+  var ed2 = window.editor2;
+
+  // Monaco editor1
+  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) {
+    ed1.trigger("kb", "type", { text: char });
     return;
   }
-  if (window.editor2 && window.editor2.hasTextFocus()) {
-    window.editor2.trigger("kb", "type", { text: char });
+  // Monaco editor2
+  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) {
+    ed2.trigger("kb", "type", { text: char });
     return;
   }
 
-  // Try focused Monaco (even without hasTextFocus)
-  if (window.editor1) {
-    window.editor1.focus();
-    window.editor1.trigger("kb", "type", { text: char });
+  // Last focused input/textarea (AI chat, settings etc)
+  var target = kbLastFocus;
+  if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT") && !target.readOnly) {
+    var s   = target.selectionStart || 0;
+    var end = target.selectionEnd   || 0;
+    target.value = target.value.slice(0, s) + char + target.value.slice(end);
+    var pos = s + char.length;
+    target.setSelectionRange(pos, pos);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
     return;
   }
 
-  // Fallback: any focused input/textarea
-  const el = document.activeElement;
-  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT") && !el.readOnly) {
-    const s = el.selectionStart || 0;
-    const e = el.selectionEnd   || 0;
-    const v = el.value;
-    el.value = v.slice(0, s) + char + v.slice(e);
-    const pos = s + char.length;
-    el.setSelectionRange(pos, pos);
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    return;
-  }
-
-  // Last resort: document.execCommand (works in contenteditable)
-  document.execCommand("insertText", false, char);
-}
-
-function doBackspace() {
-  if (window.editor1 && window.editor1.hasTextFocus()) {
-    window.editor1.trigger("kb","deleteLeft",{});
-    return;
-  }
-  if (window.editor2 && window.editor2.hasTextFocus()) {
-    window.editor2.trigger("kb","deleteLeft",{});
-    return;
-  }
-  if (window.editor1) {
-    window.editor1.focus();
-    window.editor1.trigger("kb","deleteLeft",{});
-    return;
-  }
-  const el = document.activeElement;
-  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) {
-    const s = el.selectionStart;
-    if (s > 0) {
-      el.value = el.value.slice(0,s-1) + el.value.slice(el.selectionEnd);
-      el.setSelectionRange(s-1, s-1);
-      el.dispatchEvent(new Event("input",{bubbles:true}));
+  // Fallback — focus editor1 and type
+  if (ed1 && typeof ed1.focus === "function") {
+    ed1.focus();
+    if (typeof ed1.trigger === "function") {
+      ed1.trigger("kb", "type", { text: char });
     }
   }
 }
 
+/* ══════════════════════
+   BACKSPACE
+══════════════════════ */
+function doBackspace() {
+  var ed1 = window.editor1;
+  var ed2 = window.editor2;
+
+  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) {
+    ed1.trigger("kb", "deleteLeft", {});
+    return;
+  }
+  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) {
+    ed2.trigger("kb", "deleteLeft", {});
+    return;
+  }
+
+  var target = kbLastFocus;
+  if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT") && !target.readOnly) {
+    var s = target.selectionStart;
+    if (s > 0) {
+      target.value = target.value.slice(0, s - 1) + target.value.slice(target.selectionEnd);
+      target.setSelectionRange(s - 1, s - 1);
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    return;
+  }
+
+  if (ed1 && typeof ed1.focus === "function") {
+    ed1.focus();
+    ed1.trigger("kb", "deleteLeft", {});
+  }
+}
+
+/* ══════════════════════
+   CURSOR MOVEMENT
+══════════════════════ */
 function moveCursor(action) {
-  if (window.editor1) {
-    window.editor1.focus();
-    window.editor1.trigger("kb", action, {});
+  var ed1 = window.editor1;
+  if (ed1 && typeof ed1.focus === "function") {
+    ed1.focus();
+    ed1.trigger("kb", action, {});
   }
 }
 
 function fireKey(code) {
-  const target = document.activeElement || document.body;
-  target.dispatchEvent(new KeyboardEvent("keydown",{
-    code, key: code, bubbles: true, cancelable: true
+  var target = document.activeElement || document.body;
+  target.dispatchEvent(new KeyboardEvent("keydown", {
+    code: code, key: code, bubbles: true, cancelable: true
   }));
 }
 
@@ -333,35 +340,33 @@ function fireKey(code) {
    UPDATE CAPS/SHIFT UI
 ══════════════════════ */
 function updateKbState() {
-  const kb = document.getElementById("virtualKeyboard"); if (!kb) return;
+  var kb = document.getElementById("virtualKeyboard");
+  if (!kb) return;
 
-  // update all letter keys
-  kb.querySelectorAll(".vkb-key:not(.vkb-sp)").forEach(btn => {
-    const ch = btn.dataset.ch;
-    const sh = btn.dataset.sh;
+  kb.querySelectorAll(".vkb-key:not(.vkb-sp)").forEach(function(btn) {
+    var ch = btn.dataset.ch;
+    var sh = btn.dataset.sh;
     if (!ch) return;
-    const chEl = btn.querySelector(".vkb-ch");
+    var chEl = btn.querySelector(".vkb-ch");
     if (!chEl) return;
-    const upper = kbShift || kbCaps;
+    var upper = kbShift || kbCaps;
     if (/^[a-z]$/i.test(ch)) {
       chEl.innerText = upper ? ch.toUpperCase() : ch.toLowerCase();
     } else {
-      chEl.innerText = upper && sh ? sh : ch;
+      chEl.innerText = (upper && sh) ? sh : ch;
     }
   });
 
-  // caps key glow
-  const capsBtn = document.getElementById("kb-caps");
+  var capsBtn = document.getElementById("kb-caps");
   if (capsBtn) capsBtn.classList.toggle("vkb-active", kbCaps);
 
-  // shift key glow
-  document.querySelectorAll("[data-fn='Shift']").forEach(b => {
+  document.querySelectorAll("[data-fn='Shift']").forEach(function(b) {
     b.classList.toggle("vkb-active", kbShift);
   });
 }
 
 /* ══════════════════════
-   THEME
+   THEME TOGGLE
 ══════════════════════ */
 function vkbToggleTheme() {
   kbTheme = kbTheme === "dark" ? "light" : "dark";
@@ -375,15 +380,15 @@ function vkbToggleTheme() {
    SHOW / HIDE
 ══════════════════════ */
 function toggleKeyboard() {
-  const kb = document.getElementById("virtualKeyboard"); if (!kb) return;
+  var kb = document.getElementById("virtualKeyboard");
+  if (!kb) return;
   kbVisible = !kbVisible;
 
   if (kbVisible) {
     kb.style.display = "block";
     if (!kbBuilt) { buildKeyboard(); attachKbEvents(); }
-    // default position bottom center
     if (!kb._positioned) {
-      kb._positioned = true;
+      kb._positioned     = true;
       kb.style.bottom    = "58px";
       kb.style.left      = "50%";
       kb.style.transform = "translateX(-50%)";
@@ -394,7 +399,7 @@ function toggleKeyboard() {
     kb.style.display = "none";
   }
 
-  const btn = document.getElementById("kbToggleBtn");
+  var btn = document.getElementById("kbToggleBtn");
   if (btn) btn.classList.toggle("vkb-on", kbVisible);
 }
 
@@ -402,41 +407,39 @@ function toggleKeyboard() {
    DRAG (mouse + touch)
 ══════════════════════ */
 function setupKbDrag() {
-  const handle = document.getElementById("vkb-handle");
-  const kb     = document.getElementById("virtualKeyboard");
+  var handle = document.getElementById("vkb-handle");
+  var kb     = document.getElementById("virtualKeyboard");
   if (!handle || !kb) return;
 
-  let startX = 0, startY = 0, origL = 0, origT = 0, dragging = false;
+  var startX = 0, startY = 0, origL = 0, origT = 0, dragging = false;
 
   function getPos(e) {
-    const t = e.touches ? e.touches[0] : e;
+    var t = e.touches ? e.touches[0] : e;
     return { x: t.clientX, y: t.clientY };
   }
 
   function onStart(e) {
     if (e.target.closest("button.vkb-hbtn")) return;
-    const rect = kb.getBoundingClientRect();
-    // switch to absolute positioning
+    var rect = kb.getBoundingClientRect();
     kb.style.transform = "none";
     kb.style.bottom    = "auto";
     kb.style.right     = "auto";
     kb.style.left = rect.left + "px";
     kb.style.top  = rect.top  + "px";
-
-    const pos = getPos(e);
+    var pos = getPos(e);
     startX = pos.x; startY = pos.y;
-    origL  = rect.left; origT  = rect.top;
+    origL  = rect.left; origT = rect.top;
     dragging = true;
     e.preventDefault();
   }
 
   function onMove(e) {
     if (!dragging) return;
-    const pos = getPos(e);
-    const dx  = pos.x - startX;
-    const dy  = pos.y - startY;
-    const maxX = window.innerWidth  - kb.offsetWidth;
-    const maxY = window.innerHeight - kb.offsetHeight;
+    var pos = getPos(e);
+    var dx  = pos.x - startX;
+    var dy  = pos.y - startY;
+    var maxX = window.innerWidth  - kb.offsetWidth;
+    var maxY = window.innerHeight - kb.offsetHeight;
     kb.style.left = Math.max(0, Math.min(maxX, origL + dx)) + "px";
     kb.style.top  = Math.max(0, Math.min(maxY, origT + dy)) + "px";
     e.preventDefault();
@@ -445,9 +448,9 @@ function setupKbDrag() {
   function onEnd() { dragging = false; }
 
   handle.addEventListener("mousedown",  onStart);
-  handle.addEventListener("touchstart", onStart, {passive:false});
+  handle.addEventListener("touchstart", onStart, {passive: false});
   document.addEventListener("mousemove", onMove);
-  document.addEventListener("touchmove", onMove, {passive:false});
+  document.addEventListener("touchmove", onMove, {passive: false});
   document.addEventListener("mouseup",   onEnd);
   document.addEventListener("touchend",  onEnd);
 }

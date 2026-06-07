@@ -82,7 +82,7 @@ function renderTreeNode(node,container,prefix){
       div.style.paddingLeft=(prefix.split("/").filter(Boolean).length*14+8)+"px";
       div.innerHTML=`${getFileIcon(key)}<span class="file-name" title="${val._file}">${key}</span><span class="file-actions"><span class="file-split" title="Split">⬒</span><span class="file-delete" title="Delete">✕</span></span>`;
       div.querySelector(".file-name").onclick=()=>openFile(val._file);
-      div.querySelector(".file-name").ondblclick=()=>renameFile(val._file);
+      div.querySelector(".file-name").ondblclick=(e)=>{e.stopPropagation();renameFile(val._file);};
       div.querySelector(".file-split").onclick=(e)=>{e.stopPropagation();openInSplitFromSidebar(val._file);};
       div.querySelector(".file-delete").onclick=(e)=>{e.stopPropagation();deleteFile(val._file);};
       container.appendChild(div);
@@ -167,15 +167,10 @@ function deleteFolder(folderPath){
   if(del.includes(currentFile))openFile(Object.keys(files).find(f=>!f.endsWith("/.gitkeep"))||"");
   renderFiles();renderTabs();saveToStorage();showToast("Deleted","info");
 }
-function renameFile(file){
-  const parts=file.split("/"),old=parts.pop();
-  const n=prompt("Rename to:",old)?.trim();if(!n||n===old)return;
-  const newPath=parts.length?parts.join("/")+"/"+n:n;
-  if(files[newPath]!==undefined){showToast("Already exists!","error");return;}
-  files[newPath]=files[file];delete files[file];
+files[newPath]=files[file];delete files[file];
   if(currentFile===file)currentFile=newPath;if(splitFile===file)splitFile=newPath;
-  renderFiles();renderTabs();openFile(currentFile);showToast("Renamed to "+n,"success");
-}
+  const mp=document.getElementById("mediaPreviewPane");if(mp)mp.remove();
+  renderFiles();renderTabs();openFile(currentFile);showToast("Renamed to "+n,"success");saveToStorage();
 function deleteFile(file){
   if(Object.keys(files).filter(f=>!f.endsWith("/.gitkeep")).length<=1){showToast("Can't delete last file.","error");return;}
   if(!confirm(`Delete "${file}"?`))return;
@@ -227,7 +222,8 @@ function renderRecent(){
 /* ========== MONACO ========== */
 require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs"}});
 require(["vs/editor/editor.main"],()=>{
-  const shared={theme:"vs-dark",automaticLayout:true,fontSize:14,minimap:{enabled:false},wordWrap:"on",scrollBeyondLastLine:false,tabSize:2,lineNumbers:"on",renderLineHighlight:"all",cursorBlinking:"smooth",smoothScrolling:true,suggestOnTriggerCharacters:true,quickSuggestions:true};
+ const isMobile=/Mobi|Android/i.test(navigator.userAgent);
+const shared={theme:"vs-dark",automaticLayout:true,fontSize:14,minimap:{enabled:false},wordWrap:"on",scrollBeyondLastLine:false,tabSize:2,lineNumbers:"on",renderLineHighlight:"all",cursorBlinking:"smooth",smoothScrolling:true,suggestOnTriggerCharacters:!isMobile,quickSuggestions:!isMobile,acceptSuggestionOnCommitCharacter:!isMobile,snippetSuggestions:isMobile?"none":"inline",wordBasedSuggestions:!isMobile};
   loadFromStorage();
   editor1=monaco.editor.create(document.getElementById("editor1"),{...shared,language:getLang(currentFile),value:files[currentFile]});
   editor2=monaco.editor.create(document.getElementById("editor2"),{...shared,language:getLang(currentFile),value:files[currentFile]});

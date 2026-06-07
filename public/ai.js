@@ -75,10 +75,13 @@ async function callDirect({provider,model,prompt,currentFile,currentCode,files,h
   const customs=getCustomProviders();
   const custom=customs.find(c=>c.id===provider);
 
-  const filesSummary=Object.keys(files).filter(f=>!f.endsWith("/.gitkeep"))
+  const mediaExts=/\.(png|jpg|jpeg|gif|webp|svg|mp4|webm|mp3|wav)$/i;
+const mediaFiles=Object.keys(files).filter(f=>mediaExts.test(f));
+const mediaList=mediaFiles.length?"\n\nPROJECT IMAGES/MEDIA (use these src paths when asked):\n"+mediaFiles.map(f=>`- ${f}`).join("\n"):"";
+const filesSummary=Object.keys(files).filter(f=>!f.endsWith("/.gitkeep")&&!mediaExts.test(f))
     .map(f=>`[${f}]:\n${(files[f]||"").slice(0,2000)}`).join("\n---\n").slice(0,12000);
 
-  const userMsg=`USER REQUEST: ${prompt}
+  const userMsg=`USER REQUEST: ${prompt}${mediaList}
 
 CURRENT FILE: ${currentFile}
 CURRENT FILE CODE:

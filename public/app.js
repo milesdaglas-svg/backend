@@ -109,9 +109,43 @@ function toggleFolder(path,fd,node,sub){
 }
 
 /* ========== FILE OPS ========== */
+
+function isMediaFile(file){
+  return /\.(png|jpg|jpeg|gif|webp|svg|bmp|ico|mp4|webm|ogg|mp3|wav)$/i.test(file);
+}
+
 function openFile(file){
   if(files[file]===undefined)return;
   currentFile=file;
+
+  // If it's an image/video/audio — show preview instead of raw code
+  if(isMediaFile(file)){
+    var content=files[file];
+    var editorArea=document.getElementById("editorArea")||document.querySelector(".editor-area");
+    var existing=document.getElementById("mediaPreviewPane");
+    if(existing)existing.remove();
+    var ext=file.split(".").pop().toLowerCase();
+    var isImg=/png|jpg|jpeg|gif|webp|svg|bmp|ico/.test(ext);
+    var isVid=/mp4|webm|ogg/.test(ext);
+    var isAud=/mp3|wav|ogg/.test(ext);
+    var pane=document.createElement("div");
+    pane.id="mediaPreviewPane";
+    pane.style.cssText="position:absolute;inset:0;z-index:50;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;";
+    var html="<div style='font-size:12px;color:#58a6ff;font-family:monospace;margin-bottom:4px;'>"+file+"</div>";
+    if(isImg) html+="<img src='"+content+"' style='max-width:90%;max-height:70vh;border-radius:8px;border:1px solid #1a2332;object-fit:contain;'>";
+    else if(isVid) html+="<video src='"+content+"' controls style='max-width:90%;max-height:70vh;border-radius:8px;'></video>";
+    else if(isAud) html+="<audio src='"+content+"' controls style='width:80%;'></audio>";
+    html+="<button onclick=\"document.getElementById('mediaPreviewPane').remove();\" style='margin-top:8px;padding:6px 18px;background:#1a2332;border:1px solid #2a3545;color:#8b949e;border-radius:6px;cursor:pointer;font-size:12px;'>✕ Close Preview</button>";
+    pane.innerHTML=html;
+    var edWrap=document.getElementById("editor1Wrap")||editorArea;
+    if(edWrap){edWrap.style.position="relative";edWrap.appendChild(pane);}
+    renderFiles();renderTabs();addRecent(file);saveToStorage();
+    return;
+  }
+
+  // Remove media preview if switching back to code file
+  var mp=document.getElementById("mediaPreviewPane");if(mp)mp.remove();
+
   isSyncing=true;
   editor1.setValue(files[file]);monaco.editor.setModelLanguage(editor1.getModel(),getLang(file));
   if(!splitActive){editor2.setValue(files[file]);monaco.editor.setModelLanguage(editor2.getModel(),getLang(file));}
@@ -119,17 +153,6 @@ function openFile(file){
   if(file.endsWith(".html"))updatePreview(file);
   renderFiles();renderTabs();addRecent(file);updateSplitHeader();saveToStorage();
   if(window.innerWidth<=768){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("active");}
-}
-function newFileInFolder(folderPath){
-  const name=prompt("File name:");if(!name?.trim())return;
-  const full=folderPath+"/"+name.trim();
-  if(files[full]!==undefined){showToast("Already exists!","error");return;}
-  const n=name.trim();
-  if(n.endsWith(".html"))files[full]=`<!DOCTYPE html>\n<html>\n<head>\n<title>${n}</title>\n</head>\n<body>\n\n</body>\n</html>`;
-  else if(n.endsWith(".css"))files[full]=`/* ${n} */\n`;
-  else if(n.endsWith(".js"))files[full]=`// ${n}\n`;
-  else files[full]="";
-  openFolders.add(folderPath);renderFiles();renderTabs();openFile(full);showToast("Created "+full,"success");
 }
 function newFolderInFolder(parentPath){
   const name=prompt("Folder name:");if(!name?.trim())return;

@@ -166,12 +166,18 @@ function deleteFolder(folderPath){
   del.forEach(f=>delete files[f]);openFolders.delete(folderPath);
   if(del.includes(currentFile))openFile(Object.keys(files).find(f=>!f.endsWith("/.gitkeep"))||"");
   renderFiles();renderTabs();saveToStorage();showToast("Deleted","info");
-}
-files[newPath]=files[file];delete files[file];
+function renameFile(file){
+  const n=prompt("Rename to:",file.split("/").pop());if(!n?.trim())return;
+  const parts=file.split("/");parts[parts.length-1]=n.trim();
+  const newPath=parts.join("/");
+  if(files[newPath]!==undefined){showToast("Already exists!","error");return;}
+  files[newPath]=files[file];delete files[file];
   if(currentFile===file)currentFile=newPath;if(splitFile===file)splitFile=newPath;
   const mp=document.getElementById("mediaPreviewPane");if(mp)mp.remove();
-  renderFiles();renderTabs();openFile(currentFile);showToast("Renamed to "+n,"success");saveToStorage();
+  renderFiles();renderTabs();openFile(currentFile);showToast("Renamed to "+n.trim(),"success");saveToStorage();
+}
 function deleteFile(file){
+
   if(Object.keys(files).filter(f=>!f.endsWith("/.gitkeep")).length<=1){showToast("Can't delete last file.","error");return;}
   if(!confirm(`Delete "${file}"?`))return;
   delete files[file];

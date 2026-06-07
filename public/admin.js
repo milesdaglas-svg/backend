@@ -180,6 +180,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('history',this)">
             <span class="adm-nav-icon">📋</span><span>History</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('global',this)">
+  <span class="adm-nav-icon">🌍</span><span>Global</span>
+</button>
           <button class="adm-nav-btn" onclick="admTab('stats',this)">
                 <span class="adm-nav-icon">📈</span><span>Stats</span>
               </button>
@@ -329,6 +332,7 @@ function admTab(name, btn) {
   if (el) el.innerText = name;
 
   if (name === "history") loadAdminHistory();
+  if (name === "global") loadGlobalSettings();
   if (name === "stats") {
   const el = document.getElementById("adm-stats-content");
   if (el) { el.innerHTML = "<div class='adm-feed-loading'>// Loading stats...</div>"; buildAdStatsDashboard().then(html => { el.innerHTML = html; }); }
@@ -514,3 +518,88 @@ document.addEventListener("keydown", e => {
     else openAdminPanel();
   }
 });
+/* ══ GLOBAL SETTINGS ══ */
+async function loadGlobalSettings() {
+  const el = document.getElementById("adm-global-content"); if (!el) return;
+  const cfg = await fetchGlobalSettings();
+  el.innerHTML = `
+    <div class="adm-section-title">// GLOBAL APP SETTINGS</div>
+    <div style="font-size:11px;color:rgba(0,255,136,0.3);margin-bottom:16px;">Changes here apply to ALL users instantly via Firebase.</div>
+    <div class="adm-form" style="max-width:500px;">
+      <div class="adm-field">
+        <label>EDITOR THEME</label>
+        <select class="adm-input" id="g-theme">
+          <option value="vs-dark" ${cfg.theme==="vs-dark"?"selected":""}>Dark (default)</option>
+          <option value="vs" ${cfg.theme==="vs"?"selected":""}>Light</option>
+          <option value="hc-black" ${cfg.theme==="hc-black"?"selected":""}>High Contrast</option>
+        </select>
+      </div>
+      <div class="adm-field">
+        <label>SITE ACCENT COLOR</label>
+        <input class="adm-input" type="color" id="g-accent" value="${cfg.accent||"#58a6ff"}">
+      </div>
+      <div class="adm-field">
+        <label>ANNOUNCEMENT BANNER (shown top of app)</label>
+        <input class="adm-input" type="text" id="g-banner" placeholder="Leave empty to hide" value="${cfg.banner||""}">
+      </div>
+      <div class="adm-field">
+        <label>DISABLE AI FOR USERS</label>
+        <select class="adm-input" id="g-disableai">
+          <option value="0" ${!cfg.disableAI?"selected":""}>No — AI enabled</option>
+          <option value="1" ${cfg.disableAI?"selected":""}>Yes — disable AI panel</option>
+        </select>
+      </div>
+      <div class="adm-form-actions">
+        <button class="adm-btn adm-btn-primary" onclick="saveGlobalSettings()">🌍 APPLY TO ALL USERS</button>
+      </div>
+      <div id="g-status" class="adm-form-status"></div>
+    </div>`;
+}
+
+async function fetchGlobalSettings() {
+  try {
+    const db = await initAnnounceDB(); if (!db) return {};
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "config"));
+    return snap.exists() ? snap.data() : {};
+  } catch { return {}; }
+}
+
+async function saveGlobalSettings() {
+  const st = document.getElementById("g-status");
+  try {
+    const db = await initAnnounceDB();
+    if (!db) { if(st) st.innerText = "⚠ Firebase not configured in Settings → Cloud"; return; }
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const cfg = {
+      theme:     document.getElementById("g-theme").value,
+      accent:    document.getElementById("g-accent").value,
+      banner:    document.getElementById("g-banner").value,
+      disableAI: document.getElementById("g-disableai").value === "1",
+      updatedAt: Date.now()
+    };
+    await setDoc(doc(db, "global_settings", "config"), cfg);
+    if(st) st.innerText = "✅ Applied to all users!";
+    setTimeout(() => { if(st) st.innerText = ""; }, 3000);
+  } catch(e) { if(st) st.innerText = "❌ Error: " + e.message; }
+}
+
+async function applyGlobalSettings() {
+  try {
+    const db = await initAnnounceDB(); if (!db) return;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "config"));
+    if (!snap.exists()) return;
+    const cfg = snap.data();
+    if (cfg.theme && window.monaco) monaco.editor.setTheme(cfg.theme);
+    if (cfg.accent) document.documentElement.style.setProperty("--accent", cfg.accent);
+    if (cfg.banner) {
+      let b = document.getElementById("global-banner");
+      if (!b) { b = document.createElement("div"); b.id = "global-banner"; b.style.cssText = "background:#1f3a1f;color:#00ff88;text-align:center;padding:6px 12px;font-size:12px;z-index:9999;position:relative;"; document.body.prepend(b); }
+      b.innerText = cfg.banner;
+    }
+    if (cfg.disableAI) {
+      const ai = document.getElementById("toggleAiBtn"); if(ai) ai.style.display = "none";
+    }
+  } catch {}
+}

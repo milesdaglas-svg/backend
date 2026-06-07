@@ -29,6 +29,8 @@ async function initAnnounceDB() {
 }
 
 /* ── FETCH ── */
+let _announceUnsub = null;
+
 async function fetchLatestAnnouncement() {
   const db = await initAnnounceDB(); if (!db) return null;
   try {
@@ -39,6 +41,23 @@ async function fetchLatestAnnouncement() {
     if (snap.empty) return null;
     return { id: snap.docs[0].id, ...snap.docs[0].data() };
   } catch(e) { return null; }
+}
+
+async function startRealtimeAnnouncements() {
+  const db = await initAnnounceDB(); if (!db) return;
+  try {
+    const { collection, query, orderBy, limit, where, onSnapshot } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    if (_announceUnsub) _announceUnsub();
+    const q = query(collection(db, ANNOUNCE_COLLECTION), where("active","==",true), orderBy("timestamp","desc"), limit(1));
+    _announceUnsub = onSnapshot(q, snap => {
+      if (snap.empty) return;
+      const ann = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      if (ann.id !== lastSeenAnnouncementId) {
+        showAnnouncementPopup(ann);
+      }
+    });
+  } catch(e) { console.warn("Realtime announce:", e.message); }
 }
 
 async function fetchAllAnnouncements() {
@@ -82,17 +101,33 @@ async function postAnnouncement(title, message, type="info") {
 async function postReply(announcementId, username, message) {
   const db = await initAnnounceDB(); if (!db) return false;
   try {
-    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const { collection, addDoc, onSnapshot, query, where, orderBy } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
     await addDoc(collection(db, REPLIES_COLLECTION), {
-      announcementId, username, message,
-      timestamp: Date.now(), date: new Date().toLocaleString()
+      announcementId, username, message, timestamp: Date.now()
     });
+    // refresh replies in popup in real time
+    const replyBox = document.getElementById("ap-replies-live");
+    if (replyBox) {
+      const q = query(collection(db, REPLIES_COLLECTION), where("announcementId","==",announcementId), orderBy("timestamp","asc"));
+      onSnapshot(q, snap => {
+        const replies = snap.docs.map(d => d.data());
+        replyBox.innerHTML = replies.map(r =>
+          `<div style="padding:4px 0;border-bottom:1px solid rgba(0,255,136,0.05);font-size:11px;">
+            <span style="color:#00ff88;">${r.username||"anon"}</span>
+            <span style="color:rgba(255,255,255,0.4);margin:0 6px;">${new Date(r.timestamp).toLocaleTimeString()}</span>
+            <span style="color:#c0f0d0;">${r.message}</span>
+          </div>`
+        ).join("") || "<div style='color:rgba(0,255,136,0.2);font-size:11px;'>No replies yet.</div>";
+      });
+    }
     return true;
-  } catch { return false; }
+  } catch(e) { return false; }
 }
 
 /* ── POPUP CHECK ── */
 async function checkAndShowPopup(force = false) {
+  startRealtimeAnnouncements();
   const ann = await fetchLatestAnnouncement(); if (!ann) return;
   const isNew = ann.id !== lastSeenAnnouncementId;
   const timeKey = "announce_shown_" + ann.id;
@@ -215,7 +250,7 @@ function showAnnouncementPopup(ann) {
             <div class="ap-message-text" id="ap-typewriter"></div>
           </div>
 
-          <!-- REPLY -->
+         <!-- REPLY -->
           <div class="ap-reply-box">
             <div class="ap-reply-title">// SEND REPLY / RAISE CONCERN</div>
             <input id="ap-username" class="ap-input" placeholder="your_username" maxlength="30">
@@ -224,6 +259,11 @@ function showAnnouncementPopup(ann) {
               <button class="ap-send-btn" onclick="submitReply('${ann.id}')">▶ SEND</button>
               <span id="ap-reply-status" class="ap-reply-status"></span>
             </div>
+          </div>
+          <!-- LIVE REPLIES -->
+          <div class="ap-reply-title" style="margin-top:10px;">// LIVE RESPONSES</div>
+          <div id="ap-replies-live" style="max-height:120px;overflow-y:auto;padding:6px 0;">
+            <div style="color:rgba(0,255,136,0.2);font-size:11px;">No replies yet.</div>
           </div>
 
           <!-- FOOTER -->

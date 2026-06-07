@@ -190,3 +190,25 @@
 @media(min-width:769px){
   .vkb-key { height: 42px; }
 }
+/* ══ COLOURFUL KEY GLOW ══ */
+@keyframes vkb-rainbow {
+  0%   { border-color: #ff5555; box-shadow: 0 0 6px #ff5555, 0 2px 0 #0a0f18; }
+  14%  { border-color: #ff9f43; box-shadow: 0 0 6px #ff9f43, 0 2px 0 #0a0f18; }
+  28%  { border-color: #ffd32a; box-shadow: 0 0 6px #ffd32a, 0 2px 0 #0a0f18; }
+  42%  { border-color: #0be881; box-shadow: 0 0 6px #0be881, 0 2px 0 #0a0f18; }
+  57%  { border-color: #00d2d3; box-shadow: 0 0 6px #00d2d3, 0 2px 0 #0a0f18; }
+  71%  { border-color: #54a0ff; box-shadow: 0 0 6px #54a0ff, 0 2px 0 #0a0f18; }
+  85%  { border-color: #a29bfe; box-shadow: 0 0 6px #a29bfe, 0 2px 0 #0a0f18; }
+  100% { border-color: #ff5555; box-shadow: 0 0 6px #ff5555, 0 2px 0 #0a0f18; }
+}
+
+.vkb-dark .vkb-key {
+  animation: vkb-rainbow 4s linear infinite;
+}
+.vkb-dark .vkb-key:active,
+.vkb-dark .vkb-key.vkb-pressed {
+  animation: none;
+  background: #0d1117;
+  box-shadow: 0 0 14px #fff, 0 0 0 #0a0f18;
+  transform: translateY(2px);
+}

@@ -165,7 +165,8 @@ function deleteFolder(folderPath){
   if(!confirm(`Delete "${folderPath}" and ${del.length} file(s)?`))return;
   del.forEach(f=>delete files[f]);openFolders.delete(folderPath);
   if(del.includes(currentFile))openFile(Object.keys(files).find(f=>!f.endsWith("/.gitkeep"))||"");
-  renderFiles();renderTabs();saveToStorage();showToast("Deleted","info");
+ renderFiles();renderTabs();saveToStorage();showToast("Deleted","info");
+}
 function renameFile(file){
   const n=prompt("Rename to:",file.split("/").pop());if(!n?.trim())return;
   const parts=file.split("/");parts[parts.length-1]=n.trim();

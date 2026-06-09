@@ -210,37 +210,60 @@
 
 /* ── MOBILE ── */
 @media(max-width:640px){
-  .adm-window { width:100vw; height:100vh; max-height:100vh; border-radius:0; flex-direction:column; }
+  .adm-window {
+    width:100vw; height:100vh; max-height:100vh;
+    border-radius:0; flex-direction:column;
+    /* account for phone browser chrome top + bottom */
+    height: 100dvh;
+  }
 
-  /* sidebar becomes horizontal scrollable tab bar */
-  .adm-sidebar { width:100%; flex-direction:row; height:auto; overflow-x:auto; flex-shrink:0; scrollbar-width:none; }
+  /* sidebar becomes horizontal scrollable tab bar — fixed height */
+  .adm-sidebar {
+    width:100%; flex-direction:row;
+    height:58px; min-height:58px; flex-shrink:0;
+    overflow-x:auto; overflow-y:hidden;
+    scrollbar-width:none; border-right:none;
+    border-bottom:1px solid rgba(0,255,136,0.1);
+  }
   .adm-sidebar::-webkit-scrollbar { display:none; }
   .adm-sidebar-logo { display:none; }
   .adm-sidebar-footer { display:none; }
 
-  /* nav buttons horizontal, compact */
-  .adm-nav { flex-direction:row; padding:4px 6px; gap:3px; flex-wrap:nowrap; width:max-content; }
-  .adm-nav-btn { flex-direction:column; gap:1px; padding:6px 10px; font-size:9px; min-width:52px; max-width:70px; justify-content:center; align-items:center; border-radius:8px; white-space:nowrap; }
-  .adm-nav-btn .adm-nav-icon { font-size:16px; }
-  .adm-nav-btn.active { border-left:none; border-bottom:2px solid #00ff88; background:rgba(0,255,136,0.1); }
+  /* nav scrolls horizontally */
+  .adm-nav {
+    flex-direction:row; padding:4px 6px; gap:3px;
+    flex-wrap:nowrap; width:max-content; align-items:center;
+  }
+  .adm-nav-btn {
+    flex-direction:column; gap:1px; padding:5px 10px;
+    font-size:9px; min-width:54px; justify-content:center;
+    align-items:center; border-radius:8px; white-space:nowrap;
+    height:48px;
+  }
+  .adm-nav-btn .adm-nav-icon { font-size:15px; }
+  .adm-nav-btn.active {
+    border-left:none; border-bottom:2px solid #00ff88;
+    background:rgba(0,255,136,0.1);
+  }
   .adm-badge { font-size:8px; padding:1px 4px; }
 
   /* topbar compact */
-  .adm-topbar { height:38px; padding:0 10px; }
-  .adm-breadcrumb { font-size:10px; }
+  .adm-topbar { height:36px; padding:0 10px; flex-shrink:0; }
+  .adm-breadcrumb { font-size:9px; }
   .adm-time { display:none; }
-  .adm-close-btn { padding:4px 8px; font-size:10px; }
+  .adm-close-btn { padding:3px 8px; font-size:10px; }
 
-  /* content fills remaining space */
-  .adm-main { flex:1; min-height:0; overflow:hidden; }
-  .adm-content { flex:1; overflow:hidden; }
-  .adm-tab { padding:12px; }
+  /* main fills remaining space and scrolls */
+  .adm-main { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  .adm-content { flex:1; min-height:0; overflow:hidden; position:relative; }
+  .adm-tab { padding:12px; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
-  /* stats grid 2 cols on phone */
-  .adm-stats-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  /* stats grid */
+  .adm-stats-grid { grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
   .adm-stat-val { font-size:20px; }
+  .adm-stat-card { padding:12px 10px; }
 
-  /* live feed rows wrap */
+  /* live feed */
   .adm-feed-row { flex-wrap:wrap; gap:4px; padding:8px 10px; }
   .adm-feed-ip { min-width:auto; }
   .adm-feed-time { min-width:auto; }
@@ -248,9 +271,10 @@
   /* visitor cards */
   .adm-visitor-details { grid-template-columns:1fr; }
 
-  /* form full width */
+  /* form */
   .adm-form { max-width:100%; }
-  .adm-input, .adm-textarea { font-size:14px; }
-  .adm-btn { padding:10px 16px; font-size:10px; }
+  .adm-input, .adm-textarea { font-size:14px; padding:10px 12px; }
+  .adm-btn { padding:10px 14px; font-size:10px; }
   .adm-form-actions { flex-wrap:wrap; }
+  .adm-section-title { font-size:9px; letter-spacing:2px; }
 }

@@ -308,11 +308,23 @@ function handleCtrlCombo(char) {
 function typeChar(char) {
   var ed = getActiveEditor();
 
+  if (!ed) {
+    // try direct fallback to editor1/editor2 regardless of focus
+    var e1 = window.editor1, e2 = window.editor2;
+    if (e1 && typeof e1.getSelection === "function" && typeof e1.executeEdits === "function") ed = e1;
+    else if (e2 && typeof e2.getSelection === "function" && typeof e2.executeEdits === "function") ed = e2;
+  }
+
   if (ed) {
-    ed.focus();
-    var sel = ed.getSelection();
-    ed.executeEdits("kb", [{ range: sel, text: char, forceMoveMarkers: true }]);
-    ed.pushUndoStop();
+    try {
+      var sel = ed.getSelection();
+      ed.executeEdits("kb", [{ range: sel, text: char, forceMoveMarkers: true }]);
+      ed.pushUndoStop();
+      ed.focus();
+      ed.revealLine(sel.endLineNumber);
+    } catch(err) {
+      if (typeof showToast === "function") showToast("KB error: " + err.message, "error");
+    }
     return;
   }
 
@@ -328,13 +340,7 @@ function typeChar(char) {
     return;
   }
 
-  // Fallback
-  if (window.editor1 && typeof window.editor1.focus === "function") {
-    window.editor1.focus();
-    var sel2 = window.editor1.getSelection();
-    window.editor1.executeEdits("kb", [{ range: sel2, text: char, forceMoveMarkers: true }]);
-    window.editor1.pushUndoStop();
-  }
+  if (typeof showToast === "function") showToast("KB: no target found", "error");
 }
 /* ══════════════════════
    BACKSPACE

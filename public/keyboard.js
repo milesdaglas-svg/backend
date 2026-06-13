@@ -266,9 +266,12 @@ function handleFn(fn, btn) {
 
 function getActiveEditor() {
   var ed1 = window.editor1, ed2 = window.editor2;
-  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) return ed1;
-  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) return ed2;
-  return ed1 || null;
+  function valid(ed) { return ed && typeof ed.getSelection === "function" && typeof ed.executeEdits === "function"; }
+  if (valid(ed1) && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) return ed1;
+  if (valid(ed2) && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) return ed2;
+  if (valid(ed1)) return ed1;
+  if (valid(ed2)) return ed2;
+  return null;
 }
 
 /* ── CTRL/ALT COMBO with letter keys ── */

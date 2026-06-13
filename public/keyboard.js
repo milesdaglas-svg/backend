@@ -321,19 +321,65 @@ function handleCtrlCombo(char) {
   var ed = getActiveEditor();
   if (!ed) return false;
   ed.focus();
-  switch(char.toLowerCase()) {
-    case "z": ed.trigger("kb", "undo", {}); return true;
+  var key = char.toLowerCase();
+
+  // Alt+Ctrl combos (e.g. Ctrl+Alt+arrow not handled here)
+  switch(key) {
+    case "z":
+      if (kbAlt) ed.trigger("kb", "redo", {}); // Ctrl+Alt+Z = redo on some setups
+      else ed.trigger("kb", "undo", {});
+      return true;
     case "y": ed.trigger("kb", "redo", {}); return true;
     case "s":
       if (typeof saveCurrentFile === "function") saveCurrentFile();
       return true;
     case "a": ed.trigger("kb", "editor.action.selectAll", {}); return true;
-    case "c": ed.trigger("kb", "editor.action.clipboardCopyAction", {}); return true;
-    case "x": ed.trigger("kb", "editor.action.clipboardCutAction", {}); return true;
-    case "v": ed.trigger("kb", "editor.action.clipboardPasteAction", {}); return true;
+    case "c":
+      execClipboard(ed, "copy");
+      return true;
+    case "x":
+      execClipboard(ed, "cut");
+      return true;
+    case "v":
+      execClipboard(ed, "paste");
+      return true;
     case "f": ed.trigger("kb", "actions.find", {}); return true;
+    case "h": ed.trigger("kb", "editor.action.startFindReplaceAction", {}); return true;
+    case "d": ed.trigger("kb", "editor.action.addSelectionToNextFindMatch", {}); return true;
     case "/": ed.trigger("kb", "editor.action.commentLine", {}); return true;
+    case "[": ed.trigger("kb", "editor.action.outdentLines", {}); return true;
+    case "]": ed.trigger("kb", "editor.action.indentLines", {}); return true;
+    case "l": ed.trigger("kb", "expandLineSelection", {}); return true;
+    case "g": ed.trigger("kb", "editor.action.gotoLine", {}); return true;
     default: return false;
+  }
+}
+
+/* Clipboard helper — Monaco's clipboard actions need real
+   document.execCommand or Clipboard API on some browsers */
+function execClipboard(ed, action) {
+  try {
+    if (action === "copy") {
+      var sel = ed.getModel().getValueInRange(ed.getSelection());
+      if (navigator.clipboard && sel) navigator.clipboard.writeText(sel);
+      else ed.trigger("kb", "editor.action.clipboardCopyAction", {});
+    } else if (action === "cut") {
+      var selText = ed.getModel().getValueInRange(ed.getSelection());
+      if (navigator.clipboard && selText) navigator.clipboard.writeText(selText);
+      ed.trigger("kb", "editor.action.clipboardCutAction", {});
+    } else if (action === "paste") {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function(text) {
+          if (text) typeChar(text);
+        }).catch(function() {
+          ed.trigger("kb", "editor.action.clipboardPasteAction", {});
+        });
+      } else {
+        ed.trigger("kb", "editor.action.clipboardPasteAction", {});
+      }
+    }
+  } catch(e) {
+    ed.trigger("kb", "editor.action.clipboardCopyAction", {});
   }
 }
 

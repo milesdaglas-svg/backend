@@ -225,6 +225,76 @@ function attachKbEvents() {
 /* ══════════════════════
    HANDLE SPECIAL KEYS
 ══════════════════════ */
+function handleFn(fn, btn) {
+  var ed = getActiveEditor();
+
+  switch(fn) {
+    case "Backspace":  doBackspace();             break;
+    case "Enter":      typeChar("\n");            break;
+    case "Tab":        typeChar("\t");            break;
+    case "Space":      typeChar(" ");             break;
+    case "Caps":
+      kbCaps = !kbCaps;
+      updateKbState();
+      break;
+    case "Shift":
+      kbShift = !kbShift;
+      updateKbState();
+      break;
+    case "Ctrl":
+      kbCtrl = !kbCtrl;
+      updateKbState();
+      break;
+    case "Alt":
+      kbAlt = !kbAlt;
+      updateKbState();
+      break;
+    case "ArrowLeft":
+      if (kbCtrl) { if(ed) ed.trigger("kb","cursorWordLeft",{}); kbCtrl=false; updateKbState(); }
+      else moveCursor("cursorLeft");
+      break;
+    case "ArrowRight":
+      if (kbCtrl) { if(ed) ed.trigger("kb","cursorWordRight",{}); kbCtrl=false; updateKbState(); }
+      else moveCursor("cursorRight");
+      break;
+    case "ArrowUp":    moveCursor("cursorUp");    break;
+    case "ArrowDown":  moveCursor("cursorDown");  break;
+    case "Delete":
+      if (ed) ed.trigger("kb", "deleteRight", {});
+      break;
+    case "Escape":
+      if (ed) ed.trigger("kb", "editor.action.inlineSuggest.hide", {});
+      kbCtrl=false; kbAlt=false; kbShift=false; updateKbState();
+      break;
+    case "F1":
+      if (ed) ed.trigger("kb", "editor.action.quickCommand", {});
+      break;
+    case "F2":
+      if (ed) ed.trigger("kb", "editor.action.rename", {});
+      break;
+    case "F3":
+      if (ed) ed.trigger("kb", "editor.action.nextMatchFindAction", {});
+      break;
+    case "F11":
+      // toggle preview fullscreen-ish: just refresh preview
+      if (typeof updatePreview === "function" && typeof currentFile !== "undefined") updatePreview(currentFile);
+      break;
+    case "F12":
+      if (ed) ed.trigger("kb", "editor.action.revealDefinition", {});
+      break;
+    case "F5":
+      if (typeof document !== "undefined") {
+        var runBtn = document.getElementById("runBtn");
+        if (runBtn) runBtn.click();
+      }
+      break;
+    case "F4": case "F6": case "F7": case "F8": case "F9": case "F10":
+      // reserved — no default editor action, just consume the press
+      break;
+    default:
+      fireKey(fn);
+  }
+}
 
 function getActiveEditor() {
   var ed1 = window.editor1, ed2 = window.editor2;

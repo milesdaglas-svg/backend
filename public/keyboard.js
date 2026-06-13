@@ -17,6 +17,7 @@ let kbBuilt    = false;
 let kbLastFocus = null;
 let kbCtrl = false;
 let kbAlt  = false;
+let kbNativeLocked = localStorage.getItem("kb_native_locked") === "true";
 
 document.addEventListener("focusin", function(e) {
   if (!e.target.closest("#virtualKeyboard")) {
@@ -497,11 +498,7 @@ function setupKbDrag() {
   document.addEventListener("mouseup",   onEnd);
   document.addEventListener("touchend",  onEnd);
 }
-/* ══════════════════════
-   #4 — DISABLE NATIVE
-   PHONE KEYBOARD
-══════════════════════ */
-let kbNativeLocked = localStorage.getItem("kb_native_locked") === "true";
+
 
 function applyNativeKeyboardLock() {
   document.querySelectorAll(".monaco-editor textarea.inputarea").forEach(function(ta) {

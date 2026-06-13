@@ -192,10 +192,12 @@ function attachKbEvents() {
     } else if (ch !== undefined) {
       var char = (kbShift || kbCaps) && sh ? sh : ch;
 
-      // Ctrl combo
+      // Ctrl combo — check BEFORE consuming kbShift
       if (kbCtrl) {
+        var wasAlt = kbAlt;
         var handled = handleCtrlCombo(ch);
-        kbCtrl = false; updateKbState();
+        kbCtrl = false; kbAlt = false;
+        updateKbState();
         if (handled) return;
       }
 

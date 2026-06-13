@@ -15,6 +15,8 @@ let kbCaps     = false;
 let kbShift    = false;
 let kbBuilt    = false;
 let kbLastFocus = null;
+let kbCtrl = false;
+let kbAlt  = false;
 
 document.addEventListener("focusin", function(e) {
   if (!e.target.closest("#virtualKeyboard")) {
@@ -133,6 +135,7 @@ function buildKeyboard() {
       '<span class="vkb-handle-icon">&#9000;</span>' +
       '<span class="vkb-handle-title">Keyboard</span>' +
       '<div class="vkb-handle-btns">' +
+        '<button class="vkb-hbtn" id="vkbLockBtn" onclick="toggleNativeKeyboardLock()" title="Lock phone keyboard">' + (kbNativeLocked ? "🔒" : "🔓") + '</button>' +
         '<button class="vkb-hbtn" onclick="vkbToggleTheme()" title="Toggle theme">' + (kbTheme === "dark" ? "☀" : "🌙") + '</button>' +
         '<button class="vkb-hbtn" onclick="toggleKeyboard()" title="Close">✕</button>' +
       '</div>' +
@@ -187,6 +190,14 @@ function attachKbEvents() {
       handleFn(fn, btn);
     } else if (ch !== undefined) {
       var char = (kbShift || kbCaps) && sh ? sh : ch;
+
+      // Ctrl combo
+      if (kbCtrl) {
+        var handled = handleCtrlCombo(ch);
+        kbCtrl = false; updateKbState();
+        if (handled) return;
+      }
+
       typeChar(char);
       if (kbShift) { kbShift = false; updateKbState(); }
     }
@@ -214,6 +225,8 @@ function attachKbEvents() {
    HANDLE SPECIAL KEYS
 ══════════════════════ */
 function handleFn(fn, btn) {
+  var ed = getActiveEditor();
+
   switch(fn) {
     case "Backspace":  doBackspace();             break;
     case "Enter":      typeChar("\n");            break;
@@ -227,64 +240,88 @@ function handleFn(fn, btn) {
       kbShift = !kbShift;
       updateKbState();
       break;
+    case "Ctrl":
+      kbCtrl = !kbCtrl;
+      updateKbState();
+      break;
+    case "Alt":
+      kbAlt = !kbAlt;
+      updateKbState();
+      break;
     case "ArrowLeft":  moveCursor("cursorLeft");  break;
     case "ArrowRight": moveCursor("cursorRight"); break;
     case "ArrowUp":    moveCursor("cursorUp");    break;
     case "ArrowDown":  moveCursor("cursorDown");  break;
     case "Delete":
-      if (window.editor1 && typeof window.editor1.trigger === "function") {
-        window.editor1.trigger("kb", "deleteRight", {});
-      }
+      if (ed) ed.trigger("kb", "deleteRight", {});
       break;
     case "Escape":
-      if (window.editor1 && typeof window.editor1.trigger === "function") {
-        window.editor1.trigger("kb", "editor.action.inlineSuggest.hide", {});
-      }
+      if (ed) ed.trigger("kb", "editor.action.inlineSuggest.hide", {});
       break;
     default:
       fireKey(fn);
   }
 }
 
-/* ══════════════════════
-   TYPE INTO EDITOR
-══════════════════════ */
-function typeChar(char) {
-  var ed1 = window.editor1;
-  var ed2 = window.editor2;
+function getActiveEditor() {
+  var ed1 = window.editor1, ed2 = window.editor2;
+  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) return ed1;
+  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) return ed2;
+  return ed1 || null;
+}
 
-  // Monaco editor1
-  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) {
-    ed1.trigger("kb", "type", { text: char });
-    return;
+/* ── CTRL/ALT COMBO with letter keys ── */
+function handleCtrlCombo(char) {
+  var ed = getActiveEditor();
+  if (!ed) return false;
+  ed.focus();
+  switch(char.toLowerCase()) {
+    case "z": ed.trigger("kb", "undo", {}); return true;
+    case "y": ed.trigger("kb", "redo", {}); return true;
+    case "s":
+      if (typeof saveCurrentFile === "function") saveCurrentFile();
+      return true;
+    case "a": ed.trigger("kb", "editor.action.selectAll", {}); return true;
+    case "c": ed.trigger("kb", "editor.action.clipboardCopyAction", {}); return true;
+    case "x": ed.trigger("kb", "editor.action.clipboardCutAction", {}); return true;
+    case "v": ed.trigger("kb", "editor.action.clipboardPasteAction", {}); return true;
+    case "f": ed.trigger("kb", "actions.find", {}); return true;
+    case "/": ed.trigger("kb", "editor.action.commentLine", {}); return true;
+    default: return false;
   }
-  // Monaco editor2
-  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) {
-    ed2.trigger("kb", "type", { text: char });
+}
+
+function typeChar(char) {
+  var ed = getActiveEditor();
+
+  if (ed) {
+    ed.focus();
+    var sel = ed.getSelection();
+    ed.executeEdits("kb", [{ range: sel, text: char, forceMoveMarkers: true }]);
+    ed.pushUndoStop();
     return;
   }
 
   // Last focused input/textarea (AI chat, settings etc)
-  var target = kbLastFocus;
-  if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT") && !target.readOnly) {
-    var s   = target.selectionStart || 0;
-    var end = target.selectionEnd   || 0;
-    target.value = target.value.slice(0, s) + char + target.value.slice(end);
+  var el = kbLastFocus;
+  if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT") && !el.readOnly) {
+    var s   = el.selectionStart || 0;
+    var end = el.selectionEnd   || 0;
+    el.value = el.value.slice(0, s) + char + el.value.slice(end);
     var pos = s + char.length;
-    target.setSelectionRange(pos, pos);
-    target.dispatchEvent(new Event("input", { bubbles: true }));
+    el.setSelectionRange(pos, pos);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
     return;
   }
 
-  // Fallback — focus editor1 and type
-  if (ed1 && typeof ed1.focus === "function") {
-    ed1.focus();
-    if (typeof ed1.trigger === "function") {
-      ed1.trigger("kb", "type", { text: char });
-    }
+  // Fallback
+  if (window.editor1 && typeof window.editor1.focus === "function") {
+    window.editor1.focus();
+    var sel2 = window.editor1.getSelection();
+    window.editor1.executeEdits("kb", [{ range: sel2, text: char, forceMoveMarkers: true }]);
+    window.editor1.pushUndoStop();
   }
 }
-
 /* ══════════════════════
    BACKSPACE
 ══════════════════════ */
@@ -362,6 +399,12 @@ function updateKbState() {
 
   document.querySelectorAll("[data-fn='Shift']").forEach(function(b) {
     b.classList.toggle("vkb-active", kbShift);
+  });
+  document.querySelectorAll("[data-fn='Ctrl']").forEach(function(b) {
+    b.classList.toggle("vkb-active", kbCtrl);
+  });
+  document.querySelectorAll("[data-fn='Alt']").forEach(function(b) {
+    b.classList.toggle("vkb-active", kbAlt);
   });
 }
 
@@ -454,3 +497,124 @@ function setupKbDrag() {
   document.addEventListener("mouseup",   onEnd);
   document.addEventListener("touchend",  onEnd);
 }
+/* ══════════════════════
+   #4 — DISABLE NATIVE
+   PHONE KEYBOARD
+══════════════════════ */
+let kbNativeLocked = localStorage.getItem("kb_native_locked") === "true";
+
+function applyNativeKeyboardLock() {
+  document.querySelectorAll(".monaco-editor textarea.inputarea").forEach(function(ta) {
+    if (kbNativeLocked) {
+      ta.setAttribute("inputmode", "none");
+      ta.setAttribute("readonly", "readonly");
+    } else {
+      ta.removeAttribute("inputmode");
+      ta.removeAttribute("readonly");
+    }
+  });
+}
+
+function toggleNativeKeyboardLock() {
+  kbNativeLocked = !kbNativeLocked;
+  localStorage.setItem("kb_native_locked", kbNativeLocked);
+  applyNativeKeyboardLock();
+
+  var btn = document.getElementById("vkbLockBtn");
+  if (btn) {
+    btn.classList.toggle("vkb-locked", kbNativeLocked);
+    btn.innerHTML = kbNativeLocked ? "🔒" : "🔓";
+  }
+
+  if (typeof showToast === "function") {
+    showToast(kbNativeLocked ? "🔒 Phone keyboard disabled — use virtual keyboard" : "🔓 Phone keyboard enabled", "info");
+  }
+}
+
+// re-apply lock whenever editor re-renders its textarea (Monaco recreates it sometimes)
+const kbLockObserver = new MutationObserver(function() {
+  applyNativeKeyboardLock();
+});
+window.addEventListener("load", function() {
+  setTimeout(function() {
+    applyNativeKeyboardLock();
+    var editorArea = document.querySelector(".editor-area");
+    if (editorArea) kbLockObserver.observe(editorArea, { childList: true, subtree: true });
+  }, 1500);
+});
+
+/* ══════════════════════
+   #5 — PHYSICAL KEYBOARD
+   SYNC (highlight virtual
+   key when real key pressed)
+══════════════════════ */
+const KB_KEY_MAP = {
+  "Backquote":"`","Digit1":"1","Digit2":"2","Digit3":"3","Digit4":"4","Digit5":"5",
+  "Digit6":"6","Digit7":"7","Digit8":"8","Digit9":"9","Digit0":"0","Minus":"-","Equal":"=",
+  "KeyQ":"q","KeyW":"w","KeyE":"e","KeyR":"r","KeyT":"t","KeyY":"y","KeyU":"u","KeyI":"i","KeyO":"o","KeyP":"p",
+  "BracketLeft":"[","BracketRight":"]","Backslash":"\\",
+  "KeyA":"a","KeyS":"s","KeyD":"d","KeyF":"f","KeyG":"g","KeyH":"h","KeyJ":"j","KeyK":"k","KeyL":"l",
+  "Semicolon":";","Quote":"'",
+  "KeyZ":"z","KeyX":"x","KeyC":"c","KeyV":"v","KeyB":"b","KeyN":"n","KeyM":"m",
+  "Comma":",","Period":".","Slash":"/",
+  "Space":"__space__"
+};
+const KB_FN_MAP = {
+  "Enter":"Enter","Backspace":"Backspace","Tab":"Tab","Escape":"Escape","Delete":"Delete",
+  "ArrowLeft":"ArrowLeft","ArrowRight":"ArrowRight","ArrowUp":"ArrowUp","ArrowDown":"ArrowDown",
+  "ControlLeft":"Ctrl","ControlRight":"Ctrl","AltLeft":"Alt","AltRight":"Alt",
+  "ShiftLeft":"Shift","ShiftRight":"Shift","CapsLock":"Caps",
+  "F1":"F1","F2":"F2","F3":"F3","F4":"F4","F5":"F5","F6":"F6","F7":"F7","F8":"F8","F9":"F9","F10":"F10","F11":"F11","F12":"F12"
+};
+
+document.addEventListener("keydown", function(e) {
+  if (!kbBuilt) return;
+  var kb = document.getElementById("virtualKeyboard");
+  if (!kb || kb.style.display === "none") return;
+
+  var btn = null;
+
+  if (KB_KEY_MAP[e.code]) {
+    var ch = KB_KEY_MAP[e.code];
+    if (ch === "__space__") {
+      btn = document.getElementById("kb-space");
+    } else {
+      btn = kb.querySelector('[data-ch="' + ch.replace(/"/g, '\\"') + '"]');
+    }
+  } else if (KB_FN_MAP[e.code]) {
+    var fn = KB_FN_MAP[e.code];
+    if (fn === "Shift") btn = kb.querySelector("#kb-shift") || kb.querySelector('[data-fn="Shift"]');
+    else if (fn === "Caps") btn = kb.querySelector("#kb-caps");
+    else if (fn === "Enter") btn = kb.querySelector("#kb-enter");
+    else if (fn === "Backspace") btn = kb.querySelector("#kb-bksp");
+    else btn = kb.querySelector('[data-fn="' + fn + '"]');
+  }
+
+  if (btn) {
+    btn.classList.add("vkb-physical-press");
+  }
+});
+
+document.addEventListener("keyup", function(e) {
+  if (!kbBuilt) return;
+  var kb = document.getElementById("virtualKeyboard");
+  if (!kb) return;
+
+  var btn = null;
+  if (KB_KEY_MAP[e.code]) {
+    var ch = KB_KEY_MAP[e.code];
+    if (ch === "__space__") btn = document.getElementById("kb-space");
+    else btn = kb.querySelector('[data-ch="' + ch.replace(/"/g, '\\"') + '"]');
+  } else if (KB_FN_MAP[e.code]) {
+    var fn = KB_FN_MAP[e.code];
+    if (fn === "Shift") btn = kb.querySelector("#kb-shift") || kb.querySelector('[data-fn="Shift"]');
+    else if (fn === "Caps") btn = kb.querySelector("#kb-caps");
+    else if (fn === "Enter") btn = kb.querySelector("#kb-enter");
+    else if (fn === "Backspace") btn = kb.querySelector("#kb-bksp");
+    else btn = kb.querySelector('[data-fn="' + fn + '"]');
+  }
+
+  if (btn) {
+    setTimeout(function() { btn.classList.remove("vkb-physical-press"); }, 100);
+  }
+});

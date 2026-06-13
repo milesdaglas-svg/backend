@@ -212,3 +212,20 @@
   box-shadow: 0 0 14px #fff, 0 0 0 #0a0f18;
   transform: translateY(2px);
 }
+/* ══ PHYSICAL KEY PRESS HIGHLIGHT (widen) ══ */
+.vkb-key.vkb-physical-press {
+  transform: scaleX(1.15) translateY(1px) !important;
+  background: rgba(0,255,136,0.25) !important;
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 12px rgba(0,255,136,0.4) !important;
+  z-index: 2;
+  transition: transform .05s, background .05s !important;
+}
+
+/* ══ KEYBOARD LOCK BUTTON ══ */
+#kbLockBtn { position: relative; transition: .2s; }
+#kbLockBtn.vkb-locked {
+  background: #1a3a2a !important;
+  color: #00ff88 !important;
+  box-shadow: 0 0 10px rgba(0,255,136,0.3) !important;
+}

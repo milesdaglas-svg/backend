@@ -309,10 +309,15 @@ function typeChar(char) {
   var ed = getActiveEditor();
 
   if (!ed) {
-    // try direct fallback to editor1/editor2 regardless of focus
     var e1 = window.editor1, e2 = window.editor2;
     if (e1 && typeof e1.getSelection === "function" && typeof e1.executeEdits === "function") ed = e1;
     else if (e2 && typeof e2.getSelection === "function" && typeof e2.executeEdits === "function") ed = e2;
+  }
+
+  // last resort — ask Monaco directly for any live editor instance
+  if (!ed && window.monaco && monaco.editor && typeof monaco.editor.getEditors === "function") {
+    var all = monaco.editor.getEditors();
+    if (all && all.length) ed = all[0];
   }
 
   if (ed) {

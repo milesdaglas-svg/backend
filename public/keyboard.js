@@ -225,44 +225,6 @@ function attachKbEvents() {
 /* ══════════════════════
    HANDLE SPECIAL KEYS
 ══════════════════════ */
-function handleFn(fn, btn) {
-  var ed = getActiveEditor();
-
-  switch(fn) {
-    case "Backspace":  doBackspace();             break;
-    case "Enter":      typeChar("\n");            break;
-    case "Tab":        typeChar("\t");            break;
-    case "Space":      typeChar(" ");             break;
-    case "Caps":
-      kbCaps = !kbCaps;
-      updateKbState();
-      break;
-    case "Shift":
-      kbShift = !kbShift;
-      updateKbState();
-      break;
-    case "Ctrl":
-      kbCtrl = !kbCtrl;
-      updateKbState();
-      break;
-    case "Alt":
-      kbAlt = !kbAlt;
-      updateKbState();
-      break;
-    case "ArrowLeft":  moveCursor("cursorLeft");  break;
-    case "ArrowRight": moveCursor("cursorRight"); break;
-    case "ArrowUp":    moveCursor("cursorUp");    break;
-    case "ArrowDown":  moveCursor("cursorDown");  break;
-    case "Delete":
-      if (ed) ed.trigger("kb", "deleteRight", {});
-      break;
-    case "Escape":
-      if (ed) ed.trigger("kb", "editor.action.inlineSuggest.hide", {});
-      break;
-    default:
-      fireKey(fn);
-  }
-}
 
 function getActiveEditor() {
   var ed1 = window.editor1, ed2 = window.editor2;

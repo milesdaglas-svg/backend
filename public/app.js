@@ -255,10 +255,50 @@ const shared={theme:"vs-dark",automaticLayout:true,fontSize:14,minimap:{enabled:
 });
 
 /* ========== PREVIEW with scrollbar ========== */
+/* ── Resolve local media src/url() paths to base64 data URIs from files{} ── */
+function resolveMediaPaths(text){
+  if(!text) return text;
+
+  function findFile(rawPath){
+    if(!rawPath) return null;
+    if(rawPath.startsWith("data:")||rawPath.startsWith("http://")||rawPath.startsWith("https://")||rawPath.startsWith("//")) return null;
+    let p=rawPath.split("?")[0].split("#")[0];
+    p=p.replace(/^\.\//,"").replace(/^\//,"");
+    if(files[p]!==undefined) return files[p];
+    // try matching by filename only (in case of folder mismatch)
+    const fname=p.split("/").pop();
+    const match=Object.keys(files).find(f=>f.split("/").pop()===fname && isMediaFile(f));
+    return match?files[match]:null;
+  }
+
+  // <img src="...">, <source src="...">, <video src="...">, <audio src="...">
+  text=text.replace(/(<(?:img|source|video|audio|embed)\b[^>]*\bsrc\s*=\s*)(["'])([^"']+)\2/gi,(m,pre,q,path)=>{
+    const data=findFile(path);
+    return data?`${pre}${q}${data}${q}`:m;
+  });
+
+  // poster="..." (video thumbnails)
+  text=text.replace(/(<video\b[^>]*\bposter\s*=\s*)(["'])([^"']+)\2/gi,(m,pre,q,path)=>{
+    const data=findFile(path);
+    return data?`${pre}${q}${data}${q}`:m;
+  });
+
+  // CSS url(...) — both inline style="" and <style> blocks
+  text=text.replace(/url\((['"]?)([^'")]+)\1\)/gi,(m,q,path)=>{
+    const data=findFile(path);
+    return data?`url(${q}${data}${q})`:m;
+  });
+
+  return text;
+}
 function updatePreview(page=currentFile){
   const iframe=document.getElementById("previewFrame");
   let html=files[page]||"";if(!page.endsWith(".html"))return;
-  let css="";Object.keys(files).forEach(f=>{if(f.endsWith(".css"))css+=`<style>${files[f]}</style>`;});
+
+  // Replace local media references (img/video/audio/source/link href + css url()) with base64 data URIs
+  html=resolveMediaPaths(html);
+
+  let css="";Object.keys(files).forEach(f=>{if(f.endsWith(".css"))css+=`<style>${resolveMediaPaths(files[f])}</style>`;});
   let js="";Object.keys(files).forEach(f=>{if(f.endsWith(".js")&&!f.includes("sw.js"))js+=`<script>${files[f]}<\/script>`;});
   // inject scrollbar styling
   const scrollCSS=`<style>::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f1f1}::-webkit-scrollbar-thumb{background:#888;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#555}body{overflow:auto!important}</style>`;

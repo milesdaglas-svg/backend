@@ -79,8 +79,8 @@ async function initVisitorTracking() {
       }
     }
 
-    // heartbeat — keeps "online" status fresh every 30 seconds
-    setInterval(async () => {
+    // heartbeat — keeps "online" status fresh every 10 seconds
+    async function sendHeartbeat() {
       try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
         if (visitorSessionId) {
@@ -89,7 +89,14 @@ async function initVisitorTracking() {
           });
         }
       } catch {}
-    }, 30000);
+    }
+    setInterval(sendHeartbeat, 10000);
+
+    // also send heartbeat instantly when tab becomes visible/focused again
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") sendHeartbeat();
+    });
+    window.addEventListener("focus", sendHeartbeat);
 
     // mark offline on page leave
     window.addEventListener("beforeunload", async () => {
@@ -114,7 +121,7 @@ async function fetchAdminStats() {
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     // online now = sessions with lastSeen in last 60 seconds
-    const onlineThresh = Date.now() - 60000;
+    const onlineThresh = Date.now() - 25000;
     const allSessions  = await getDocs(collection(db, SESSIONS_COL));
     const sessions     = allSessions.docs.map(d => ({ id: d.id, ...d.data() }));
     const online       = sessions.filter(s => s.lastSeen > onlineThresh);
@@ -419,7 +426,7 @@ async function loadVisitorsList() {
 }
 
 function renderSessionRow(s) {
-  const onlineThresh = Date.now() - 60000;
+  const onlineThresh = Date.now() - 25000;
   const isOnline = s.lastSeen > onlineThresh;
   const ago = timeAgo(s.lastSeen);
   return `
@@ -433,7 +440,7 @@ function renderSessionRow(s) {
 }
 
 function renderSessionCard(s, isOnline) {
-  const onlineThresh = Date.now() - 60000;
+  const onlineThresh = Date.now() - 25000;
   const online = isOnline || s.lastSeen > onlineThresh;
   return `
     <div class="adm-visitor-card ${online?"adm-visitor-online":""}">

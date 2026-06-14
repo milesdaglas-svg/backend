@@ -6,7 +6,26 @@
 ========================= */
 
 const ANNOUNCE_CHECK_INTERVAL = 40 * 60 * 1000;
-const ADMIN_PASSWORD = "vscodegodmode2025";
+const ADMIN_PASSWORD = "vscodegodmode2025"; // fallback default
+
+async function getAdminPassword() {
+  try {
+    const db = await initAnnounceDB(); if (!db) return ADMIN_PASSWORD;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "config"));
+    if (snap.exists() && snap.data().adminPassword) return snap.data().adminPassword;
+    return ADMIN_PASSWORD;
+  } catch { return ADMIN_PASSWORD; }
+}
+
+async function setAdminPassword(newPw) {
+  try {
+    const db = await initAnnounceDB(); if (!db) return false;
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", "config"), { adminPassword: newPw }, { merge: true });
+    return true;
+  } catch { return false; }
+}
 const ANNOUNCE_COLLECTION = "announcements";
 const REPLIES_COLLECTION  = "replies";
 
@@ -445,10 +464,11 @@ function openAdminPanel() {
   });
 }
 
-function checkAdminPassword() {
+async function checkAdminPassword() {
   const val = document.getElementById("ap-pw-input")?.value;
   const err = document.getElementById("ap-pw-error");
-  if (val === ADMIN_PASSWORD) {
+  const realPw = await getAdminPassword();
+  if (val === realPw) {
     document.getElementById("adminPasswordPrompt").remove();
     showAdminPanel();
   } else {

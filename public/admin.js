@@ -288,14 +288,22 @@ async function showAdminPanel() {
             </div>
           </div>
 
+          <!-- ── GLOBAL ── -->
+          <div class="adm-tab" id="adm-tab-global">
+            <div id="adm-global-content">
+              <div class="adm-feed-loading">// Loading global settings...</div>
+            </div>
+          </div>
+
+          <!-- ── STATS ── -->
+          <div class="adm-tab" id="adm-tab-stats">
+            <div id="adm-stats-content">
+              <div class="adm-feed-loading">// Click to load stats...</div>
+            </div>
+          </div>
+
           <!-- ── HISTORY ── -->
           <div class="adm-tab" id="adm-tab-history">
-          <!-- ── STATS ── -->
-<div class="adm-tab" id="adm-tab-stats">
-  <div id="adm-stats-content">
-    <div class="adm-feed-loading">// Click to load stats...</div>
-  </div>
-</div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
               <div class="adm-feed-loading">// Loading...</div>
@@ -560,7 +568,33 @@ async function loadGlobalSettings() {
         <button class="adm-btn adm-btn-primary" onclick="saveGlobalSettings()">🌍 APPLY TO ALL USERS</button>
       </div>
       <div id="g-status" class="adm-form-status"></div>
+
+      <div class="adm-divider">─── ADMIN PASSWORD ───</div>
+      <div class="adm-field"><label>New Admin Password</label><input id="g-newpass" class="adm-input" type="password" placeholder="Enter new password (min 4 chars)"></div>
+      <div class="adm-form-actions">
+        <button class="adm-btn adm-btn-primary" onclick="changeAdminPassword()">🔑 Change Password</button>
+      </div>
+      <div id="g-pass-status" class="adm-form-status"></div>
     </div>`;
+}
+
+async function changeAdminPassword() {
+  const val = document.getElementById("g-newpass")?.value.trim();
+  const st  = document.getElementById("g-pass-status");
+  if (!val || val.length < 4) {
+    if (st) { st.innerText = "// Password must be at least 4 characters"; st.style.color = "#ff4444"; }
+    return;
+  }
+  if (!confirm("Change admin password for ALL devices?")) return;
+  if (st) st.innerText = "// Saving...";
+  const ok = await setAdminPassword(val);
+  if (ok) {
+    if (st) { st.innerText = "// ✓ Password changed!"; st.style.color = "#00ff88"; }
+    document.getElementById("g-newpass").value = "";
+    if (typeof showToast === "function") showToast("🔑 Admin password updated", "success");
+  } else {
+    if (st) { st.innerText = "// ✗ Failed — check Firebase connection"; st.style.color = "#ff4444"; }
+  }
 }
 
 async function fetchGlobalSettings() {

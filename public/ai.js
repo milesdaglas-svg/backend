@@ -8,7 +8,10 @@ const SERVER_URL = "";
 
 /* ===== FIREBASE ===== */
 let firebaseDB = null;
-function getFirebaseConfig(){ try{return JSON.parse(localStorage.getItem("vscode_firebase")||"null");}catch{return null;} }
+function getFirebaseConfig(){
+  if (window.GLOBAL_FIREBASE_CONFIG && window.GLOBAL_FIREBASE_CONFIG.apiKey) return window.GLOBAL_FIREBASE_CONFIG;
+  try{return JSON.parse(localStorage.getItem("vscode_firebase")||"null");}catch{return null;}
+}
 
 async function initFirebase(){
   const cfg=getFirebaseConfig();

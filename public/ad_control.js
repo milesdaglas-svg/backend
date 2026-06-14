@@ -39,13 +39,45 @@ function getAdSettings() {
 
 function saveAdSettings(cfg) {
   try { localStorage.setItem(AD_KEY, JSON.stringify(cfg)); } catch {}
+  // sync to Firestore so ALL devices get the same ad settings
+  syncAdSettingsToCloud(cfg);
+}
+
+/* ── CLOUD SYNC ── */
+async function syncAdSettingsToCloud(cfg) {
+  try {
+    const db = await initAnnounceDB(); if (!db) return;
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", "ads"), { ...cfg, updatedAt: Date.now() });
+  } catch {}
+}
+
+async function fetchAdSettingsFromCloud() {
+  try {
+    const db = await initAnnounceDB(); if (!db) return null;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "ads"));
+    return snap.exists() ? snap.data() : null;
+  } catch { return null; }
+}
+
+/* pull latest ad settings from cloud and cache locally — call on app load */
+async function syncAdSettingsFromCloud() {
+  const cloud = await fetchAdSettingsFromCloud();
+  if (cloud) {
+    try { localStorage.setItem(AD_KEY, JSON.stringify(cloud)); } catch {}
+  }
+  return cloud;
 }
 
 /* ══════════════════════
    INIT — called on load
    respects all settings
 ══════════════════════ */
-function initAdSystem() {
+async function initAdSystem() {
+  // pull latest global ad settings from Firestore first (falls back to localStorage if offline)
+  await syncAdSettingsFromCloud();
+
   const cfg = getAdSettings();
   if (!cfg.enabled) return;
 

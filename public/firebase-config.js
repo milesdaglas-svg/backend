@@ -1,8 +1,3 @@
-/* =========================
-   GLOBAL FIREBASE CONFIG
-   Baked in — works for ALL users
-   automatically, no setup needed
-========================= */
 window.GLOBAL_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAyQ5n7QuAaa6S4q3u6qpSXYZhZZ6J7WWM",
   authDomain: "vsc-clone.firebaseapp.com",

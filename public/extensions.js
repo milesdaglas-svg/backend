@@ -345,12 +345,20 @@ function installExtension(id) {
   const list = getInstalledExtensions();
   if (!list.includes(id)) list.push(id);
   saveInstalledExtensions(list);
+  if (typeof trackExtensionInstall === "function") trackExtensionInstall(id, true);
+
+  const cloudExt = (typeof cloudExtensions !== "undefined") ? cloudExtensions[id] : null;
 
   if (EXT_THEMES[id]) {
     applyExtensionTheme(id);
     showToast(`✓ ${EXT_THEMES[id].name} installed & applied`, "success");
   } else if (EXT_SNIPPETS[id]) {
     showToast(`✓ ${EXT_SNIPPETS[id].name} installed — open via 🧩 Snippets menu`, "success");
+  } else if (cloudExt) {
+    if (cloudExt.type === "theme") { applyCloudExtensionTheme(id); showToast(`✓ ${cloudExt.name} installed & applied`, "success"); }
+    else showToast(`✓ ${cloudExt.name} installed`, "success");
+  } else {
+    showToast("✓ Installed", "success");
   }
   renderExtensionsPanel();
 }
@@ -358,9 +366,9 @@ function installExtension(id) {
 function uninstallExtension(id) {
   let list = getInstalledExtensions().filter(x => x !== id);
   saveInstalledExtensions(list);
+  if (typeof trackExtensionInstall === "function") trackExtensionInstall(id, false);
 
-  if (EXT_THEMES[id]) {
-    // revert to default vs-dark if this theme was active
+  if (EXT_THEMES[id] || (typeof cloudExtensions !== "undefined" && cloudExtensions[id] && cloudExtensions[id].type === "theme")) {
     const activeTheme = localStorage.getItem("vscode_active_ext_theme");
     if (activeTheme === id) {
       localStorage.removeItem("vscode_active_ext_theme");
@@ -408,14 +416,16 @@ function renderExtensionsPanel(filter = "") {
     const matches = !f || ext.name.toLowerCase().includes(f) || ext.desc.toLowerCase().includes(f);
     if (!matches) return "";
 
+    const isCloud = typeof cloudExtensions !== "undefined" && !!cloudExtensions[id];
+
     let actionBtn;
     if (type === "Theme") {
       actionBtn = inst
-        ? `<button class="ext-btn" onclick="applyExtensionTheme('${id}');showToast('Theme applied','success')">Apply</button>`
+        ? `<button class="ext-btn" onclick="${isCloud?'applyCloudExtensionTheme':'applyExtensionTheme'}('${id}');showToast('Theme applied','success')">Apply</button>`
         : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`;
     } else if (type === "Snippets") {
       actionBtn = inst
-        ? `<button class="ext-btn" onclick="openSnippetMenu('${id}')">Browse</button>`
+        ? `<button class="ext-btn" onclick="${isCloud?'openCloudSnippetMenu':'openSnippetMenu'}('${id}')">Browse</button>`
         : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`;
     } else {
       // functional tools
@@ -471,6 +481,18 @@ function renderExtensionsPanel(filter = "") {
   if (typeof EXT_GENERATORS !== "undefined") html += section("Generators", EXT_GENERATORS, "Generator");
   if (typeof EXT_TOOLS !== "undefined") html += section("Productivity Tools", EXT_TOOLS, "Tool");
 
+  // cloud-added extensions, grouped by their type
+  if (typeof cloudExtensions !== "undefined" && Object.keys(cloudExtensions).length) {
+    const cloudByType = { theme: {}, snippet: {}, tool: {} };
+    Object.keys(cloudExtensions).forEach(id => {
+      const e = cloudExtensions[id];
+      if (cloudByType[e.type]) cloudByType[e.type][id] = e;
+    });
+    html += section("Themes", cloudByType.theme, "Theme");
+    html += section("Snippets", cloudByType.snippet, "Snippets");
+    html += section("Community Tools", cloudByType.tool, "Tool");
+  }
+
   if (!html.replace(/<div class="ext-category-tabs">[\s\S]*?<\/div>/,"").trim()) {
     html += `<div class="ext-card"><div class="ext-card-body">No extensions match "${filter}"</div></div>`;
   }
@@ -490,7 +512,8 @@ function showExtensionDetails(id, type) {
   let ext = EXT_THEMES[id] || EXT_SNIPPETS[id] ||
             (typeof EXT_FORMATTERS !== "undefined" && EXT_FORMATTERS[id]) ||
             (typeof EXT_GENERATORS !== "undefined" && EXT_GENERATORS[id]) ||
-            (typeof EXT_TOOLS !== "undefined" && EXT_TOOLS[id]);
+            (typeof EXT_TOOLS !== "undefined" && EXT_TOOLS[id]) ||
+            (typeof cloudExtensions !== "undefined" && cloudExtensions[id]);
   if (!ext) return;
 
   let bodyHtml = `<div class="ext-detail-section-title">What it does</div><div>${ext.longDesc || ext.desc}</div>`;
@@ -603,5 +626,6 @@ function runExtensionTool(id) {
   if (typeof FORMATTER_ACTIONS !== "undefined" && FORMATTER_ACTIONS[id]) { runFormatterTool(id); return; }
   if (typeof GENERATOR_ACTIONS !== "undefined" && GENERATOR_ACTIONS[id]) { runGeneratorTool(id); return; }
   if (typeof TOOL_ACTIONS !== "undefined" && TOOL_ACTIONS[id]) { runToolAction(id); return; }
+  if (typeof cloudExtensions !== "undefined" && cloudExtensions[id]) { runCloudExtensionTool(id); return; }
   showToast("This tool isn't wired up yet", "error");
 }

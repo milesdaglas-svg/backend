@@ -190,6 +190,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('global',this)">
   <span class="adm-nav-icon">🌍</span><span>Global</span>
 </button>
+          <button class="adm-nav-btn" onclick="admTab('extensions',this)">
+            <span class="adm-nav-icon">🧩</span><span>Extensions</span>
+          </button>
           <button class="adm-nav-btn" onclick="admTab('stats',this)">
                 <span class="adm-nav-icon">📈</span><span>Stats</span>
               </button>
@@ -295,6 +298,13 @@ async function showAdminPanel() {
             </div>
           </div>
 
+          <!-- ── EXTENSIONS ── -->
+          <div class="adm-tab" id="adm-tab-extensions">
+            <div id="adm-extensions-content">
+              <div class="adm-feed-loading">// Loading extensions...</div>
+            </div>
+          </div>
+
           <!-- ── STATS ── -->
           <div class="adm-tab" id="adm-tab-stats">
             <div id="adm-stats-content">
@@ -348,6 +358,7 @@ function admTab(name, btn) {
 
   if (name === "history") loadAdminHistory();
   if (name === "global") loadGlobalSettings();
+  if (name === "extensions") loadAdminExtensionsTab();
   if (name === "stats") {
   const el = document.getElementById("adm-stats-content");
   if (el) { el.innerHTML = "<div class='adm-feed-loading'>// Loading stats...</div>"; buildAdStatsDashboard().then(html => { el.innerHTML = html; }); }

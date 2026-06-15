@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="dragdrop.css">
 <link rel="stylesheet" href="ad_control.css">
 <link rel="stylesheet" href="sidebar-shell.css">
+<link rel="stylesheet" href="extensions.css">
 <script src="firebase-config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="ad_stats.css">
@@ -160,6 +161,7 @@
     <div class="activity-bar-icons">
       <button class="activity-btn active" data-panel="explorer" onclick="activitySwitch('explorer')" title="Explorer">📁</button>
       <button class="activity-btn" data-panel="search" onclick="activitySwitch('search')" title="Search">🔍</button>
+      <button class="activity-btn" data-panel="extensions" onclick="activitySwitch('extensions')" title="Extensions">🧩</button>
     </div>
     <div class="activity-bar-bottom">
       <button class="activity-btn" onclick="openSettings()" title="Settings">⚙</button>
@@ -203,6 +205,18 @@
           <div class="search-empty">Type to search across all files</div>
         </div>
       </div>
+    </div>
+
+    <!-- EXTENSIONS PANEL -->
+    <div class="sidebar-panel" data-panel="extensions">
+      <div class="sidebar-header">
+        <span>Extensions</span>
+        <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+      </div>
+      <div class="ext-search">
+        <input id="extSearchInput" type="text" placeholder="Search Extensions in Marketplace" oninput="filterExtensions()">
+      </div>
+      <div class="ext-panel-body" id="extensionsList"></div>
     </div>
 
   </div>
@@ -323,6 +337,7 @@
 <script src="ad_control.js"></script>
 <script src="ad_stats.js"></script>
 <script src="sidebar-shell.js"></script>
+<script src="extensions.js"></script>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
@@ -350,6 +365,7 @@ function fillExample(type) {
 
 window.addEventListener("load", () => {
   loadCustomProvidersIntoDropdown();
+  setTimeout(() => { if (typeof renderExtensionsPanel === "function") renderExtensionsPanel(); }, 1000);
   getCustomProviders().forEach(p => {
     if (window.models) window.models[p.id] = p.defaultModel ? [p.defaultModel] : ["default"];
   });

@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="models.css">
 <link rel="stylesheet" href="dragdrop.css">
 <link rel="stylesheet" href="ad_control.css">
+<link rel="stylesheet" href="sidebar-shell.css">
 <script src="firebase-config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="ad_stats.css">
@@ -153,13 +154,57 @@
 
 <!-- MAIN -->
 <div class="main">
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <span>Explorer</span>
-      <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+
+  <!-- ACTIVITY BAR -->
+  <div class="activity-bar">
+    <div class="activity-bar-icons">
+      <button class="activity-btn active" data-panel="explorer" onclick="activitySwitch('explorer')" title="Explorer">📁</button>
+      <button class="activity-btn" data-panel="search" onclick="activitySwitch('search')" title="Search">🔍</button>
     </div>
-    <div id="recentProjects"></div>
-    <div id="fileList"></div>
+    <div class="activity-bar-bottom">
+      <button class="activity-btn" onclick="openSettings()" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+
+    <!-- EXPLORER PANEL -->
+    <div class="sidebar-panel active" data-panel="explorer">
+      <div class="sidebar-header">
+        <span>Explorer</span>
+        <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+      </div>
+      <div id="recentProjects"></div>
+      <div id="fileList"></div>
+    </div>
+
+    <!-- SEARCH PANEL -->
+    <div class="sidebar-panel" data-panel="search">
+      <div class="sidebar-header">
+        <span>Search</span>
+        <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+      </div>
+      <div class="search-panel-body">
+        <div class="search-input-wrap">
+          <div class="search-input-row">
+            <input id="searchInput" type="text" placeholder="Search across all files" oninput="performSearch()">
+            <button class="search-toggle-btn" title="Match Case" onclick="toggleSearchOption('case', this)">Aa</button>
+            <button class="search-toggle-btn" title="Match Whole Word" onclick="toggleSearchOption('word', this)">ab</button>
+            <button class="search-toggle-btn" title="Use Regex" onclick="toggleSearchOption('regex', this)">.*</button>
+            <button class="search-toggle-btn" title="Toggle Replace" onclick="toggleReplaceBox()">⇄</button>
+          </div>
+          <div class="search-replace-row" id="searchReplaceRow" style="display:none;">
+            <input id="searchReplaceInput" type="text" placeholder="Replace">
+            <button class="search-replace-btn" onclick="replaceAllInProject()">Replace All</button>
+          </div>
+        </div>
+        <div class="search-results-summary" id="searchSummary"></div>
+        <div class="search-results" id="searchResults">
+          <div class="search-empty">Type to search across all files</div>
+        </div>
+      </div>
+    </div>
+
   </div>
   <div class="resizer desktop-only" id="sidebarResizer"></div>
 
@@ -251,7 +296,18 @@
   <button onclick="openUpdatesPage();">📢<span>Updates</span></button>
   <button onclick="openSettings();">⚙<span>Settings</span></button>
 </div>
+<!-- STATUS BAR -->
+<div class="status-bar desktop-only" id="statusBar">
+  <span class="status-bar-item" id="sbBranch">🌿 main</span>
+  <span class="status-bar-item" id="sbErrors">✕ 0 ⚠ 0</span>
+  <span class="status-bar-spacer"></span>
+  <span class="status-bar-item" id="sbFile"></span>
+  <span class="status-bar-item" id="sbLang">plaintext</span>
+  <span class="status-bar-item" id="sbPos">Ln 1, Col 1</span>
+</div>
 
+<!-- VIRTUAL KEYBOARD -->
+<div id="virtualKeyboard"></div>
 <!-- VIRTUAL KEYBOARD -->
 <div id="virtualKeyboard"></div>
 
@@ -266,6 +322,7 @@
 <script src="dragdrop.js"></script>
 <script src="ad_control.js"></script>
 <script src="ad_stats.js"></script>
+<script src="sidebar-shell.js"></script>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});

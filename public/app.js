@@ -37,16 +37,8 @@ function showToast(msg,type="info"){
 
 /* ========== FILE ICONS ========== */
 function getFileIcon(name){
-  const n=name.toLowerCase();
-  if(n===".env"||n.startsWith(".env."))return'<span class="fi">⚙</span>';
-  if(n==="package.json")return'<span class="fi">📦</span>';
-  if(n==="package-lock.json"||n.endsWith(".lock"))return'<span class="fi">🔒</span>';
-  if(n==="dockerfile")return'<span class="fi">🐳</span>';
-  if(n===".gitignore"||n===".git")return'<span class="fi">🌿</span>';
-  if(n==="readme.md")return'<span class="fi">📖</span>';
-  const ext=n.split(".").pop();
-  const m={html:"🌐",htm:"🌐",css:"🎨",scss:"🎨",sass:"🎨",less:"🎨",js:"⚡",mjs:"⚡",ts:"🔷",tsx:"🔷",jsx:"⚛",json:"{}",md:"📝",mdx:"📝",py:"🐍",php:"🐘",rb:"💎",java:"☕",cpp:"⚙",c:"⚙",h:"⚙",cs:"#⃣",go:"🐹",rs:"🦀",swift:"🍎",kt:"🎯",sh:"🖥",sql:"🗃",xml:"📄",svg:"🖼",png:"🖼",jpg:"🖼",jpeg:"🖼",gif:"🖼",webp:"🖼",ico:"🖼",pdf:"📕",zip:"🗜",mp3:"🎵",mp4:"🎬",yaml:"📐",yml:"📐",toml:"📐",ini:"📐",vue:"💚",svelte:"🔥"};
-  return`<span class="fi">${m[ext]||"📄"}</span>`;
+  if (typeof getFileIconBadge === "function") return getFileIconBadge(name);
+  return '<span class="fi">📄</span>';
 }
 function getFolderIcon(name,open){
   const m={src:"📂",public:"🌐",assets:"🖼",images:"🖼",components:"⚛",pages:"📄",styles:"🎨",node_modules:"📦",dist:"🚀",build:"🏗",".git":"🌿",tests:"🧪",docs:"📖"};

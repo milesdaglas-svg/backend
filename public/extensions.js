@@ -407,6 +407,25 @@ function renderExtensionsPanel(filter = "") {
     const inst = installed.includes(id);
     const matches = !f || ext.name.toLowerCase().includes(f) || ext.desc.toLowerCase().includes(f);
     if (!matches) return "";
+
+    let actionBtn;
+    if (type === "Theme") {
+      actionBtn = inst
+        ? `<button class="ext-btn" onclick="applyExtensionTheme('${id}');showToast('Theme applied','success')">Apply</button>`
+        : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`;
+    } else if (type === "Snippets") {
+      actionBtn = inst
+        ? `<button class="ext-btn" onclick="openSnippetMenu('${id}')">Browse</button>`
+        : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`;
+    } else {
+      // functional tools
+      actionBtn = inst
+        ? `<button class="ext-btn" onclick="runExtensionTool('${id}')">Open</button>`
+        : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`;
+    }
+
+    const uninstallBtn = inst ? `<button class="ext-btn ext-btn-danger" onclick="uninstallExtension('${id}')">Uninstall</button>` : "";
+
     return `
       <div class="ext-card">
         <div class="ext-card-icon">${ext.icon}</div>
@@ -415,23 +434,101 @@ function renderExtensionsPanel(filter = "") {
           <div class="ext-card-desc">${ext.desc}</div>
           <div class="ext-card-meta">${ext.publisher} · ${type}</div>
           <div class="ext-card-actions">
-            ${inst
-              ? `<button class="ext-btn ext-btn-danger" onclick="uninstallExtension('${id}')">Uninstall</button>` +
-                (type === "Theme" ? `<button class="ext-btn" onclick="applyExtensionTheme('${id}');showToast('Theme applied','success')">Apply</button>` : `<button class="ext-btn" onclick="openSnippetMenu('${id}')">Browse Snippets</button>`)
-              : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}')">Install</button>`
-            }
+            ${actionBtn}
+            ${uninstallBtn}
+            <button class="ext-btn ext-btn-details" onclick="showExtensionDetails('${id}','${type}')">Details</button>
           </div>
         </div>
       </div>`;
   }
 
-  let html = "";
-  html += `<div class="ext-section-title">Themes</div>`;
-  Object.keys(EXT_THEMES).forEach(id => html += cardHTML(id, EXT_THEMES[id], "Theme"));
-  html += `<div class="ext-section-title">Snippets</div>`;
-  Object.keys(EXT_SNIPPETS).forEach(id => html += cardHTML(id, EXT_SNIPPETS[id], "Snippets"));
+  const cat = window._extActiveCategory || "all";
+  let html = `
+    <div class="ext-category-tabs">
+      <span class="ext-cat-tab ${cat==='all'?'active':''}" onclick="setExtCategory('all')">All</span>
+      <span class="ext-cat-tab ${cat==='Theme'?'active':''}" onclick="setExtCategory('Theme')">Themes</span>
+      <span class="ext-cat-tab ${cat==='Snippets'?'active':''}" onclick="setExtCategory('Snippets')">Snippets</span>
+      <span class="ext-cat-tab ${cat==='Formatter'?'active':''}" onclick="setExtCategory('Formatter')">Formatters</span>
+      <span class="ext-cat-tab ${cat==='Generator'?'active':''}" onclick="setExtCategory('Generator')">Generators</span>
+      <span class="ext-cat-tab ${cat==='Tool'?'active':''}" onclick="setExtCategory('Tool')">Tools</span>
+      <span class="ext-cat-tab ${cat==='installed'?'active':''}" onclick="setExtCategory('installed')">Installed</span>
+    </div>`;
 
-  container.innerHTML = html || `<div class="ext-card"><div class="ext-card-body">No extensions match "${filter}"</div></div>`;
+  function section(title, dict, type) {
+    if (cat !== "all" && cat !== type && cat !== "installed") return "";
+    let body = "";
+    Object.keys(dict).forEach(id => {
+      if (cat === "installed" && !installed.includes(id)) return;
+      body += cardHTML(id, dict[id], type);
+    });
+    if (!body) return "";
+    return `<div class="ext-section-title">${title}</div>${body}`;
+  }
+
+  html += section("Themes", EXT_THEMES, "Theme");
+  html += section("Snippets", EXT_SNIPPETS, "Snippets");
+  if (typeof EXT_FORMATTERS !== "undefined") html += section("Formatters & Converters", EXT_FORMATTERS, "Formatter");
+  if (typeof EXT_GENERATORS !== "undefined") html += section("Generators", EXT_GENERATORS, "Generator");
+  if (typeof EXT_TOOLS !== "undefined") html += section("Productivity Tools", EXT_TOOLS, "Tool");
+
+  if (!html.replace(/<div class="ext-category-tabs">[\s\S]*?<\/div>/,"").trim()) {
+    html += `<div class="ext-card"><div class="ext-card-body">No extensions match "${filter}"</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function setExtCategory(cat) {
+  window._extActiveCategory = cat;
+  renderExtensionsPanel(document.getElementById("extSearchInput")?.value || "");
+}
+
+/* ══════════════════════
+   DETAILS MODAL
+══════════════════════ */
+function showExtensionDetails(id, type) {
+  let ext = EXT_THEMES[id] || EXT_SNIPPETS[id] ||
+            (typeof EXT_FORMATTERS !== "undefined" && EXT_FORMATTERS[id]) ||
+            (typeof EXT_GENERATORS !== "undefined" && EXT_GENERATORS[id]) ||
+            (typeof EXT_TOOLS !== "undefined" && EXT_TOOLS[id]);
+  if (!ext) return;
+
+  let bodyHtml = `<div class="ext-detail-section-title">What it does</div><div>${ext.longDesc || ext.desc}</div>`;
+
+  if (ext.howTo) {
+    bodyHtml += `<div class="ext-detail-section-title">How to use</div><div>${ext.howTo}</div>`;
+  }
+  if (ext.example) {
+    bodyHtml += `<div class="ext-detail-section-title">Example</div><div class="ext-detail-example">${escapeHtmlSearch(ext.example)}</div>`;
+  }
+  if (type === "Snippets" && ext.snippets) {
+    bodyHtml += `<div class="ext-detail-section-title">Included Snippets (${ext.snippets.length})</div>`;
+    bodyHtml += ext.snippets.map(s => `<div style="margin-bottom:6px;"><b>${s.name}</b> — ${s.desc}</div>`).join("");
+  }
+
+  document.getElementById("extDetailOverlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "extDetailOverlay";
+  overlay.innerHTML = `
+    <div class="ext-detail-overlay" onclick="document.getElementById('extDetailOverlay').remove()"></div>
+    <div class="ext-detail-modal">
+      <div class="ext-detail-header">
+        <div class="ext-detail-icon">${ext.icon}</div>
+        <div>
+          <div class="ext-detail-title">${ext.name}</div>
+          <div class="ext-detail-publisher">${ext.publisher} · ${type}</div>
+        </div>
+        <button class="ext-detail-close" onclick="document.getElementById('extDetailOverlay').remove()">✕</button>
+      </div>
+      <div class="ext-detail-body">${bodyHtml}</div>
+      <div class="ext-detail-footer">
+        ${isExtInstalled(id)
+          ? `<button class="ext-btn ext-btn-danger" onclick="uninstallExtension('${id}');document.getElementById('extDetailOverlay').remove()">Uninstall</button>`
+          : `<button class="ext-btn ext-btn-primary" onclick="installExtension('${id}');document.getElementById('extDetailOverlay').remove()">Install</button>`
+        }
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 function filterExtensions() {
@@ -497,3 +594,14 @@ document.addEventListener("keydown", e => {
     openSnippetMenu();
   }
 });
+
+/* ══════════════════════
+   DISPATCHER for functional tool extensions
+══════════════════════ */
+function runExtensionTool(id) {
+  if (id === "fmt-hash") { runHashTool(); return; }
+  if (typeof FORMATTER_ACTIONS !== "undefined" && FORMATTER_ACTIONS[id]) { runFormatterTool(id); return; }
+  if (typeof GENERATOR_ACTIONS !== "undefined" && GENERATOR_ACTIONS[id]) { runGeneratorTool(id); return; }
+  if (typeof TOOL_ACTIONS !== "undefined" && TOOL_ACTIONS[id]) { runToolAction(id); return; }
+  showToast("This tool isn't wired up yet", "error");
+}

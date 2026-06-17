@@ -379,7 +379,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 @media(max-width: 768px) {
   .mobile-only { display: flex !important; }
   .desktop-only { display: none !important; }
-   display flex; }.mobile-nav {
+   display: flex; }.mobile-nav {
   .main { height: calc(100vh - 48px - 56px); }
   .toast { bottom: 70px; }
 

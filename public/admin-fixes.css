@@ -1,0 +1,224 @@
+/* =============================================
+   ADMIN PANEL — FULL RESPONSIVE FIX
+   Covers: Extensions tab, all panels, mobile
+============================================= */
+
+/* ── Make sure adm-btn-danger exists ── */
+.adm-btn-danger {
+  background: transparent;
+  border-color: rgba(255,68,68,0.4);
+  color: #ff4444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: .2s;
+  border: 1px solid;
+}
+.adm-btn-danger:hover {
+  background: rgba(255,68,68,0.1);
+  box-shadow: 0 0 12px rgba(255,68,68,0.2);
+  transform: none;
+}
+
+/* ── Extensions tab content ── */
+#adm-extensions-content {
+  padding: 4px 0;
+}
+#adm-extensions-content .adm-form {
+  max-width: 100%;
+}
+#adm-extensions-content .adm-section-title {
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+#adm-extensions-content select.adm-input {
+  background: #010a08;
+  cursor: pointer;
+}
+#adm-extensions-content textarea.adm-textarea {
+  min-height: 80px;
+}
+
+/* ── Fix tab scrolling on all screens ── */
+.adm-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+.adm-tab {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+.adm-tab.active { display: block; }
+
+/* ── Admin online count badge ── */
+.adm-online-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,255,136,0.15);
+  color: #00ff88;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 24px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 6px;
+  margin-left: 6px;
+}
+
+/* ── Fix visitor card details grid on small screens ── */
+.adm-visitor-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+/* ── Stats grid responsive ── */
+.adm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+/* ── History list ── */
+.adm-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 20px;
+}
+
+/* ══════════════════════
+   FULL MOBILE FIX
+   (replaces old broken mobile block)
+══════════════════════ */
+@media(max-width: 640px) {
+  /* window fills screen */
+  .adm-window {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    flex-direction: column !important;
+  }
+
+  /* sidebar = horizontal scrollable tab bar */
+  .adm-sidebar {
+    width: 100% !important;
+    flex-direction: row !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    flex-shrink: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0,255,136,0.1) !important;
+  }
+  .adm-sidebar::-webkit-scrollbar { display: none !important; }
+  .adm-sidebar-logo { display: none !important; }
+  .adm-sidebar-footer { display: none !important; }
+
+  /* nav buttons horizontal scrollable */
+  .adm-nav {
+    flex-direction: row !important;
+    padding: 4px 6px !important;
+    gap: 3px !important;
+    flex-wrap: nowrap !important;
+    width: max-content !important;
+    align-items: center !important;
+  }
+  .adm-nav-btn {
+    flex-direction: column !important;
+    gap: 1px !important;
+    padding: 5px 10px !important;
+    font-size: 8px !important;
+    min-width: 52px !important;
+    height: 48px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+  .adm-nav-btn .adm-nav-icon { font-size: 15px !important; }
+  .adm-nav-btn.active {
+    border-left: none !important;
+    border-bottom: 2px solid #00ff88 !important;
+    background: rgba(0,255,136,0.1) !important;
+  }
+  .adm-badge { font-size: 8px !important; padding: 1px 4px !important; }
+
+  /* topbar compact */
+  .adm-topbar { height: 36px !important; padding: 0 10px !important; flex-shrink: 0 !important; }
+  .adm-breadcrumb { font-size: 9px !important; }
+  .adm-time { display: none !important; }
+  .adm-close-btn { padding: 3px 8px !important; font-size: 10px !important; }
+
+  /* main fills rest */
+  .adm-main {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  .adm-content {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+  .adm-tab {
+    padding: 12px !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* stats */
+  .adm-stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
+  .adm-stat-val { font-size: 20px !important; }
+  .adm-stat-card { padding: 12px 10px !important; }
+
+  /* forms */
+  .adm-form { max-width: 100% !important; }
+  .adm-input, .adm-textarea { font-size: 13px !important; padding: 8px 10px !important; }
+  .adm-btn { padding: 8px 14px !important; font-size: 9px !important; }
+  .adm-form-actions { flex-wrap: wrap !important; gap: 6px !important; }
+  .adm-section-title { font-size: 9px !important; letter-spacing: 2px !important; }
+
+  /* visitor */
+  .adm-visitor-details { grid-template-columns: 1fr !important; }
+  .adm-visitor-list { max-height: none !important; }
+
+  /* live feed */
+  .adm-feed-row { flex-wrap: wrap !important; gap: 4px !important; padding: 8px 10px !important; }
+  .adm-feed-ip { min-width: auto !important; }
+  .adm-feed-time { min-width: auto !important; }
+
+  /* history */
+  .adm-hist-top { flex-wrap: wrap !important; }
+
+  /* extensions tab on mobile */
+  #adm-extensions-content .adm-form { max-width: 100% !important; }
+  #ext-type-tool-fields textarea { font-size: 11px !important; }
+}
+
+/* ── Tablet tweaks ── */
+@media(min-width: 641px) and (max-width: 900px) {
+  .adm-window { width: 96vw !important; height: 90vh !important; }
+  .adm-sidebar { width: 160px !important; }
+  .adm-nav-btn { padding: 10px 8px !important; font-size: 10px !important; }
+  .adm-stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .adm-form { max-width: 100% !important; }
+}

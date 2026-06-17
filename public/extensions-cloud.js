@@ -128,8 +128,9 @@ async function loadAdminExtensionsTab() {
   const el = document.getElementById("adm-extensions-content"); if (!el) return;
   el.innerHTML = `<div class="adm-feed-loading">// Loading extensions...</div>`;
 
-  await syncCloudExtensions();
-  const stats = await fetchExtensionStats();
+  try { await syncCloudExtensions(); } catch(e) { console.warn("syncCloud:", e); }
+  let stats = null;
+  try { stats = await fetchExtensionStats(); } catch(e) { console.warn("extStats:", e); }
 
   const allBuiltIn = {
     ...(EXT_THEMES||{}), ...(EXT_SNIPPETS||{}), ...(EXT_FORMATTERS||{}), ...(EXT_GENERATORS||{}), ...(EXT_TOOLS||{})

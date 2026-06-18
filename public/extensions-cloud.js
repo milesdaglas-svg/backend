@@ -35,11 +35,11 @@ async function syncCloudExtensions() {
 function cleanupUninstalledDeletedExtensions() {
   const installed = getInstalledExtensions();
   const validIds = new Set([
-    ...Object.keys(EXT_THEMES||{}),
-    ...Object.keys(EXT_SNIPPETS||{}),
-    ...Object.keys(EXT_FORMATTERS||{}),
-    ...Object.keys(EXT_GENERATORS||{}),
-    ...Object.keys(EXT_TOOLS||{}),
+    ...Object.keys(typeof EXT_THEMES!=="undefined"?EXT_THEMES:{}),
+    ...Object.keys(typeof EXT_SNIPPETS!=="undefined"?EXT_SNIPPETS:{}),
+    ...Object.keys(typeof EXT_FORMATTERS!=="undefined"?EXT_FORMATTERS:{}),
+    ...Object.keys(typeof EXT_GENERATORS!=="undefined"?EXT_GENERATORS:{}),
+    ...Object.keys(typeof EXT_TOOLS!=="undefined"?EXT_TOOLS:{}),
     ...Object.keys(cloudExtensions)
   ]);
   const cleaned = installed.filter(id => validIds.has(id));
@@ -133,7 +133,11 @@ async function loadAdminExtensionsTab() {
   try { stats = await fetchExtensionStats(); } catch(e) { console.warn("extStats:", e); }
 
   const allBuiltIn = {
-    ...(EXT_THEMES||{}), ...(EXT_SNIPPETS||{}), ...(EXT_FORMATTERS||{}), ...(EXT_GENERATORS||{}), ...(EXT_TOOLS||{})
+    ...(typeof EXT_THEMES!=="undefined"?EXT_THEMES:{}),
+    ...(typeof EXT_SNIPPETS!=="undefined"?EXT_SNIPPETS:{}),
+    ...(typeof EXT_FORMATTERS!=="undefined"?EXT_FORMATTERS:{}),
+    ...(typeof EXT_GENERATORS!=="undefined"?EXT_GENERATORS:{}),
+    ...(typeof EXT_TOOLS!=="undefined"?EXT_TOOLS:{})
   };
 
   let html = `

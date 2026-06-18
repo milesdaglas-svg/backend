@@ -494,7 +494,8 @@
 
 /* ─── UPDATES PAGE ─── */
 .up-container, .adm-container {
-  width: 720px; max-width: 95vw; max-height: 88vh;
+  width: 720px; max-width: 95vw;
+  height: 88vh; max-height: 88vh;
   background: linear-gradient(135deg, #0a0e2a, #06091a);
   border: 1px solid rgba(0,212,255,0.2); border-radius: 18px;
   display: flex; flex-direction: column; overflow: hidden;
@@ -522,7 +523,7 @@
 }
 .up-close:hover { border-color: #ff5050; color: #ff5050; }
 
-.up-list { overflow-y: auto; flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.up-list { overflow-y: auto; flex: 1; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
 .up-loading, .up-empty { color: #1a4a6a; font-size: 12px; text-align: center; padding: 30px; }
 
 .up-item { background: #020510; border: 1px solid rgba(0,212,255,0.1); border-radius: 10px; overflow: hidden; }
@@ -533,13 +534,21 @@
 .up-item-version { font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; }
 .up-item-date  { font-size: 10px; color: #1a3a5a; }
 .up-item-msg   { padding: 12px 16px; font-size: 12px; color: #5a8aaa; line-height: 1.7; white-space: pre-wrap; }
-.up-replies    { padding: 10px 16px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(0,212,255,0.07); }
+.up-replies    { padding: 10px 16px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(0,212,255,0.07); overflow: visible; }
 .up-replies-title { font-family: 'Orbitron', monospace; font-size: 9px; color: #1a4a3a; letter-spacing: 2px; margin-bottom: 8px; }
 .up-reply { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 11px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,212,255,0.05); }
 .up-reply-user { color: #00ff88; flex-shrink: 0; }
 .up-reply-msg  { color: #5a8aaa; flex: 1; }
 .up-reply-date { color: #1a3a5a; font-size: 10px; }
-.up-reply-form-inline { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.up-reply-form-inline { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-bottom: 8px; }
+.up-reply-form-inline .ap-send-btn { align-self: flex-start; }
+.up-delete-btn {
+  background: transparent; border: 1px solid rgba(255,68,68,0.2);
+  color: rgba(255,68,68,0.5); padding: 4px 10px; border-radius: 5px;
+  cursor: pointer; font-size: 10px; font-family: 'Orbitron',monospace;
+  letter-spacing: 1px; transition: .2s; margin-left: auto;
+}
+.up-delete-btn:hover { border-color: #ff4444; color: #ff4444; }
 
 /* ADMIN PANEL */
 .adm-header { padding: 16px 20px; background: rgba(0,255,136,0.04); border-bottom: 1px solid rgba(0,255,136,0.1); display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; }

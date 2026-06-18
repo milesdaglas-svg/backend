@@ -375,12 +375,27 @@ function openUpdatesPage() {
   loadUpdatesPage();
 }
 
+async function deleteAnnouncement(id) {
+  if (!confirm("Delete this broadcast permanently?")) return;
+  try {
+    const db = await initAnnounceDB(); if (!db) return;
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await deleteDoc(doc(db, ANNOUNCE_COLLECTION, id));
+    if (typeof showToast === "function") showToast("Broadcast deleted", "info");
+    loadUpdatesPage();
+  } catch(e) { if (typeof showToast === "function") showToast("Failed: " + e.message, "error"); }
+}
+
 async function loadUpdatesPage() {
   const list = document.getElementById("up-list"); if (!list) return;
   const anns = await fetchAllAnnouncements();
   if (!anns.length) { list.innerHTML=`<div class="up-empty">// No broadcasts yet.</div>`; return; }
   list.innerHTML = "";
   const colors = { info:"#00d4ff", update:"#00ff88", warning:"#ffaa00", urgent:"#ff4444" };
+
+  // check if admin is logged in (panel was opened this session)
+  const isAdmin = typeof adminPanelOpen !== "undefined" && adminPanelOpen === false && localStorage.getItem("adm_authed") === "1";
+
   for (const ann of anns) {
     const c = colors[ann.type] || "#00d4ff";
     const replies = await fetchReplies(ann.id);
@@ -392,7 +407,10 @@ async function loadUpdatesPage() {
           <span class="up-item-title">${escHtml(ann.title)}</span>
           ${ann.version?`<span class="up-item-version" style="color:${c}">v${escHtml(ann.version)}</span>`:""}
         </div>
-        <span class="up-item-date">${ann.date||""}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="up-item-date">${ann.date||""}</span>
+          <button class="up-delete-btn" onclick="deleteAnnouncement('${ann.id}')">🗑 Delete</button>
+        </div>
       </div>
       <div class="up-item-msg">${escHtml(ann.message||"").replace(/\n/g,"<br>")}</div>
       <div class="up-replies">
@@ -469,6 +487,7 @@ async function checkAdminPassword() {
   const err = document.getElementById("ap-pw-error");
   const realPw = await getAdminPassword();
   if (val === realPw) {
+    localStorage.setItem("adm_authed", "1");
     document.getElementById("adminPasswordPrompt").remove();
     showAdminPanel();
   } else {

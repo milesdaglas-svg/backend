@@ -108,6 +108,8 @@
 .adm-content { flex:1; overflow:hidden; position:relative; min-height:0; }
 .adm-tab     { display:none; height:100%; overflow-y:auto; padding:20px; box-sizing:border-box; -webkit-overflow-scrolling:touch; }
 .adm-tab.active { display:flex; flex-direction:column; }
+
+
 .adm-tab::-webkit-scrollbar { width:4px; }
 .adm-tab::-webkit-scrollbar-thumb { background:rgba(0,255,136,0.2); border-radius:4px; }
 
@@ -195,6 +197,9 @@
 .adm-btn-ghost:hover { border-color:rgba(0,255,136,0.5); color:#00ff88; transform:none; box-shadow:none; }
 .adm-btn-primary { background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(0,200,100,0.06)); border-color:rgba(0,255,136,0.4); color:#00ff88; }
 .adm-btn-primary:hover { box-shadow:0 0 20px rgba(0,255,136,0.2); transform:translateY(-1px); }
+.adm-btn-danger { background:transparent; border-color:rgba(255,68,68,0.4); color:#ff4444; }
+.adm-btn-danger:hover { background:rgba(255,68,68,0.1); transform:none; box-shadow:none; }
+.adm-online-count { display:inline-flex; align-items:center; justify-content:center; background:rgba(0,255,136,0.15); color:#00ff88; font-size:10px; font-weight:700; min-width:24px; height:18px; border-radius:9px; padding:0 6px; margin-left:6px; }
 .adm-form-status { font-size:11px; padding:4px 0; }
 
 /* HISTORY */

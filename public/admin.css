@@ -105,9 +105,9 @@
 .adm-close-btn:hover { background:rgba(255,80,80,0.2); color:#ff5050; border-color:rgba(255,80,80,0.4); transform:none; box-shadow:none; }
 
 /* CONTENT */
-.adm-content { flex:1; overflow:hidden; position:relative; }
-.adm-tab     { display:none; height:100%; overflow-y:auto; padding:20px; }
-.adm-tab.active { display:block; }
+.adm-content { flex:1; overflow:hidden; position:relative; min-height:0; }
+.adm-tab     { display:none; height:100%; overflow-y:auto; padding:20px; box-sizing:border-box; -webkit-overflow-scrolling:touch; }
+.adm-tab.active { display:flex; flex-direction:column; }
 .adm-tab::-webkit-scrollbar { width:4px; }
 .adm-tab::-webkit-scrollbar-thumb { background:rgba(0,255,136,0.2); border-radius:4px; }
 

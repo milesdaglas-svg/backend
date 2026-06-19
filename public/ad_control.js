@@ -24,6 +24,12 @@ const AD_DEFAULTS = {
   }
 };
 
+const AD_LOCAL_OVERRIDE_KEY = "vscode_ads_local_off";
+
+function isAdsLocallyDisabled() {
+  return localStorage.getItem(AD_LOCAL_OVERRIDE_KEY) === "1";
+}
+
 function getAdSettings() {
   try {
     const s = localStorage.getItem(AD_KEY);
@@ -39,7 +45,6 @@ function getAdSettings() {
 
 function saveAdSettings(cfg) {
   try { localStorage.setItem(AD_KEY, JSON.stringify(cfg)); } catch {}
-  // sync to Firestore so ALL devices get the same ad settings
   syncAdSettingsToCloud(cfg);
 }
 
@@ -77,6 +82,9 @@ async function syncAdSettingsFromCloud() {
 async function initAdSystem() {
   // pull latest global ad settings from Firestore first (falls back to localStorage if offline)
   await syncAdSettingsFromCloud();
+
+  // local-only override — this device has ads disabled individually
+  if (isAdsLocallyDisabled()) return;
 
   const cfg = getAdSettings();
   if (!cfg.enabled) return;
@@ -169,14 +177,30 @@ function buildAdControlPanel() {
     <div class="adctl-card">
       <div class="adctl-row adctl-featured">
         <div class="adctl-left">
-          <span class="adctl-icon">📢</span>
+          <span class="adctl-icon">🌍</span>
           <div>
-            <div class="adctl-name">All Ads</div>
-            <div class="adctl-desc">Master switch — turns all ads on or off instantly</div>
+            <div class="adctl-name">All Ads — ALL Devices (Global)</div>
+            <div class="adctl-desc">Turns ads on/off for EVERY user on every device via Firestore</div>
           </div>
         </div>
         <label class="adctl-switch">
           <input type="checkbox" ${cfg.enabled?"checked":""} onchange="adSet('enabled',this.checked)">
+          <span class="adctl-knob"></span>
+        </label>
+      </div>
+
+      <div class="adctl-divider"></div>
+
+      <div class="adctl-row">
+        <div class="adctl-left">
+          <span class="adctl-icon">📱</span>
+          <div>
+            <div class="adctl-name">Ads — THIS Device Only (Local)</div>
+            <div class="adctl-desc">Hides ads only on this device — other users still see ads</div>
+          </div>
+        </div>
+        <label class="adctl-switch">
+          <input type="checkbox" ${isAdsLocallyDisabled()?"":"checked"} onchange="toggleLocalAdOverride(this.checked)">
           <span class="adctl-knob"></span>
         </label>
       </div>
@@ -330,6 +354,20 @@ function buildAdControlPanel() {
 }
 
 /* ── SETTERS ── */
+function toggleLocalAdOverride(showAds) {
+  // showAds=true means checkbox is checked = ads ON locally
+  if (showAds) {
+    localStorage.removeItem(AD_LOCAL_OVERRIDE_KEY);
+    showToast("Ads enabled on this device", "info");
+  } else {
+    localStorage.setItem(AD_LOCAL_OVERRIDE_KEY, "1");
+    showToast("Ads hidden on this device only", "info");
+  }
+  // reload the panel to reflect change
+  const el = document.getElementById("adm-ads-content");
+  if (el && typeof buildAdControlPanel === "function") el.innerHTML = buildAdControlPanel();
+}
+
 function adSet(key, value) {
   const cfg = getAdSettings();
   cfg[key] = value;

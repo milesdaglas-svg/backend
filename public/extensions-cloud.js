@@ -144,7 +144,14 @@ async function loadAdminExtensionsTab() {
     <div class="adm-section-title">// ADD NEW EXTENSION</div>
     <div class="adm-form" style="max-width:600px;">
       <div class="adm-field"><label>NAME *</label><input class="adm-input" id="ext-name" placeholder="e.g. Lorem Ipsum Generator"></div>
-      <div class="adm-field"><label>ICON (emoji)</label><input class="adm-input" id="ext-icon" placeholder="📝" maxlength="4"></div>
+      <div class="adm-field">
+        <label>ICON — emoji OR image URL</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="adm-input" id="ext-icon" placeholder="📝 or https://..." style="flex:1;" oninput="previewExtIcon()">
+          <div id="ext-icon-preview" style="width:36px;height:36px;border-radius:8px;background:#1a1a1a;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🧩</div>
+        </div>
+        <div style="font-size:10px;color:#555;margin-top:3px;">Paste an emoji OR a full image URL (https://...) to use as icon</div>
+      </div>
       <div class="adm-field"><label>SHORT DESCRIPTION *</label><input class="adm-input" id="ext-desc" placeholder="One-line description shown on card"></div>
       <div class="adm-field"><label>LONG DESCRIPTION (Details modal)</label><textarea class="adm-textarea" id="ext-longdesc" rows="2" placeholder="What this extension does in detail"></textarea></div>
       <div class="adm-field"><label>HOW TO USE</label><textarea class="adm-textarea" id="ext-howto" rows="2" placeholder="Instructions shown in Details modal"></textarea></div>
@@ -212,7 +219,26 @@ return text.toUpperCase();"></textarea>
   el.innerHTML = html;
 }
 
-function adminExtTypeChanged() {
+function previewExtIcon() {
+  const val = document.getElementById("ext-icon")?.value.trim();
+  const preview = document.getElementById("ext-icon-preview");
+  if (!preview) return;
+  if (!val) { preview.innerHTML = "🧩"; return; }
+  if (val.startsWith("http") || val.startsWith("data:")) {
+    preview.innerHTML = `<img src="${val}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;" onerror="this.parentNode.innerHTML='❌'">`;
+  } else {
+    preview.innerHTML = val;
+  }
+}
+
+function renderExtIcon(iconVal, size) {
+  size = size || "18px";
+  if (!iconVal) return "🧩";
+  if (iconVal.startsWith("http") || iconVal.startsWith("data:")) {
+    return `<img src="${iconVal}" style="width:${size};height:${size};border-radius:4px;object-fit:cover;vertical-align:middle;" onerror="this.outerHTML='🧩'">`;
+  }
+  return iconVal;
+}
   const type = document.getElementById("ext-type").value;
   document.getElementById("ext-type-tool-fields").style.display = type === "tool" ? "block" : "none";
   document.getElementById("ext-type-theme-fields").style.display = type === "theme" ? "block" : "none";
@@ -242,7 +268,7 @@ function renderAdminExtList(stats) {
     const ext = cloudExtensions[id];
     const count = stats?.counts?.[id] || 0;
     return `<div class="adm-hist-card" style="display:flex;align-items:center;gap:10px;">
-      <span style="font-size:18px;">${ext.icon||"🧩"}</span>
+      <span style="font-size:18px;">${renderExtIcon(ext.icon||"🧩","28px")}</span>
       <div style="flex:1;">
         <div style="font-weight:600;">${ext.name} <span style="font-size:10px;color:#666;">[${ext.type}]</span></div>
         <div style="font-size:11px;color:#888;">${ext.desc||""}</div>
@@ -306,6 +332,7 @@ async function adminSubmitExtension() {
   if (id) {
     if (status) { status.innerText = "✅ Extension added! Visible to all users."; status.style.color="#00ff88"; }
     ["ext-name","ext-icon","ext-desc","ext-longdesc","ext-howto","ext-example","ext-code","ext-snippets"].forEach(fid => { const e=document.getElementById(fid); if(e) e.value=""; });
+    const prev = document.getElementById("ext-icon-preview"); if(prev) prev.innerHTML="🧩";
     loadAdminExtensionsTab();
     if (typeof showToast === "function") showToast("Extension added ✓", "success");
   } else {

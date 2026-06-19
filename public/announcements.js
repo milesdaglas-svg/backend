@@ -407,10 +407,7 @@ async function loadUpdatesPage() {
           <span class="up-item-title">${escHtml(ann.title)}</span>
           ${ann.version?`<span class="up-item-version" style="color:${c}">v${escHtml(ann.version)}</span>`:""}
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="up-item-date">${ann.date||""}</span>
-          <button class="up-delete-btn" onclick="deleteAnnouncement('${ann.id}')">🗑 Delete</button>
-        </div>
+        <span class="up-item-date">${ann.date||""}</span>
       </div>
       <div class="up-item-msg">${escHtml(ann.message||"").replace(/\n/g,"<br>")}</div>
       <div class="up-replies">

@@ -503,12 +503,22 @@ async function loadAdminHistory() {
         <span class="adm-hist-type" style="color:${colors[a.type]||"#00d4ff"}">[${(a.type||"").toUpperCase()}]</span>
         <span class="adm-hist-title">${a.title||""}</span>
         <span class="adm-hist-status ${a.active?"adm-live":""}">${a.active?"● LIVE":"○ off"}</span>
+        <button class="adm-btn adm-btn-danger" style="margin-left:auto;padding:3px 10px;font-size:10px;" onclick="adminDeleteBroadcast('${a.id}')">🗑 Delete</button>
       </div>
       <div class="adm-hist-msg">${(a.message||"").slice(0,100)}${a.message?.length>100?"...":""}</div>
       <div class="adm-hist-date">${a.date||""}</div>
     </div>`).join("");
 }
-
+async function adminDeleteBroadcast(id) {
+  if (!confirm("Delete this broadcast? It will disappear for ALL users immediately.")) return;
+  try {
+    const db = await initAnnounceDB(); if (!db) { showToast("Firebase not connected","error"); return; }
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await deleteDoc(doc(db, "announcements", id));
+    showToast("Broadcast deleted for all users ✓", "success");
+    loadAdminHistory();
+  } catch(e) { showToast("Failed: " + e.message, "error"); }
+}
 async function sendBroadcast() {
   const title   = document.getElementById("adminTitle")?.value.trim();
   const message = document.getElementById("adminMessage")?.value.trim();

@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="dragdrop.css">
 <link rel="stylesheet" href="ad_control.css">
 <link rel="stylesheet" href="sidebar-shell.css">
+<link rel="stylesheet" href="source-control.css">
 <link rel="stylesheet" href="extensions.css">
 
 <script src="firebase-config.js"></script>
@@ -162,6 +163,10 @@
     <div class="activity-bar-icons">
       <button class="activity-btn active" data-panel="explorer" onclick="activitySwitch('explorer')" title="Explorer">📁</button>
       <button class="activity-btn" data-panel="search" onclick="activitySwitch('search')" title="Search">🔍</button>
+      <button class="activity-btn" data-panel="source-control" onclick="activitySwitch('source-control')" title="Source Control" style="position:relative;">
+        🌿<span id="sc-activity-badge" class="activity-badge" style="display:none;">0</span>
+      </button>
+      <button class="activity-btn" data-panel="outline" onclick="activitySwitch('outline')" title="Outline">⊟</button>
       <button class="activity-btn" data-panel="extensions" onclick="activitySwitch('extensions')" title="Extensions">🧩</button>
     </div>
     <div class="activity-bar-bottom">
@@ -209,6 +214,41 @@
     </div>
 
     <!-- EXTENSIONS PANEL -->
+     <!-- SOURCE CONTROL PANEL -->
+    <div class="sidebar-panel" data-panel="source-control">
+      <div class="sidebar-header">
+        <span>Source Control</span>
+        <div style="display:flex;gap:4px;">
+          <button onclick="scResetBaseline()" title="Reset baseline" style="background:transparent;border:none;color:#858585;cursor:pointer;font-size:13px;padding:2px 5px;">↺</button>
+          <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+        </div>
+      </div>
+      <div class="sc-commit-area">
+        <textarea id="sc-commit-msg" class="sc-commit-input" rows="2" placeholder="Message (⌘Enter to commit)"></textarea>
+        <button class="sc-commit-btn" onclick="scCommit()">✓ Commit Changes</button>
+      </div>
+      <div class="sc-section-title">
+        Changes
+        <span class="sc-section-count" id="sc-changes-count">0</span>
+      </div>
+      <div class="sc-panel-body">
+        <div id="sc-file-list"><div class="sc-empty">// Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- OUTLINE PANEL -->
+    <div class="sidebar-panel" data-panel="outline">
+      <div class="sidebar-header">
+        <span>Outline</span>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button class="outline-refresh-btn" onclick="buildOutline()" title="Refresh">↺</button>
+          <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+        </div>
+      </div>
+      <div class="outline-panel-body">
+        <div id="outline-list"><div class="outline-empty">// Open a file to see outline</div></div>
+      </div>
+    </div>
     <div class="sidebar-panel" data-panel="extensions">
       <div class="sidebar-header">
         <span>Extensions</span>
@@ -339,6 +379,7 @@
 <script src="ad_stats.js"></script>
 <script src="sidebar-shell.js"></script>
 <script src="extensions.js"></script>
+<script src="source-control.js"></script>
 <script src="extensions-cloud.js"></script>
 <script src="extensions-pack1.js"></script>
 <script src="extensions-pack2.js"></script>

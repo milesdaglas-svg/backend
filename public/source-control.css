@@ -1,0 +1,211 @@
+/* =========================================
+   SOURCE CONTROL PANEL + OUTLINE PANEL
+========================================= */
+
+/* ── SOURCE CONTROL ── */
+.sc-panel-body {
+  flex: 1; overflow-y: auto; min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sc-commit-area {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+
+.sc-commit-input {
+  width: 100%;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+  margin-bottom: 7px;
+}
+.sc-commit-input:focus { border-color: #007acc; }
+
+.sc-commit-btn {
+  width: 100%;
+  background: #007acc;
+  border: none;
+  color: #fff;
+  padding: 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.sc-commit-btn:hover { background: #0088e0; }
+
+.sc-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #858585;
+  padding: 8px 12px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-section-count {
+  background: rgba(255,255,255,0.08);
+  color: #858585;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 8px;
+}
+
+.sc-file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.sc-file-item:hover { background: rgba(255,255,255,0.04); }
+
+.sc-file-status {
+  font-size: 11px;
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.sc-status-M { color: #e2c08d; }
+.sc-status-A { color: #73c991; }
+.sc-status-D { color: #f14c4c; }
+.sc-status-U { color: #73c991; }
+.sc-status-R { color: #4ec9b0; }
+
+.sc-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #cccccc;
+}
+.sc-file-path {
+  font-size: 10px;
+  color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.sc-file-actions {
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.sc-file-item:hover .sc-file-actions { opacity: 1; }
+.sc-file-action-btn {
+  background: transparent;
+  border: none;
+  color: #858585;
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.sc-file-action-btn:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+
+.sc-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+}
+
+.sc-last-commit {
+  margin: 8px 12px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #858585;
+}
+.sc-last-commit-msg { color: #ccc; font-weight: 600; margin-bottom: 3px; }
+.sc-last-commit-meta { font-size: 10px; color: #555; }
+
+/* ── OUTLINE PANEL ── */
+.outline-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 6px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .1s;
+  color: #cccccc;
+}
+.outline-item:hover { background: rgba(255,255,255,0.04); }
+.outline-item.active { background: rgba(0,122,204,0.15); color: #4fc3f7; }
+
+.outline-icon {
+  font-size: 11px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.outline-kind-function { color: #dcdcaa; }
+.outline-kind-class    { color: #4ec9b0; }
+.outline-kind-variable { color: #9cdcfe; }
+.outline-kind-const    { color: #4fc1ff; }
+.outline-kind-arrow    { color: #dcdcaa; }
+.outline-kind-id       { color: #d7ba7d; }
+.outline-kind-class2   { color: #569cd6; }
+
+.outline-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.outline-line {
+  font-size: 10px;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.outline-indent-1 { padding-left: 20px; }
+.outline-indent-2 { padding-left: 32px; }
+
+.outline-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+}
+
+.outline-refresh-btn {
+  background: transparent;
+  border: none;
+  color: #858585;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.outline-refresh-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; }

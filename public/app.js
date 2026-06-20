@@ -267,6 +267,74 @@ const shared={
   loadFromStorage();
   editor1=monaco.editor.create(document.getElementById("editor1"),{...shared,language:getLang(currentFile),value:files[currentFile]});
   editor2=monaco.editor.create(document.getElementById("editor2"),{...shared,language:getLang(currentFile),value:files[currentFile]});
+  // ── Enable language validation/diagnostics (error squiggles) ──
+  monaco.languages.css.cssDefaults.setOptions({
+    validate: true,
+    lint: {
+      compatibleVendorPrefixes: "warning",
+      duplicateProperties: "warning",
+      emptyRules: "warning",
+      importStatement: "warning",
+      boxModel: "ignore",
+      universalSelector: "ignore",
+      zeroUnits: "warning",
+      fontFaceProperties: "warning",
+      hexColorLength: "error",
+      argumentsInColorFunction: "error",
+      unknownProperties: "warning",
+      ieHack: "ignore",
+      unknownVendorSpecificProperties: "ignore",
+      propertyIgnoredDueToDisplay: "warning",
+      important: "ignore",
+      float: "ignore",
+      idSelector: "ignore"
+    }
+  });
+
+  monaco.languages.css.scssDefaults.setOptions({ validate: true });
+  monaco.languages.css.lessDefaults.setOptions({ validate: true });
+
+  monaco.languages.html.htmlDefaults.setOptions({
+    validate: true,
+    format: {
+      enable: true,
+      wrapLineLength: 120,
+      unformatted: "pre,code,textarea",
+      indentInnerHtml: false,
+      preserveNewLines: true,
+      maxPreserveNewLines: null,
+      indentHandlebars: false,
+      endWithNewline: false,
+      extraLiners: "head,body,/html"
+    },
+    suggest: {
+      html5: true,
+      angular1: false,
+      ionic: false
+    }
+  });
+
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: false,
+    noSyntaxValidation: false,
+    noSuggestionDiagnostics: false
+  });
+
+  monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+    target: monaco.languages.typescript.ScriptTarget.ESNext,
+    allowNonTsExtensions: true,
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.languages.typescript.ModuleKind.CommonJS,
+    noEmit: true,
+    allowJs: true,
+    checkJs: true,
+    strict: false
+  });
+
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: false,
+    noSyntaxValidation: false
+  });
   editor1.onDidChangeModelContent(()=>{
     if(isSyncing)return;files[currentFile]=editor1.getValue();
     if(!splitActive){isSyncing=true;editor2.setValue(editor1.getValue());isSyncing=false;}

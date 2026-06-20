@@ -222,7 +222,48 @@ function renderRecent(){
 require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs"}});
 require(["vs/editor/editor.main"],()=>{
  const isMobile=/Mobi|Android/i.test(navigator.userAgent);
-const shared={theme:"vs-dark",automaticLayout:true,fontSize:14,minimap:{enabled:false},wordWrap:"on",scrollBeyondLastLine:false,tabSize:2,lineNumbers:"on",renderLineHighlight:"all",cursorBlinking:"smooth",smoothScrolling:true,suggestOnTriggerCharacters:!isMobile,quickSuggestions:!isMobile,acceptSuggestionOnCommitCharacter:!isMobile,snippetSuggestions:isMobile?"none":"inline",wordBasedSuggestions:!isMobile};
+const shared={
+  theme:"vs-dark",
+  automaticLayout:true,
+  fontSize:14,
+  minimap:{enabled:false},
+  wordWrap:"on",
+  scrollBeyondLastLine:false,
+  tabSize:2,
+  lineNumbers:"on",
+  renderLineHighlight:"all",
+  cursorBlinking:"smooth",
+  smoothScrolling:true,
+  suggestOnTriggerCharacters:true,
+  quickSuggestions:true,
+
+  // ── TYPING FEEL FIX ──
+  fontFamily:"'Cascadia Code','Fira Code','Consolas','Courier New',monospace",
+  fontLigatures:false,          // disable ligatures — causes render delay
+  renderControlCharacters:false,
+  disableLayerHinting:false,
+  renderFinalNewline:"on",
+  fixedOverflowWidgets:true,
+  roundedSelection:false,
+
+  // make typing feel instant like notepad/vsc
+  cursorSmoothCaretAnimation:"off",  // off = instant caret movement
+  cursorStyle:"line",
+  cursorWidth:2,
+  mouseWheelZoom:false,
+  fastScrollSensitivity:5,
+  padding:{top:8,bottom:8},
+
+  // ── ERROR HIGHLIGHTING ──
+  // keep validation ON for all languages
+  "semanticHighlighting.enabled":true,
+  bracketPairColorization:{enabled:true},    // colorize matching brackets
+  guides:{bracketPairs:true,indentation:true}, // indent + bracket guides
+
+  // word-by-word rendering fix
+  stopRenderingLineAfter:-1,   // -1 = never stop rendering (fixes cut-off text)
+  renderValidationDecorations:"on",
+};
   loadFromStorage();
   editor1=monaco.editor.create(document.getElementById("editor1"),{...shared,language:getLang(currentFile),value:files[currentFile]});
   editor2=monaco.editor.create(document.getElementById("editor2"),{...shared,language:getLang(currentFile),value:files[currentFile]});
@@ -262,6 +303,12 @@ function resolveMediaPaths(text){
     const match=Object.keys(files).find(f=>f.split("/").pop()===fname && isMediaFile(f));
     return match?files[match]:null;
   }
+  // remove broken external script/link src references that don't exist in files[]
+  text=text.replace(/<script\b[^>]*\bsrc\s*=\s*(["'])([^"']+)\1[^>]*><\/script>/gi,(m,q,path)=>{
+    if(path.startsWith("http")||path.startsWith("//")) return m; // keep external CDN scripts
+    const p=path.replace(/^\.\//,"").replace(/^\//,"");
+    return (files[p]!==undefined) ? m : `<!-- removed missing: ${path} -->`;
+  });
 
   // <img src="...">, <source src="...">, <video src="...">, <audio src="...">
   text=text.replace(/(<(?:img|source|video|audio|embed)\b[^>]*\bsrc\s*=\s*)(["'])([^"']+)\2/gi,(m,pre,q,path)=>{
@@ -291,7 +338,7 @@ function updatePreview(page=currentFile){
   html=resolveMediaPaths(html);
 
   let css="";Object.keys(files).forEach(f=>{if(f.endsWith(".css"))css+=`<style>${resolveMediaPaths(files[f])}</style>`;});
-  let js="";Object.keys(files).forEach(f=>{if(f.endsWith(".js")&&!f.includes("sw.js"))js+=`<script>${files[f]}<\/script>`;});
+  let js="";Object.keys(files).forEach(f=>{if(f.endsWith(".js")&&!f.includes("sw.js")&&files[f]!==undefined)js+=`<script>${files[f]}<\/script>`;});
   // inject scrollbar styling
   const scrollCSS=`<style>::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f1f1}::-webkit-scrollbar-thumb{background:#888;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#555}body{overflow:auto!important}</style>`;
   html=html.includes("</head>")?html.replace("</head>",css+scrollCSS+"</head>"):css+scrollCSS+html;
@@ -523,6 +570,7 @@ document.getElementById("newFolderBtn").onclick=()=>{
 };
 
 function saveCurrentFile(){
+  if (typeof scRefresh === "function") setTimeout(scRefresh, 300);
   const blob=new Blob([editor1.getValue()],{type:"text/plain"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=currentFile.split("/").pop();a.click();URL.revokeObjectURL(a.href);
   showToast("Saved "+currentFile.split("/").pop(),"success");

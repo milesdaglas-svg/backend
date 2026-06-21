@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="ad_control.css">
 <link rel="stylesheet" href="sidebar-shell.css">
 <link rel="stylesheet" href="source-control.css">
+<link rel="stylesheet" href="github-panel.css">
 <link rel="stylesheet" href="extensions.css">
 
 <script src="firebase-config.js"></script>
@@ -167,6 +168,7 @@
         🌿<span id="sc-activity-badge" class="activity-badge" style="display:none;">0</span>
       </button>
       <button class="activity-btn" data-panel="outline" onclick="activitySwitch('outline')" title="Outline">⊟</button>
+      <button class="activity-btn" data-panel="github" onclick="activitySwitch('github')" title="GitHub">🐙</button>
       <button class="activity-btn" data-panel="extensions" onclick="activitySwitch('extensions')" title="Extensions">🧩</button>
     </div>
     <div class="activity-bar-bottom">
@@ -212,9 +214,17 @@
         </div>
       </div>
     </div>
+     <!-- GITHUB PANEL -->
+    <div class="sidebar-panel" data-panel="github">
+      <div class="sidebar-header">
+        <span>🐙 GitHub</span>
+        <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+      </div>
+      <div id="gh-panel-content" style="flex:1;overflow-y:auto;min-height:0;">
+        <div style="padding:20px;text-align:center;color:#555;font-size:12px;">// Loading...</div>
+      </div>
+    </div>
 
-    <!-- EXTENSIONS PANEL -->
-     <!-- SOURCE CONTROL PANEL -->
     <div class="sidebar-panel" data-panel="source-control">
       <div class="sidebar-header">
         <span>Source Control</span>
@@ -380,6 +390,7 @@
 <script src="sidebar-shell.js"></script>
 <script src="extensions.js"></script>
 <script src="source-control.js"></script>
+<script src="github-panel.js"></script>
 <script src="extensions-cloud.js"></script>
 <script src="extensions-pack1.js"></script>
 <script src="extensions-pack2.js"></script>

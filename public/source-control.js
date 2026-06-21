@@ -237,6 +237,7 @@ function activitySwitch(panel) {
   if(panel==="source-control") scRefresh();
   if(panel==="outline") buildOutline();
   if(panel==="extensions") setTimeout(()=>{if(typeof renderExtensionsPanel==="function")renderExtensionsPanel();},50);
+  if(panel==="github") setTimeout(()=>{if(typeof renderGithubPanel==="function")renderGithubPanel();},50);
 }
 
 /* ══════════════════════

@@ -1,0 +1,381 @@
+/* =========================================
+   GITHUB INTEGRATION PANEL CSS
+========================================= */
+
+/* ── GITHUB SIDEBAR PANEL ── */
+.gh-panel-body {
+  flex: 1; overflow-y: auto; min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── CONNECT SECTION ── */
+.gh-connect-box {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gh-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
+.gh-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+.gh-user-name { font-size: 13px; font-weight: 600; color: #ccc; }
+.gh-user-meta { font-size: 10px; color: #555; }
+.gh-disconnect-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(248,113,113,0.3);
+  color: #f87171;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.gh-disconnect-btn:hover { background: rgba(248,113,113,0.1); }
+
+.gh-input {
+  width: 100%;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.gh-input:focus { border-color: #238636; }
+
+.gh-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+  font-family: inherit;
+}
+.gh-btn-green { background: #238636; color: #fff; }
+.gh-btn-green:hover { background: #2ea043; }
+.gh-btn-blue { background: #1f6feb; color: #fff; }
+.gh-btn-blue:hover { background: #388bfd; }
+.gh-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #ccc;
+}
+.gh-btn-ghost:hover { background: rgba(255,255,255,0.05); }
+
+.gh-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #555;
+  padding: 10px 14px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gh-section-btn {
+  background: transparent;
+  border: none;
+  color: #555;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.gh-section-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; }
+
+/* ── REPO SELECTOR ── */
+.gh-repo-selector {
+  padding: 0 14px 10px;
+}
+.gh-repo-select {
+  width: 100%;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.gh-repo-select:focus { border-color: #1f6feb; }
+
+.gh-branch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 8px;
+}
+.gh-branch-label {
+  font-size: 11px;
+  color: #555;
+  flex-shrink: 0;
+}
+.gh-branch-select {
+  flex: 1;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+  cursor: pointer;
+}
+.gh-new-branch-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #858585;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gh-new-branch-btn:hover { color: #ccc; border-color: rgba(255,255,255,0.2); }
+
+/* ── PUSH/PULL ACTIONS ── */
+.gh-actions-area {
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.gh-commit-input {
+  width: 100%;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+}
+.gh-commit-input:focus { border-color: #238636; }
+.gh-push-row {
+  display: flex;
+  gap: 6px;
+}
+.gh-push-btn {
+  flex: 1;
+  padding: 8px;
+  background: #238636;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+}
+.gh-push-btn:hover { background: #2ea043; }
+.gh-push-btn:disabled { opacity: .5; cursor: not-allowed; }
+.gh-pull-btn {
+  flex: 1;
+  padding: 8px;
+  background: #1f6feb;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+}
+.gh-pull-btn:hover { background: #388bfd; }
+.gh-pull-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.gh-status-msg {
+  font-size: 11px;
+  padding: 4px 0;
+  min-height: 16px;
+  text-align: center;
+}
+.gh-status-success { color: #3fb950; }
+.gh-status-error   { color: #f85149; }
+.gh-status-loading { color: #58a6ff; }
+
+/* ── PROGRESS BAR ── */
+.gh-progress {
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.gh-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #238636, #2ea043);
+  border-radius: 2px;
+  transition: width .3s;
+}
+
+/* ── COMMITS LIST ── */
+.gh-commit-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background .1s;
+}
+.gh-commit-item:hover { background: rgba(255,255,255,0.03); }
+.gh-commit-sha {
+  font-family: monospace;
+  font-size: 10px;
+  color: #1f6feb;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.gh-commit-msg {
+  font-size: 12px;
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.gh-commit-meta {
+  font-size: 10px;
+  color: #555;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* ── PRs LIST ── */
+.gh-pr-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.gh-pr-item:hover { background: rgba(255,255,255,0.03); }
+.gh-pr-title { font-size: 12px; color: #ccc; margin-bottom: 3px; }
+.gh-pr-meta  { font-size: 10px; color: #555; }
+.gh-pr-open   { color: #3fb950; }
+.gh-pr-closed { color: #f85149; }
+.gh-pr-merged { color: #a371f7; }
+
+/* ── ISSUES LIST ── */
+.gh-issue-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.gh-issue-item:hover { background: rgba(255,255,255,0.03); }
+.gh-issue-title { font-size: 12px; color: #ccc; margin-bottom: 3px; }
+.gh-issue-meta  { font-size: 10px; color: #555; }
+
+/* ── ACTIONS RUNS ── */
+.gh-run-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.gh-run-item:hover { background: rgba(255,255,255,0.03); }
+.gh-run-status { font-size: 14px; flex-shrink: 0; }
+.gh-run-name   { font-size: 12px; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gh-run-meta   { font-size: 10px; color: #555; flex-shrink: 0; }
+
+/* ── TABS INSIDE GITHUB PANEL ── */
+.gh-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.gh-tabs::-webkit-scrollbar { display: none; }
+.gh-tab {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: .15s;
+  flex-shrink: 0;
+}
+.gh-tab:hover { color: #ccc; }
+.gh-tab.active { color: #ccc; border-bottom-color: #1f6feb; }
+
+.gh-tab-content { display: none; flex: 1; overflow-y: auto; min-height: 0; }
+.gh-tab-content.active { display: block; }
+
+.gh-empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+}
+
+/* ── CREATE REPO MODAL ── */
+.gh-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 6000;
+  display: flex; align-items: center; justify-content: center;
+}
+.gh-modal {
+  background: #161b22;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  width: 380px;
+  max-width: 92vw;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.gh-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ccc;
+}
+.gh-modal label {
+  font-size: 11px;
+  color: #858585;
+  display: block;
+  margin-bottom: 4px;
+}
+.gh-modal-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── GUTTER BLAME ── */
+.gh-blame-decoration {
+  background: rgba(31,111,235,0.08);
+  border-left: 2px solid #1f6feb;
+}
+
+@media(max-width: 768px) {
+  .gh-push-row { flex-direction: column; }
+}

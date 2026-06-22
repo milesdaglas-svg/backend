@@ -239,6 +239,8 @@ function renderExtIcon(iconVal, size) {
   }
   return iconVal;
 }
+
+function adminExtTypeChanged() {
   const type = document.getElementById("ext-type").value;
   document.getElementById("ext-type-tool-fields").style.display = type === "tool" ? "block" : "none";
   document.getElementById("ext-type-theme-fields").style.display = type === "theme" ? "block" : "none";

@@ -229,7 +229,7 @@ function previewExtIcon() {
   } else {
     preview.innerHTML = val;
   }
-
+}
 
 function renderExtIcon(iconVal, size) {
   size = size || "18px";
@@ -436,4 +436,4 @@ function openCloudSnippetMenu(id) {
 ══════════════════════ */
 window.addEventListener("load", () => {
   setTimeout(syncCloudExtensions, 2000);
-
+});

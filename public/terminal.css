@@ -96,7 +96,7 @@
 
 /* MOBILE */
 @media(max-width: 768px){
-  #terminalPanel { font-size: 11px; }
+  #terminalPanel { font-size: 11px; width: 100%!important; margin-left: 0!important; position: relative; z-index: 3; }
   .term-output   { padding: 6px 8px; }
   .term-input    { font-size: 12px; }
   .t-ps1         { font-size: 10px; }

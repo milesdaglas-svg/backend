@@ -625,6 +625,99 @@ app.get("/api/github/blame", async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+/* =========================
+   TERMINAL — REAL SHELL
+========================= */
+const { exec, spawn } = require("child_process");
+const fs   = require("fs");
+const os   = require("os");
+
+const PROJECT_DIR = path.join(os.tmpdir(), "vscode_godmode_project");
+
+// ensure project dir exists
+if (!fs.existsSync(PROJECT_DIR)) fs.mkdirSync(PROJECT_DIR, { recursive: true });
+
+/* sync files from browser into real filesystem */
+app.post("/api/terminal/sync", (req, res) => {
+  const { files } = req.body;
+  if (!files || typeof files !== "object")
+    return res.status(400).json({ error: "No files provided" });
+  try {
+    Object.entries(files).forEach(([filePath, content]) => {
+      if (filePath.endsWith("/.gitkeep")) return;
+      const full = path.join(PROJECT_DIR, filePath);
+      const dir  = path.dirname(full);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(full, content || "", "utf8");
+    });
+    res.json({ success: true, synced: Object.keys(files).length, dir: PROJECT_DIR });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+/* run a real shell command */
+app.post("/api/terminal/exec", (req, res) => {
+  const { command, cwd } = req.body;
+  if (!command) return res.status(400).json({ error: "No command" });
+
+  // security: block truly dangerous commands
+  const blocked = /^(rm\s+-rf\s+\/|mkfs|dd\s+if=|:(){ :|:&};:)/.test(command.trim());
+  if (blocked) return res.status(403).json({ error: "Command blocked for safety" });
+
+  const workDir = cwd || PROJECT_DIR;
+  // ensure workDir exists
+  if (!fs.existsSync(workDir)) fs.mkdirSync(workDir, { recursive: true });
+
+  exec(command, {
+    cwd: workDir,
+    timeout: 30000,       // 30 second timeout
+    maxBuffer: 1024*1024, // 1MB output limit
+    env: {
+      ...process.env,
+      PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      HOME: os.homedir(),
+      TERM: "xterm"
+    }
+  }, (err, stdout, stderr) => {
+    res.json({
+      stdout: stdout || "",
+      stderr: stderr || "",
+      exitCode: err?.code ?? 0,
+      error: err && err.code !== 0 ? (stderr || err.message) : null
+    });
+  });
+});
+
+/* read a file back from server into browser */
+app.get("/api/terminal/readfile", (req, res) => {
+  const { file } = req.query;
+  if (!file) return res.status(400).json({ error: "No file specified" });
+  const full = path.join(PROJECT_DIR, file);
+  try {
+    if (!fs.existsSync(full)) return res.status(404).json({ error: "File not found" });
+    const content = fs.readFileSync(full, "utf8");
+    res.json({ content });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+/* list all files in project dir — sync back to browser after commands */
+app.get("/api/terminal/listfiles", (req, res) => {
+  function walk(dir, base="") {
+    const result = {};
+    if (!fs.existsSync(dir)) return result;
+    fs.readdirSync(dir).forEach(name => {
+      if (name === "node_modules" || name === ".git") return;
+      const full = path.join(dir, name);
+      const rel  = base ? base + "/" + name : name;
+      if (fs.statSync(full).isDirectory()) {
+        Object.assign(result, walk(full, rel));
+      } else {
+        try { result[rel] = fs.readFileSync(full, "utf8"); } catch {}
+      }
+    });
+    return result;
+  }
+  res.json({ files: walk(PROJECT_DIR) });
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {

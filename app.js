@@ -294,7 +294,7 @@ function githubAPI(method, path, token, body) {
       res.on("end", () => {
         try {
           const parsed = raw ? JSON.parse(raw) : {};
-          if (res.statusCode >= 400) reject({ status: res.statusCode, message: parsed.message || raw });
+          if (res.statusCode >= 400) reject(new Error(parsed.message || `GitHub API error ${res.statusCode}`));
           else resolve(parsed);
         } catch(e) { resolve(raw); }
       });
@@ -508,7 +508,7 @@ app.post("/api/github/pull-all", async (req, res) => {
     }
 
     res.json({ success: true, files, count: Object.keys(files).length });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: e.message || e.toString() || "Unknown error" }); }
 });
 
 /* ── GET /api/github/prs ──

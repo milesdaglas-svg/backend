@@ -162,11 +162,11 @@ function renderGithubPanel() {
     <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);">
       <div class="gh-user-card">
         <img class="gh-avatar" src="${ghUser.avatar_url}" alt="${ghUser.login}" onerror="this.style.display='none'">
-        <div>
+        <div style="flex:1;min-width:0;overflow:hidden;">
           <div class="gh-user-name">@${ghUser.login}</div>
           <div class="gh-user-meta">${ghUser.public_repos || 0} repos</div>
         </div>
-        <button class="gh-disconnect-btn" onclick="ghDisconnect()">Disconnect</button>
+        <button class="gh-disconnect-btn" onclick="ghDisconnect()" style="flex-shrink:0;font-size:10px;padding:3px 6px;white-space:nowrap;">✕</button>
       </div>
     </div>
 

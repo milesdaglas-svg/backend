@@ -5,6 +5,7 @@
 /* ── GITHUB SIDEBAR PANEL ── */
 .gh-panel-body {
   flex: 1; overflow-y: auto; min-height: 0;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -117,6 +118,9 @@
   outline: none;
   cursor: pointer;
   box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .gh-repo-select:focus { border-color: #1f6feb; }
 
@@ -258,6 +262,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  min-width: 0;
 }
 .gh-commit-meta {
   font-size: 10px;

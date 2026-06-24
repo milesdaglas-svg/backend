@@ -12,7 +12,7 @@ const GH_TOKEN_KEY   = "gh_token";
 const GH_USER_KEY    = "gh_user";
 const GH_REPO_KEY    = "gh_repo";
 const GH_BRANCH_KEY  = "gh_branch";
-const SERVER_BASE    = ""; // empty = same origin
+const SERVER_BASE    = "https://backend-forz.onrender.com";
 
 let ghUser   = null;
 let ghRepo   = null;

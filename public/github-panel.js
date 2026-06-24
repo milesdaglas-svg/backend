@@ -92,7 +92,8 @@ function ghDisconnect() {
 ══════════════════════ */
 async function ghLoadRepos() {
   try {
-    ghRepos = await ghAPI("GET", "/repos");
+    const data = await ghAPI("GET", "/repos");
+    ghRepos = Array.isArray(data) ? data : [];
     const savedRepo = ghGetSavedRepo();
     if (savedRepo) {
       ghRepo = ghRepos.find(r => r.full_name === savedRepo) || ghRepos[0] || null;
@@ -100,7 +101,7 @@ async function ghLoadRepos() {
       ghRepo = ghRepos[0] || null;
     }
     if (ghRepo) { ghSaveRepo(ghRepo.full_name); await ghLoadBranches(); }
-  } catch(e) { console.warn("Load repos:", e.message); }
+  } catch(e) { console.warn("Load repos:", e?.message || e?.error || e); }
 }
 
 async function ghLoadBranches() {

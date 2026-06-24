@@ -326,6 +326,167 @@ async function runRealCommand(command) {
     printTermLine(`<span class="t-err">✗ Server error: ${escTerm(e.message)}</span>`);
   }
 }
+
+/* ══════════════════════
+   REAL TERMINAL API
+══════════════════════ */
+const TERM_SERVER = "https://backend-forz.onrender.com";
+let termCwd = null;
+
+async function runRealCommand(command) {
+  const cmd = command.trim().split(" ")[0].toLowerCase();
+
+  // sync — push browser files to server
+  if (command === "sync") {
+    printTermLine(`<span class="t-info">⟳ Syncing project files to server...</span>`);
+    try {
+      const r = await fetch(TERM_SERVER + "/api/terminal/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: window.files || {} })
+      });
+      const d = await r.json();
+      printTermLine(`<span class="t-ok">✓ Synced ${d.synced} files to server</span>`);
+    } catch(e) {
+      printTermLine(`<span class="t-err">✗ Sync failed: ${escTerm(e.message)}</span>`);
+    }
+    return;
+  }
+
+  // pull-files — read server files back into browser
+  if (command === "pull-files") {
+    printTermLine(`<span class="t-info">⟳ Pulling files from server...</span>`);
+    try {
+      const r = await fetch(TERM_SERVER + "/api/terminal/listfiles");
+      const d = await r.json();
+      if (d.files && Object.keys(d.files).length) {
+        Object.assign(window.files, d.files);
+        if (typeof saveToStorage === "function") saveToStorage();
+        if (typeof renderFiles   === "function") renderFiles();
+        if (typeof renderTabs    === "function") renderTabs();
+        printTermLine(`<span class="t-ok">✓ Pulled ${Object.keys(d.files).length} files into editor</span>`);
+      } else {
+        printTermLine(`<span class="t-warn">No files on server — run 'sync' first</span>`);
+      }
+    } catch(e) {
+      printTermLine(`<span class="t-err">✗ Failed: ${escTerm(e.message)}</span>`);
+    }
+    return;
+  }
+
+  // cd — update working directory
+  if (cmd === "cd") {
+    const target = command.slice(3).trim();
+    termCwd = target === ".." ? null : target;
+    printTermLine(`<span class="t-ok">✓ cwd: ${escTerm(termCwd || "/")} </span>`);
+    return;
+  }
+
+  // detect server start commands — node/npm start/python etc
+  const isServerCmd = /^(node|npm\s+start|npm\s+run|python|python3|php\s+-S|ruby|bun\s+run)/.test(command);
+  if (isServerCmd) {
+    // detect port from command or default to 3000
+    const portMatch = command.match(/--port[= ](\d+)|-p\s*(\d+)|PORT=(\d+)/);
+    const port = portMatch ? parseInt(portMatch[1]||portMatch[2]||portMatch[3]) : 3000;
+
+    printTermLine(`<span class="t-info">⟳ Starting server... (waiting 3s for startup)</span>`);
+    try {
+      const r = await fetch(TERM_SERVER + "/api/terminal/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command, port, cwd: termCwd })
+      });
+      const d = await r.json();
+
+      if (d.logs) printTermLine(`<span class="t-log">${escTerm(d.logs)}</span>`);
+
+      printTermLine(`
+        <span class="t-ok">✓ Server started on port ${port} (PID: ${d.pid})</span>
+        <br><span class="t-info">Preview URL:</span>
+        <br><a href="${d.previewUrl}" target="_blank"
+          style="color:#58a6ff;text-decoration:underline;font-size:13px;">
+          🌐 ${d.previewUrl}
+        </a>
+        <br><span class="t-muted">Click to open · runs on Render server</span>
+        <br><button onclick="openServerPreview('${d.previewUrl}')"
+          style="margin-top:6px;padding:6px 16px;background:#1f6feb;color:white;
+          border:none;border-radius:6px;cursor:pointer;font-size:12px;">
+          ▶ Open Preview
+        </button>
+        <button onclick="killServer(${port})"
+          style="margin-top:6px;margin-left:6px;padding:6px 16px;background:#3a1010;
+          color:#ff5050;border:1px solid #ff505044;border-radius:6px;
+          cursor:pointer;font-size:12px;">
+          ✕ Stop Server
+        </button>`);
+    } catch(e) {
+      printTermLine(`<span class="t-err">✗ Failed to start: ${escTerm(e.message)}</span>`);
+    }
+    return;
+  }
+
+  // all other commands — run normally
+  printTermLine(`<span class="t-muted">running...</span>`);
+  try {
+    const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ command, cwd: termCwd })
+    });
+    const d = await r.json();
+    if (d.stdout) printTermLine(`<span class="t-log">${escTerm(d.stdout)}</span>`);
+    if (d.stderr) printTermLine(`<span class="t-warn">${escTerm(d.stderr)}</span>`);
+    if (d.error)  printTermLine(`<span class="t-err">✗ ${escTerm(d.error)}</span>`);
+    if (!d.stdout && !d.stderr && !d.error) printTermLine(`<span class="t-ok">✓ Done</span>`);
+
+    // after npm install or git clone — auto pull files into editor
+    if (/^(npm install|git clone|npx create)/.test(command)) {
+      setTimeout(async () => {
+        printTermLine(`<span class="t-info">⟳ Syncing new files to editor...</span>`);
+        try {
+          const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles");
+          const d2 = await r2.json();
+          if (d2.files && Object.keys(d2.files).length) {
+            Object.assign(window.files, d2.files);
+            if (typeof saveToStorage === "function") saveToStorage();
+            if (typeof renderFiles   === "function") renderFiles();
+            if (typeof renderTabs    === "function") renderTabs();
+            printTermLine(`<span class="t-ok">✓ ${Object.keys(d2.files).length} files synced to editor</span>`);
+          }
+        } catch {}
+      }, 2000);
+    }
+  } catch(e) {
+    printTermLine(`<span class="t-err">✗ Server error: ${escTerm(e.message)}</span>`);
+  }
+}
+
+function openServerPreview(url) {
+  // open in preview iframe if possible, else new tab
+  const iframe = document.getElementById("previewFrame");
+  if (iframe) {
+    iframe.src = url;
+    const preview = document.getElementById("preview");
+    if (preview) preview.classList.remove("collapsed", "hidden");
+    if (typeof showToast === "function") showToast("Preview opened ✓", "success");
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
+async function killServer(port) {
+  try {
+    const r = await fetch(TERM_SERVER + "/api/terminal/kill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ port })
+    });
+    const d = await r.json();
+    printTermLine(`<span class="t-warn">✓ ${escTerm(d.message)}</span>`);
+  } catch(e) {
+    printTermLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`);
+  }
+}
 function execCommand(raw) {
   const trimmed = raw.trim();
   if (!trimmed) return;

@@ -48,7 +48,16 @@ const COMMANDS = {
   date            — current date/time
   clear           — clear terminal
   history         — show command history
-  help            — show this help`,
+  help            — show this help
+
+<span class="t-cmd">Server (Real):</span>
+  sync            — push editor files to server
+  pull-files      — pull server files into editor
+  node [file]     — run a Node.js server
+  npm install     — install packages
+  npm start       — start your project server
+  git clone [url] — clone a GitHub repo
+  kill [port]     — stop a running server`,
 
   clear: () => { clearTerminal(); return ""; },
 
@@ -237,95 +246,7 @@ function escTerm(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
 /* ══════════════════════
    EXECUTE COMMAND
 ══════════════════════ */
-/* ══════════════════════
-   REAL TERMINAL API
-══════════════════════ */
-const TERM_SERVER = "https://backend-forz.onrender.com";
-let termCwd = null; // current working dir on server
 
-async function runRealCommand(command) {
-  // first sync project files to server
-  printTermLine(`<span class="t-muted">$ ${escTerm(command)}</span>`);
-
-  // special: cd command — update cwd
-  if (command.startsWith("cd ")) {
-    const target = command.slice(3).trim();
-    termCwd = target === ".." ? null : target;
-    printTermLine(`<span class="t-ok">✓ Changed directory to: ${escTerm(target)}</span>`);
-    return;
-  }
-
-  // special: sync — push browser files to server
-  if (command === "sync") {
-    printTermLine(`<span class="t-info">⟳ Syncing project files to server...</span>`);
-    try {
-      const r = await fetch(TERM_SERVER + "/api/terminal/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: window.files || {} })
-      });
-      const d = await r.json();
-      printTermLine(`<span class="t-ok">✓ Synced ${d.synced} files to server</span>`);
-    } catch(e) {
-      printTermLine(`<span class="t-err">✗ Sync failed: ${escTerm(e.message)}</span>`);
-    }
-    return;
-  }
-
-  // special: pull — read server files back into browser
-  if (command === "pull-files") {
-    printTermLine(`<span class="t-info">⟳ Pulling files from server...</span>`);
-    try {
-      const r = await fetch(TERM_SERVER + "/api/terminal/listfiles");
-      const d = await r.json();
-      if (d.files && Object.keys(d.files).length) {
-        Object.assign(window.files, d.files);
-        if (typeof saveToStorage === "function") saveToStorage();
-        if (typeof renderFiles === "function") renderFiles();
-        if (typeof renderTabs === "function") renderTabs();
-        printTermLine(`<span class="t-ok">✓ Pulled ${Object.keys(d.files).length} files into editor</span>`);
-      } else {
-        printTermLine(`<span class="t-warn">No files found on server — run 'sync' first</span>`);
-      }
-    } catch(e) {
-      printTermLine(`<span class="t-err">✗ Pull failed: ${escTerm(e.message)}</span>`);
-    }
-    return;
-  }
-
-  // all other commands — run on server
-  printTermLine(`<span class="t-muted">running on server...</span>`);
-  try {
-    const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ command, cwd: termCwd })
-    });
-    const d = await r.json();
-    if (d.stdout) printTermLine(`<span class="t-log">${escTerm(d.stdout)}</span>`);
-    if (d.stderr) printTermLine(`<span class="t-warn">${escTerm(d.stderr)}</span>`);
-    if (d.error)  printTermLine(`<span class="t-err">✗ ${escTerm(d.error)}</span>`);
-    if (!d.stdout && !d.stderr && !d.error) printTermLine(`<span class="t-ok">✓ Done (exit 0)</span>`);
-
-    // after npm install or git clone, auto pull files back
-    if (/^(npm install|git clone|npm run|npx)/.test(command)) {
-      setTimeout(async () => {
-        printTermLine(`<span class="t-info">⟳ Syncing new files to editor...</span>`);
-        const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles");
-        const d2 = await r2.json();
-        if (d2.files && Object.keys(d2.files).length) {
-          Object.assign(window.files, d2.files);
-          if (typeof saveToStorage === "function") saveToStorage();
-          if (typeof renderFiles === "function") renderFiles();
-          if (typeof renderTabs === "function") renderTabs();
-          printTermLine(`<span class="t-ok">✓ ${Object.keys(d2.files).length} files synced to editor</span>`);
-        }
-      }, 1500);
-    }
-  } catch(e) {
-    printTermLine(`<span class="t-err">✗ Server error: ${escTerm(e.message)}</span>`);
-  }
-}
 
 /* ══════════════════════
    REAL TERMINAL API
@@ -505,30 +426,8 @@ function execCommand(raw) {
   const cmd   = parts[0]?.toLowerCase();
   const args  = parts.slice(1).map(a => a.replace(/^["']|["']$/g,""));
 
-  // eval / js shorthand
-  // send everything to real server terminal
-  // except purely local commands
-  const localOnly = ["clear","cls","help","history"];
-  if (!localOnly.includes(cmd)) {
-    runRealCommand(raw);
-    return;
-  }
-  if (cmd === "eval" || cmd === "js" || cmd === "node") {
-    const code = args.join(" ");
-    if (!code) { printTermLine(`<span class="t-err">Usage: eval [javascript code]</span>`); return; }
-    printTermLine(sandboxEval(code));
-    return;
-  }
-
-  // run multi-line JS block
-  if (trimmed.startsWith("```")) {
-    const code = trimmed.replace(/^```\w*\n?/, "").replace(/```$/, "");
-    printTermLine(sandboxEval(code));
-    return;
-  }
-
   // local only commands
-  const localOnly = ["clear", "cls", "help", "history", "eval", "js"];
+  const localOnly = ["clear", "cls", "help", "history"];
   if (localOnly.includes(cmd) && COMMANDS[cmd]) {
     const result = COMMANDS[cmd](args);
     if (result) printTermLine(result);

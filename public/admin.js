@@ -199,8 +199,8 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('ads',this)">
             <span class="adm-nav-icon">📢</span><span>Ads</span>
           </button>
-          <button class="adm-nav-btn" onclick="admTab('ads',this)">
-            <span class="adm-nav-icon">📢</span><span>Ads</span>
+          <button class="adm-nav-btn" onclick="admTab('vault',this)">
+            <span class="adm-nav-icon">🔐</span><span>Vault</span>
           </button>
         </nav>
 
@@ -313,7 +313,9 @@ async function showAdminPanel() {
           </div>
 
           <!-- ── HISTORY ── -->
-          <div class="adm-tab" id="adm-tab-history">
+          <div class="adm-tab" id="adm-tab-vault">
+            <div id="adm-vault-content"></div>
+          </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
               <div class="adm-feed-loading">// Loading...</div>
@@ -348,6 +350,254 @@ function closeAdminPanel() {
 }
 
 /* ── TAB SWITCH ── */
+/* =========================
+   SECRET VAULT
+   Stores API keys + tokens
+   Encrypted with a PIN
+========================= */
+const VAULT_KEY = "vscode_godmode_vault";
+
+function vaultEncrypt(text, pin) {
+  // simple XOR cipher with pin — not bank-level but good enough for personal use
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ pin.charCodeAt(i % pin.length));
+  }
+  return btoa(result);
+}
+
+function vaultDecrypt(encoded, pin) {
+  try {
+    const text = atob(encoded);
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ pin.charCodeAt(i % pin.length));
+    }
+    return result;
+  } catch { return null; }
+}
+
+function vaultLoad(pin) {
+  try {
+    const raw = localStorage.getItem(VAULT_KEY);
+    if (!raw) return {};
+    const decrypted = vaultDecrypt(raw, pin);
+    if (!decrypted) return null;
+    return JSON.parse(decrypted);
+  } catch { return null; }
+}
+
+function vaultSave(data, pin) {
+  const encrypted = vaultEncrypt(JSON.stringify(data), pin);
+  localStorage.setItem(VAULT_KEY, encrypted);
+}
+
+function renderVaultPanel() {
+  const el = document.getElementById("adm-vault-content");
+  if (!el) return;
+
+  const hasVault = !!localStorage.getItem(VAULT_KEY);
+
+  el.innerHTML = `
+    <div class="adm-section-title">// 🔐 SECRET VAULT</div>
+    <div style="font-size:11px;color:rgba(0,255,136,0.3);margin-bottom:16px;">
+      Store your API keys, tokens and passwords securely. Protected by a PIN only you know.
+      Nothing is sent to any server — stored encrypted in your browser only.
+    </div>
+
+    ${!hasVault ? `
+    <!-- CREATE VAULT -->
+    <div style="background:#010a08;border:1px solid rgba(0,255,136,0.1);border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div class="adm-section-title" style="margin-top:0;">// CREATE YOUR VAULT</div>
+      <div class="adm-field">
+        <label>SET A PIN (remember this — you need it to open your vault)</label>
+        <input type="password" id="vault-pin-create" class="adm-input" placeholder="Enter a PIN...">
+      </div>
+      <div class="adm-field" style="margin-top:10px;">
+        <label>CONFIRM PIN</label>
+        <input type="password" id="vault-pin-confirm" class="adm-input" placeholder="Confirm PIN...">
+      </div>
+      <button onclick="vaultCreate()" class="adm-btn adm-btn-primary" style="margin-top:12px;width:100%;">
+        🔐 Create Vault
+      </button>
+    </div>
+    ` : `
+    <!-- UNLOCK VAULT -->
+    <div id="vault-lock-screen" style="background:#010a08;border:1px solid rgba(0,255,136,0.1);border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div class="adm-section-title" style="margin-top:0;">// UNLOCK VAULT</div>
+      <div class="adm-field">
+        <label>ENTER YOUR PIN</label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="vault-pin-unlock" class="adm-input" placeholder="PIN..." style="flex:1;"
+            onkeydown="if(event.key==='Enter') vaultUnlock()">
+          <button onclick="vaultUnlock()" class="adm-btn adm-btn-primary">🔓 Open</button>
+        </div>
+      </div>
+      <div id="vault-unlock-error" style="color:#ff5050;font-size:11px;margin-top:6px;display:none;">
+        ✗ Wrong PIN
+      </div>
+    </div>
+    <div id="vault-open-content" style="display:none;"></div>
+    `}
+  `;
+}
+
+function vaultCreate() {
+  const pin  = document.getElementById("vault-pin-create")?.value;
+  const conf = document.getElementById("vault-pin-confirm")?.value;
+  if (!pin || pin.length < 4) { showToast("PIN must be at least 4 characters", "error"); return; }
+  if (pin !== conf) { showToast("PINs don't match", "error"); return; }
+  vaultSave({
+    entries: [
+      { id: 1, label: "GitHub Token", value: "", category: "github" },
+      { id: 2, label: "Gemini API Key", value: "", category: "ai" },
+      { id: 3, label: "Groq API Key", value: "", category: "ai" },
+      { id: 4, label: "OpenRouter API Key", value: "", category: "ai" },
+      { id: 5, label: "DeepSeek API Key", value: "", category: "ai" },
+      { id: 6, label: "HuggingFace API Key", value: "", category: "ai" },
+    ]
+  }, pin);
+  showToast("✓ Vault created!", "success");
+  renderVaultPanel();
+}
+
+function vaultUnlock() {
+  const pin = document.getElementById("vault-pin-unlock")?.value;
+  if (!pin) return;
+  const data = vaultLoad(pin);
+  if (!data) {
+    document.getElementById("vault-unlock-error").style.display = "block";
+    return;
+  }
+  document.getElementById("vault-lock-screen").style.display = "none";
+  document.getElementById("vault-open-content").style.display = "block";
+  renderVaultOpen(data, pin);
+}
+
+function renderVaultOpen(data, pin) {
+  const el = document.getElementById("vault-open-content");
+  if (!el) return;
+
+  const categories = { github: "🐙 GitHub", ai: "🤖 AI Keys", custom: "📝 Custom" };
+  const grouped = {};
+  (data.entries || []).forEach(e => {
+    const cat = e.category || "custom";
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(e);
+  });
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="color:#00ff88;font-size:13px;font-weight:700;">🔓 Vault Unlocked</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="vaultAddEntry('${pin}')" class="adm-btn adm-btn-ghost" style="font-size:10px;padding:5px 10px;">+ Add Entry</button>
+        <button onclick="vaultLock()" class="adm-btn adm-btn-danger" style="font-size:10px;padding:5px 10px;">🔒 Lock</button>
+      </div>
+    </div>
+
+    ${Object.entries(grouped).map(([cat, entries]) => `
+      <div style="margin-bottom:16px;">
+        <div class="adm-section-title" style="margin-top:0;">${categories[cat] || cat}</div>
+        ${entries.map(entry => `
+          <div style="background:#010a08;border:1px solid rgba(0,255,136,0.08);border-radius:8px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div style="font-size:12px;color:#c0f0d0;font-weight:600;">${entry.label}</div>
+              <div style="display:flex;gap:5px;">
+                <button onclick="vaultCopy(${entry.id},'${pin}')"
+                  style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);color:#00ff88;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">
+                  📋 Copy
+                </button>
+                <button onclick="vaultDeleteEntry(${entry.id},'${pin}')"
+                  style="background:rgba(255,50,50,0.08);border:1px solid rgba(255,50,50,0.2);color:#ff5050;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">
+                  🗑
+                </button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="password" id="vault-entry-${entry.id}"
+                value="${entry.value}"
+                class="adm-input"
+                style="flex:1;font-family:monospace;font-size:12px;"
+                placeholder="Paste your key here...">
+              <button onclick="vaultToggleShow(${entry.id})"
+                style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccc;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:12px;">
+                👁
+              </button>
+              <button onclick="vaultSaveEntry(${entry.id},'${pin}')"
+                style="background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;">
+                Save
+              </button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `).join("")}
+
+    <div style="margin-top:8px;">
+      <button onclick="vaultReset()" style="background:transparent;border:1px solid rgba(255,50,50,0.2);color:rgba(255,50,50,0.5);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:10px;font-family:inherit;">
+        ⚠ Reset & Delete Vault
+      </button>
+    </div>
+  `;
+}
+
+function vaultSaveEntry(id, pin) {
+  const data = vaultLoad(pin);
+  if (!data) return;
+  const entry = data.entries.find(e => e.id === id);
+  if (!entry) return;
+  const input = document.getElementById(`vault-entry-${id}`);
+  if (!input) return;
+  entry.value = input.value;
+  vaultSave(data, pin);
+  showToast("✓ Saved", "success");
+}
+
+function vaultCopy(id, pin) {
+  const data = vaultLoad(pin);
+  if (!data) return;
+  const entry = data.entries.find(e => e.id === id);
+  if (!entry || !entry.value) { showToast("Nothing to copy", "error"); return; }
+  navigator.clipboard.writeText(entry.value).then(() => showToast(`✓ Copied: ${entry.label}`, "success"));
+}
+
+function vaultToggleShow(id) {
+  const input = document.getElementById(`vault-entry-${id}`);
+  if (!input) return;
+  input.type = input.type === "password" ? "text" : "password";
+}
+
+function vaultAddEntry(pin) {
+  const label = prompt("Entry name (e.g. 'Firebase Key'):");
+  if (!label) return;
+  const data = vaultLoad(pin);
+  if (!data) return;
+  const newId = Math.max(0, ...data.entries.map(e => e.id)) + 1;
+  data.entries.push({ id: newId, label, value: "", category: "custom" });
+  vaultSave(data, pin);
+  renderVaultOpen(data, pin);
+}
+
+function vaultDeleteEntry(id, pin) {
+  if (!confirm("Delete this entry?")) return;
+  const data = vaultLoad(pin);
+  if (!data) return;
+  data.entries = data.entries.filter(e => e.id !== id);
+  vaultSave(data, pin);
+  renderVaultOpen(data, pin);
+}
+
+function vaultLock() {
+  renderVaultPanel();
+  showToast("🔒 Vault locked", "info");
+}
+
+function vaultReset() {
+  if (!confirm("This will DELETE your entire vault permanently. Are you sure?")) return;
+  localStorage.removeItem(VAULT_KEY);
+  showToast("Vault deleted", "info");
+  renderVaultPanel();
+}
 function admTab(name, btn) {
   document.querySelectorAll(".adm-tab").forEach(t => t.classList.remove("active"));
   document.querySelectorAll(".adm-nav-btn").forEach(b => b.classList.remove("active"));
@@ -363,6 +613,7 @@ function admTab(name, btn) {
   const el = document.getElementById("adm-stats-content");
   if (el) { el.innerHTML = "<div class='adm-feed-loading'>// Loading stats...</div>"; buildAdStatsDashboard().then(html => { el.innerHTML = html; }); }
 }
+  if (name === "vault") renderVaultPanel();
   if (name === "ads") {
     const el = document.getElementById("adm-ads-content");
     if (el && typeof buildAdControlPanel === "function") {

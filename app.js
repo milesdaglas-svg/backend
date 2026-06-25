@@ -625,7 +625,124 @@ app.get("/api/github/blame", async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+/* =========================
+   TERMINAL — REAL SHELL
+========================= */
+const { exec, spawn } = require("child_process");
+const fs  = require("fs");
+const os  = require("os");
+const http = require("http");
 
+const PROJECT_DIR = path.join(os.tmpdir(), "vscode_godmode_project");
+if (!fs.existsSync(PROJECT_DIR)) fs.mkdirSync(PROJECT_DIR, { recursive: true });
+
+const runningProcesses = {};
+
+app.post("/api/terminal/sync", (req, res) => {
+  const { files } = req.body;
+  if (!files || typeof files !== "object") return res.status(400).json({ error: "No files provided" });
+  try {
+    Object.entries(files).forEach(([filePath, content]) => {
+      if (filePath.endsWith("/.gitkeep")) return;
+      const full = path.join(PROJECT_DIR, filePath);
+      const dir  = path.dirname(full);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(full, content || "", "utf8");
+    });
+    res.json({ success: true, synced: Object.keys(files).length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/terminal/exec", (req, res) => {
+  const { command, cwd } = req.body;
+  if (!command) return res.status(400).json({ error: "No command" });
+  const blocked = /^(rm\s+-rf\s+\/|mkfs|dd\s+if=)/.test(command.trim());
+  if (blocked) return res.status(403).json({ error: "Command blocked for safety" });
+  const workDir = cwd || PROJECT_DIR;
+  if (!fs.existsSync(workDir)) fs.mkdirSync(workDir, { recursive: true });
+  exec(command, {
+    cwd: workDir, timeout: 60000, maxBuffer: 1024 * 1024,
+    env: { ...process.env, PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", HOME: os.homedir(), TERM: "xterm" }
+  }, (err, stdout, stderr) => {
+    res.json({ stdout: stdout || "", stderr: stderr || "", exitCode: err?.code ?? 0, error: err && err.killed ? "Command timed out" : null });
+  });
+});
+
+app.post("/api/terminal/start", (req, res) => {
+  const { command, port, cwd } = req.body;
+  if (!command || !port) return res.status(400).json({ error: "command and port required" });
+  const workDir = cwd || PROJECT_DIR;
+  const key = `proc_${port}`;
+  if (runningProcesses[key]) { try { runningProcesses[key].kill(); } catch {} delete runningProcesses[key]; }
+  const parts = command.split(" ");
+  const proc  = spawn(parts[0], parts.slice(1), {
+    cwd: workDir, shell: true,
+    env: { ...process.env, PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", HOME: os.homedir(), PORT: String(port) }
+  });
+  runningProcesses[key] = proc;
+  const logs = [];
+  proc.stdout.on("data", d => logs.push(d.toString()));
+  proc.stderr.on("data", d => logs.push(d.toString()));
+  proc.on("exit", code => { logs.push(`Process exited with code ${code}`); delete runningProcesses[key]; });
+  setTimeout(() => {
+    res.json({ success: true, pid: proc.pid, port, logs: logs.join(""), previewUrl: `https://backend-forz.onrender.com/preview/${port}/` });
+  }, 3000);
+});
+
+app.get("/api/terminal/logs/:port", (req, res) => {
+  const key = `proc_${req.params.port}`;
+  const proc = runningProcesses[key];
+  if (!proc) return res.json({ running: false, logs: "No process running on that port" });
+  res.json({ running: true, pid: proc.pid });
+});
+
+app.post("/api/terminal/kill", (req, res) => {
+  const { port } = req.body;
+  const key = `proc_${port}`;
+  if (runningProcesses[key]) {
+    try { runningProcesses[key].kill(); } catch {}
+    delete runningProcesses[key];
+    res.json({ success: true, message: `Process on port ${port} killed` });
+  } else {
+    res.json({ success: false, message: "No process found" });
+  }
+});
+
+app.use("/preview/:port", (req, res) => {
+  const port = parseInt(req.params.port);
+  if (isNaN(port) || port < 1024 || port > 65535) return res.status(400).send("Invalid port");
+  const options = {
+    hostname: "127.0.0.1", port,
+    path: req.url.replace(`/preview/${port}`, "") || "/",
+    method: req.method,
+    headers: { ...req.headers, host: `localhost:${port}` }
+  };
+  const proxy = http.request(options, proxyRes => {
+    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    proxyRes.pipe(res, { end: true });
+  });
+  proxy.on("error", () => {
+    res.status(502).send(`<html><body style="background:#0d1117;color:#ff5050;font-family:monospace;padding:40px;text-align:center;"><h2>⚠ Server not ready yet</h2><p>Your server on port ${port} isn't responding.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 24px;background:#1f6feb;color:white;border:none;border-radius:8px;cursor:pointer;">🔄 Retry</button></body></html>`);
+  });
+  if (req.body) proxy.write(JSON.stringify(req.body));
+  proxy.end();
+});
+
+app.get("/api/terminal/listfiles", (req, res) => {
+  function walk(dir, base = "") {
+    const result = {};
+    if (!fs.existsSync(dir)) return result;
+    fs.readdirSync(dir).forEach(name => {
+      if (name === "node_modules" || name === ".git") return;
+      const full = path.join(dir, name);
+      const rel  = base ? base + "/" + name : name;
+      if (fs.statSync(full).isDirectory()) Object.assign(result, walk(full, rel));
+      else { try { result[rel] = fs.readFileSync(full, "utf8"); } catch {} }
+    });
+    return result;
+  }
+  res.json({ files: walk(PROJECT_DIR) });
+});
 
 const PORT = process.env.PORT || 3000;
 

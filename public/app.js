@@ -422,6 +422,108 @@ function updatePreview(page=currentFile){
   <\/script>`;
   iframe.srcdoc=html;
 }
+/* =========================
+   FULL PREVIEW
+========================= */
+let fpRotated = false;
+let fpCurrentDevice = "desktop";
+
+const FP_DEVICES = {
+  desktop:    { w: "100%",  h: "100%",  label: "Desktop (Full)",    chrome: false },
+  laptop:     { w: "1280px", h: "800px", label: "Laptop 1280×800",  chrome: true  },
+  tablet:     { w: "768px",  h: "1024px",label: "iPad 768×1024",    chrome: true  },
+  mobile:     { w: "390px",  h: "844px", label: "iPhone 14 390×844",chrome: true  },
+  smallphone: { w: "360px",  h: "740px", label: "Android 360×740",  chrome: true  },
+};
+
+function openFullPreview() {
+  const modal = document.getElementById("fullPreviewModal");
+  const fullFrame = document.getElementById("fullPreviewFrame");
+  const srcFrame  = document.getElementById("previewFrame");
+  if (!modal || !fullFrame) return;
+
+  // copy src from main preview iframe
+  fullFrame.src = srcFrame?.src || "about:blank";
+  modal.style.display = "flex";
+  fpRotated = false;
+  setPreviewDevice("desktop");
+}
+
+function closeFullPreview() {
+  const modal = document.getElementById("fullPreviewModal");
+  if (modal) modal.style.display = "none";
+}
+
+function setPreviewDevice(device) {
+  fpCurrentDevice = device;
+  const cfg   = FP_DEVICES[device];
+  const frame = document.getElementById("fullPreviewFrame");
+  const frmDiv= document.getElementById("fp-device-frame");
+  const chrTop= document.getElementById("fp-chrome-top");
+  const chrBot= document.getElementById("fp-chrome-bottom");
+  const label = document.getElementById("fp-size-label");
+  const stage = document.getElementById("fp-stage");
+
+  if (!frame || !frmDiv) return;
+
+  // update button styles
+  Object.keys(FP_DEVICES).forEach(d => {
+    const btn = document.getElementById("fpd-" + d);
+    if (!btn) return;
+    if (d === device) {
+      btn.style.borderColor = "#58a6ff";
+      btn.style.background  = "rgba(88,166,255,0.15)";
+      btn.style.color       = "#58a6ff";
+    } else {
+      btn.style.borderColor = "#1a2332";
+      btn.style.background  = "transparent";
+      btn.style.color       = "#8b949e";
+    }
+  });
+
+  if (label) label.innerText = cfg.label;
+
+  if (device === "desktop") {
+    // full screen — no frame
+    frmDiv.style.width  = "100%";
+    frmDiv.style.height = "100%";
+    frmDiv.style.boxShadow = "none";
+    frmDiv.style.borderRadius = "0";
+    frame.style.width  = "100%";
+    frame.style.height = "100%";
+    stage.style.padding = "0";
+    stage.style.alignItems = "stretch";
+    if (chrTop) chrTop.style.display = "none";
+    if (chrBot) chrBot.style.display = "none";
+  } else {
+    // device frame
+    let w = fpRotated ? cfg.h : cfg.w;
+    let h = fpRotated ? cfg.w : cfg.h;
+    frmDiv.style.width  = w;
+    frmDiv.style.height = "auto";
+    frmDiv.style.boxShadow = "0 20px 60px rgba(0,0,0,0.7), 0 0 0 2px #1a2332";
+    frmDiv.style.borderRadius = cfg.chrome ? "20px" : "8px";
+    frame.style.width  = w;
+    frame.style.height = h;
+    stage.style.padding = "20px";
+    stage.style.alignItems = "center";
+    if (chrTop) chrTop.style.display = cfg.chrome ? "flex" : "none";
+    if (chrBot) chrBot.style.display = cfg.chrome ? "flex" : "none";
+  }
+}
+
+function rotatePreview() {
+  fpRotated = !fpRotated;
+  setPreviewDevice(fpCurrentDevice);
+}
+
+// close on Escape key
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("fullPreviewModal");
+    if (modal && modal.style.display !== "none") closeFullPreview();
+  }
+});
 window.addEventListener("message",(e)=>{
   if(e.data.type==="navigate"&&files[e.data.page])openFile(e.data.page);
   if(e.data.type==="console")logConsole(e.data.level,e.data.msg);

@@ -304,6 +304,21 @@ async function runRealCommand(command) {
   }
 
   // detect server start commands — node/npm start/python etc
+  // auto-sync before npm/node commands if no package.json on server yet
+  if (/^(npm|node|npx)/.test(command)) {
+    printTermLine(`<span class="t-info">⟳ Syncing project files to server first...</span>`);
+    try {
+      const syncR = await fetch(TERM_SERVER + "/api/terminal/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: window.files || {} })
+      });
+      const syncD = await syncR.json();
+      printTermLine(`<span class="t-ok">✓ Synced ${syncD.synced} files</span>`);
+    } catch(e) {
+      printTermLine(`<span class="t-warn">⚠ Sync failed — continuing anyway</span>`);
+    }
+  }
   const isServerCmd = /^(node|npm\s+start|npm\s+run|python|python3|php\s+-S|ruby|bun\s+run)/.test(command);
   if (isServerCmd) {
     // detect port from command or default to 3000
@@ -347,7 +362,8 @@ async function runRealCommand(command) {
   }
 
   // all other commands — run normally
-  printTermLine(`<span class="t-muted">running...</span>`);
+  printTermLine(`<span class="t-muted">$ ${escTerm(command)}</span>`);
+  printTermLine(`<span class="t-muted">running on server...</span>`);
   try {
     const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
       method: "POST",
@@ -361,7 +377,7 @@ async function runRealCommand(command) {
     if (!d.stdout && !d.stderr && !d.error) printTermLine(`<span class="t-ok">✓ Done</span>`);
 
     // after npm install or git clone — auto pull files into editor
-    if (/^(npm install|git clone|npx create)/.test(command)) {
+    if (/^(npm install|npm i|git clone|npx create)/.test(command)) {
       setTimeout(async () => {
         printTermLine(`<span class="t-info">⟳ Syncing new files to editor...</span>`);
         try {

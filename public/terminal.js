@@ -304,9 +304,9 @@ async function runRealCommand(command) {
   }
 
   // detect server start commands — node/npm start/python etc
-  // auto-sync before npm/node commands if no package.json on server yet
+  // auto-sync before npm/node commands
   if (/^(npm|node|npx)/.test(command)) {
-    printTermLine(`<span class="t-info">⟳ Syncing project files to server first...</span>`);
+    printTermLine(`<span class="t-info">⟳ Syncing your files to server first...</span>`);
     try {
       const syncR = await fetch(TERM_SERVER + "/api/terminal/sync", {
         method: "POST",
@@ -314,9 +314,17 @@ async function runRealCommand(command) {
         body: JSON.stringify({ files: window.files || {} })
       });
       const syncD = await syncR.json();
-      printTermLine(`<span class="t-ok">✓ Synced ${syncD.synced} files</span>`);
+      if (syncD.synced > 0) {
+        printTermLine(`<span class="t-ok">✓ Synced ${syncD.synced} files to server</span>`);
+      } else {
+        printTermLine(`<span class="t-warn">⚠ No files to sync — create a package.json first</span>`);
+        if (command.trim() === "npm install") {
+          printTermLine(`<span class="t-info">💡 Tip: Add a package.json file to your project first, then run npm install</span>`);
+          return;
+        }
+      }
     } catch(e) {
-      printTermLine(`<span class="t-warn">⚠ Sync failed — continuing anyway</span>`);
+      printTermLine(`<span class="t-warn">⚠ Sync failed — ${escTerm(e.message)}</span>`);
     }
   }
   const isServerCmd = /^(node|npm\s+start|npm\s+run|python|python3|php\s+-S|ruby|bun\s+run)/.test(command);
@@ -379,19 +387,28 @@ async function runRealCommand(command) {
     // after npm install or git clone — auto pull files into editor
     if (/^(npm install|npm i|git clone|npx create)/.test(command)) {
       setTimeout(async () => {
-        printTermLine(`<span class="t-info">⟳ Syncing new files to editor...</span>`);
+        printTermLine(`<span class="t-info">⟳ Pulling new files into editor...</span>`);
         try {
           const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles");
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {
-            Object.assign(window.files, d2.files);
+            // merge into window.files
+            Object.keys(d2.files).forEach(f => { window.files[f] = d2.files[f]; });
             if (typeof saveToStorage === "function") saveToStorage();
             if (typeof renderFiles   === "function") renderFiles();
             if (typeof renderTabs    === "function") renderTabs();
-            printTermLine(`<span class="t-ok">✓ ${Object.keys(d2.files).length} files synced to editor</span>`);
+            // open first HTML file automatically
+            const htmlFile = Object.keys(d2.files).find(f => f.endsWith(".html"));
+            if (htmlFile && typeof openFile === "function") openFile(htmlFile);
+            printTermLine(`<span class="t-ok">✓ ${Object.keys(d2.files).length} files pulled into editor</span>`);
+            showToast(`✓ ${Object.keys(d2.files).length} files loaded from server`, "success");
+          } else {
+            printTermLine(`<span class="t-warn">⚠ No files found on server yet</span>`);
           }
-        } catch {}
-      }, 2000);
+        } catch(e) {
+          printTermLine(`<span class="t-err">✗ Pull failed: ${escTerm(e.message)}</span>`);
+        }
+      }, 3000);
     }
   } catch(e) {
     printTermLine(`<span class="t-err">✗ Server error: ${escTerm(e.message)}</span>`);

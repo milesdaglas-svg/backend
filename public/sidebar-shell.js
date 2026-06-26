@@ -215,8 +215,9 @@ function updateStatusBar() {
   const errEl  = document.getElementById("sbErrors");
   const bar    = document.getElementById("statusBar");
 
-  if (fileEl) fileEl.innerText = currentFile || "";
-  if (langEl && typeof getLang === "function") langEl.innerText = getLang(currentFile || "");
+  const cf = typeof currentFile !== "undefined" ? currentFile : "";
+  if (fileEl) fileEl.innerText = cf;
+  if (langEl && typeof getLang === "function") langEl.innerText = getLang(cf);
 
   const ed = window.editor1;
   if (posEl && ed && typeof ed.getPosition === "function") {

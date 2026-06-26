@@ -375,63 +375,7 @@
     </div>
   </div>
 
-   id="fpd-tablet"
-          style="padding:4px 10px;border-radius:5px;border:1px solid #1a2332;background:transparent;color:#8b949e;cursor:pointer;font-size:11px;">
-          📱 Tablet
-        </button>
-        <button onclick="setPreviewDevice('mobile')" id="fpd-mobile"
-          style="padding:4px 10px;border-radius:5px;border:1px solid #1a2332;background:transparent;color:#8b949e;cursor:pointer;font-size:11px;">
-          📱 Mobile
-        </button>
-        <button onclick="setPreviewDevice('smallphone')" id="fpd-smallphone"
-          style="padding:4px 10px;border-radius:5px;border:1px solid #1a2332;background:transparent;color:#8b949e;cursor:pointer;font-size:11px;">
-          📱 Small
-        </button>
-      </div>
-
-      <!-- SIZE LABEL -->
-      <span id="fp-size-label" style="font-size:11px;color:#3a5a8a;margin-left:4px;"></span>
-
-      <div style="flex:1;"></div>
-
-      <!-- ROTATE -->
-      <button onclick="rotatePreview()" title="Rotate"
-        style="background:rgba(255,255,255,0.05);border:1px solid #1a2332;color:#8b949e;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:12px;">
-        ⟳ Rotate
-      </button>
-
-      <!-- CLOSE -->
-      <button onclick="closeFullPreview()"
-        style="background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);color:#ff5050;padding:4px 12px;border-radius:5px;cursor:pointer;font-size:12px;">
-        ✕ Close
-      </button>
-    </div>
-
-    <!-- PREVIEW AREA -->
-    <div id="fp-stage" style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px;background:#0a0a0f;">
-      <div id="fp-device-frame" style="position:relative;transition:all 0.3s ease;">
-        <!-- DEVICE CHROME TOP -->
-        <div id="fp-chrome-top" style="display:none;background:#1a1a2e;border-radius:20px 20px 0 0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;gap:5px;">
-            <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
-          </div>
-          <div id="fp-url-bar" style="flex:1;margin:0 12px;background:#0d1117;border-radius:4px;padding:3px 10px;font-size:11px;color:#8b949e;text-align:center;">localhost</div>
-          <div style="width:50px;"></div>
-        </div>
-        <!-- IFRAME -->
-        <iframe id="fullPreviewFrame"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-          style="display:block;border:none;background:white;">
-        </iframe>
-        <!-- DEVICE CHROME BOTTOM -->
-        <div id="fp-chrome-bottom" style="display:none;background:#1a1a2e;border-radius:0 0 20px 20px;padding:12px;display:flex;justify-content:center;">
-          <div style="width:40px;height:5px;background:#333;border-radius:3px;"></div>
-        </div>
-      </div>
-    </div>
-  </div>
+   
 
   <div class="resizer desktop-only hidden" id="aiResizer"></div>
   <div id="aiPanel" class="collapsed">

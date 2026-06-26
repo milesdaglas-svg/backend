@@ -355,7 +355,8 @@ function closeAdminPanel() {
    Stores API keys + tokens
    Encrypted with a PIN
 ========================= */
-const VAULT_KEY = "vscode_godmode_vault";
+const VAULT_KEY        = "vscode_godmode_vault";
+const VAULT_CLOUD_DOC  = "admin_vault";
 
 function vaultEncrypt(text, pin) {
   // simple XOR cipher with pin — not bank-level but good enough for personal use
@@ -387,16 +388,46 @@ function vaultLoad(pin) {
   } catch { return null; }
 }
 
-function vaultSave(data, pin) {
+async function vaultSave(data, pin) {
   const encrypted = vaultEncrypt(JSON.stringify(data), pin);
   localStorage.setItem(VAULT_KEY, encrypted);
+  // also save to Firebase so it syncs across all devices
+  try {
+    const db = await initAnnounceDB();
+    if (!db) return;
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", VAULT_CLOUD_DOC), {
+      data: encrypted,
+      updatedAt: Date.now()
+    });
+  } catch {}
 }
 
-function renderVaultPanel() {
+async function vaultLoadFromCloud() {
+  try {
+    const db = await initAnnounceDB();
+    if (!db) return null;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", VAULT_CLOUD_DOC));
+    if (snap.exists()) {
+      const cloudData = snap.data().data;
+      // also update local cache
+      localStorage.setItem(VAULT_KEY, cloudData);
+      return cloudData;
+    }
+  } catch {}
+  return null;
+}
+
+async function renderVaultPanel() {
   const el = document.getElementById("adm-vault-content");
   if (!el) return;
 
-  const hasVault = !!localStorage.getItem(VAULT_KEY);
+  el.innerHTML = `<div style="color:#3a5a8a;font-size:12px;padding:20px;text-align:center;">⟳ Loading vault...</div>`;
+
+  // try to pull from cloud first
+  const cloudRaw = await vaultLoadFromCloud();
+  const hasVault = !!(cloudRaw || localStorage.getItem(VAULT_KEY));
 
   el.innerHTML = `
     <div class="adm-section-title">// 🔐 SECRET VAULT</div>
@@ -469,6 +500,7 @@ function vaultUnlock() {
     document.getElementById("vault-unlock-error").style.display = "block";
     return;
   }
+  _vaultSessionPin = pin; // remember for auto-sync this session
   document.getElementById("vault-lock-screen").style.display = "none";
   document.getElementById("vault-open-content").style.display = "block";
   renderVaultOpen(data, pin);
@@ -586,12 +618,59 @@ function vaultDeleteEntry(id, pin) {
   vaultSave(data, pin);
   renderVaultOpen(data, pin);
 }
+/* auto-sync API keys from settings into vault without needing PIN
+   only works if vault already exists and PIN was entered this session */
+let _vaultSessionPin = null; // remember PIN for this session only
 
+async function autoSyncKeysToVault(keys) {
+  if (!_vaultSessionPin) return; // vault not unlocked this session
+  const data = vaultLoad(_vaultSessionPin);
+  if (!data) return;
+  // update matching entries
+  const keyMap = {
+    gemini: "Gemini API Key",
+    groq: "Groq API Key",
+    openrouter: "OpenRouter API Key",
+    deepseek: "DeepSeek API Key",
+    huggingface: "HuggingFace API Key"
+  };
+  let changed = false;
+  Object.entries(keyMap).forEach(([k, label]) => {
+    if (!keys[k]) return;
+    const entry = data.entries.find(e => e.label === label);
+    if (entry) { entry.value = keys[k]; changed = true; }
+  });
+  if (changed) {
+    await vaultSave(data, _vaultSessionPin);
+    showToast("✓ API keys synced to vault", "success");
+  }
+}
 function vaultLock() {
   renderVaultPanel();
   showToast("🔒 Vault locked", "info");
 }
-
+function copyKeyToVault(inputId, label) {
+  const val = document.getElementById(inputId)?.value.trim();
+  if (!val) { showToast("Enter a key first", "error"); return; }
+  if (!_vaultSessionPin) {
+    showToast("Open Admin → Vault and unlock it first", "error");
+    return;
+  }
+  const data = vaultLoad(_vaultSessionPin);
+  if (!data) return;
+  const entry = data.entries.find(e => e.label === label);
+  if (entry) {
+    entry.value = val;
+    vaultSave(data, _vaultSessionPin);
+    showToast(`✓ ${label} saved to vault`, "success");
+  } else {
+    // add new entry
+    const newId = Math.max(0, ...data.entries.map(e => e.id)) + 1;
+    data.entries.push({ id: newId, label, value: val, category: "ai" });
+    vaultSave(data, _vaultSessionPin);
+    showToast(`✓ ${label} added to vault`, "success");
+  }
+}
 function vaultReset() {
   if (!confirm("This will DELETE your entire vault permanently. Are you sure?")) return;
   localStorage.removeItem(VAULT_KEY);

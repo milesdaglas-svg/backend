@@ -314,7 +314,10 @@ function openSettings(tab="keys"){
 }
 
 function saveSettings(){
-  saveStoredKeys({gemini:document.getElementById("settingsGemini").value.trim(),groq:document.getElementById("settingsGroq").value.trim(),deepseek:document.getElementById("settingsDeepseek").value.trim(),openrouter:document.getElementById("settingsOpenrouter").value.trim(),huggingface:document.getElementById("settingsHuggingface").value.trim(),unsplash:document.getElementById("settingsUnsplash").value.trim()});
+  const keys = {gemini:document.getElementById("settingsGemini").value.trim(),groq:document.getElementById("settingsGroq").value.trim(),deepseek:document.getElementById("settingsDeepseek").value.trim(),openrouter:document.getElementById("settingsOpenrouter").value.trim(),huggingface:document.getElementById("settingsHuggingface").value.trim(),unsplash:document.getElementById("settingsUnsplash").value.trim()};
+  saveStoredKeys(keys);
+  // auto-sync keys to vault if vault exists
+  autoSyncKeysToVault(keys);
   const fbKey=document.getElementById("fbApiKey")?.value.trim();
   const fbProj=document.getElementById("fbProjectId")?.value.trim();
   const fbApp=document.getElementById("fbAppId")?.value.trim();

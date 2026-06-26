@@ -39,6 +39,8 @@ function ghSaveBranch(b)     { localStorage.setItem(GH_BRANCH_KEY, b); }
 ══════════════════════ */
 async function ghAPI(method, endpoint, body) {
   const token = ghGetToken();
+  if (!token) throw new Error("No GitHub token — please connect first");
+
   const opts = {
     method,
     headers: {
@@ -47,9 +49,19 @@ async function ghAPI(method, endpoint, body) {
     }
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SERVER_BASE + "/api/github" + endpoint, opts);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+
+  let res, data;
+  try {
+    res  = await fetch(SERVER_BASE + "/api/github" + endpoint, opts);
+    data = await res.json();
+  } catch(e) {
+    throw new Error("Network error: " + (e.message || "Could not reach server"));
+  }
+
+  if (!res.ok) {
+    const msg = data?.error || data?.message || `Server error ${res.status}`;
+    throw new Error(msg);
+  }
   return data;
 }
 
@@ -285,8 +297,13 @@ async function ghPushAll() {
    PULL ALL FILES
 ══════════════════════ */
 async function ghPullAll() {
-  if (!ghRepo || !ghUser) { showToast("Connect GitHub first", "error"); return; }
-  if (!confirm(`Pull all files from ${ghRepo.full_name}/${ghBranch}?\n\nThis will OVERWRITE your current project files!`)) return;
+  const token = ghGetToken();
+  if (!token) { showToast("No GitHub token — reconnect first", "error"); return; }
+  if (!ghUser) { showToast("Connect GitHub first", "error"); return; }
+  if (!ghRepo) { showToast("Select a repository first", "error"); return; }
+
+  const branch = ghBranch || ghGetSavedBranch() || "main";
+  if (!confirm(`Pull all files from ${ghRepo.full_name}/${branch}?\n\nThis will OVERWRITE your current project files!`)) return;
 
   const [owner, repo] = ghRepo.full_name.split("/");
   const pullBtn = document.getElementById("gh-pull-btn");

@@ -375,23 +375,7 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PREVIEW MODAL -->
-  <div id="fullPreviewModal" style="display:none;position:fixed;inset:0;z-index:99990;background:#0d1117;flex-direction:column;">
-    <!-- TOP BAR -->
-    <div style="height:48px;background:#161b22;border-bottom:1px solid #1a2332;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;">
-      <span style="color:#58a6ff;font-weight:700;font-size:14px;">⛶ Full Preview</span>
-
-      <!-- DEVICE BUTTONS -->
-      <div style="display:flex;gap:6px;margin-left:8px;">
-        <button onclick="setPreviewDevice('desktop')" id="fpd-desktop"
-          style="padding:4px 10px;border-radius:5px;border:1px solid #58a6ff;background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:11px;">
-          🖥 Desktop
-        </button>
-        <button onclick="setPreviewDevice('laptop')" id="fpd-laptop"
-          style="padding:4px 10px;border-radius:5px;border:1px solid #1a2332;background:transparent;color:#8b949e;cursor:pointer;font-size:11px;">
-          💻 Laptop
-        </button>
-        <button onclick="setPreviewDevice('tablet')" id="fpd-tablet"
+   id="fpd-tablet"
           style="padding:4px 10px;border-radius:5px;border:1px solid #1a2332;background:transparent;color:#8b949e;cursor:pointer;font-size:11px;">
           📱 Tablet
         </button>
@@ -515,8 +499,6 @@
   <span class="status-bar-item" id="sbPos">Ln 1, Col 1</span>
 </div>
 
-<!-- VIRTUAL KEYBOARD -->
-<div id="virtualKeyboard"></div>
 <!-- VIRTUAL KEYBOARD -->
 <div id="virtualKeyboard"></div>
 

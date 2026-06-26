@@ -729,19 +729,32 @@ app.use("/preview/:port", (req, res) => {
 });
 
 app.get("/api/terminal/listfiles", (req, res) => {
+  // support custom cwd — so git cloned folders are read correctly
+  const customCwd = req.query.cwd;
+  const readDir = (customCwd && fs.existsSync(customCwd)) ? customCwd : PROJECT_DIR;
+
   function walk(dir, base = "") {
     const result = {};
     if (!fs.existsSync(dir)) return result;
-    fs.readdirSync(dir).forEach(name => {
-      if (name === "node_modules" || name === ".git") return;
-      const full = path.join(dir, name);
-      const rel  = base ? base + "/" + name : name;
-      if (fs.statSync(full).isDirectory()) Object.assign(result, walk(full, rel));
-      else { try { result[rel] = fs.readFileSync(full, "utf8"); } catch {} }
-    });
+    try {
+      fs.readdirSync(dir).forEach(name => {
+        if (name === "node_modules" || name === ".git" || name === ".gitignore") return;
+        const full = path.join(dir, name);
+        const rel  = base ? base + "/" + name : name;
+        try {
+          if (fs.statSync(full).isDirectory()) {
+            Object.assign(result, walk(full, rel));
+          } else {
+            // skip binary files
+            if (/\.(png|jpg|jpeg|gif|webp|ico|mp3|mp4|wav|webm|zip|tar|gz|bin|exe)$/i.test(name)) return;
+            result[rel] = fs.readFileSync(full, "utf8");
+          }
+        } catch {}
+      });
+    } catch {}
     return result;
   }
-  res.json({ files: walk(PROJECT_DIR) });
+  res.json({ files: walk(readDir), dir: readDir });
 });
 
 const PORT = process.env.PORT || 3000;

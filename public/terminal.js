@@ -295,11 +295,25 @@ async function runRealCommand(command) {
     return;
   }
 
-  // cd — update working directory
+  // cd — update working directory ON SERVER too
   if (cmd === "cd") {
     const target = command.slice(3).trim();
-    termCwd = target === ".." ? null : target;
-    printTermLine(`<span class="t-ok">✓ cwd: ${escTerm(termCwd || "/")} </span>`);
+    try {
+      const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: `cd ${target} && pwd`, cwd: termCwd })
+      });
+      const d = await r.json();
+      if (d.stdout && !d.error) {
+        termCwd = d.stdout.trim();
+        printTermLine(`<span class="t-ok">✓ ${escTerm(termCwd)}</span>`);
+      } else {
+        printTermLine(`<span class="t-err">✗ cd: ${escTerm(target)}: No such directory</span>`);
+      }
+    } catch(e) {
+      printTermLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`);
+    }
     return;
   }
 
@@ -369,9 +383,19 @@ async function runRealCommand(command) {
     return;
   }
 
-  // all other commands — run normally
+  // all other commands — run on server with streaming-like output
   printTermLine(`<span class="t-muted">$ ${escTerm(command)}</span>`);
-  printTermLine(`<span class="t-muted">running on server...</span>`);
+
+  // show animated running indicator
+  const runId = "run-" + Date.now();
+  printTermLine(`<span id="${runId}" class="t-muted">⠋ running...</span>`);
+  const spinFrames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
+  let spinIdx = 0;
+  const spinner = setInterval(() => {
+    const el = document.getElementById(runId);
+    if (el) el.innerHTML = `<span class="t-muted">${spinFrames[spinIdx++ % spinFrames.length]} running...</span>`;
+  }, 120);
+
   try {
     const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
       method: "POST",
@@ -379,38 +403,64 @@ async function runRealCommand(command) {
       body: JSON.stringify({ command, cwd: termCwd })
     });
     const d = await r.json();
-    if (d.stdout) printTermLine(`<span class="t-log">${escTerm(d.stdout)}</span>`);
-    if (d.stderr) printTermLine(`<span class="t-warn">${escTerm(d.stderr)}</span>`);
-    if (d.error)  printTermLine(`<span class="t-err">✗ ${escTerm(d.error)}</span>`);
-    if (!d.stdout && !d.stderr && !d.error) printTermLine(`<span class="t-ok">✓ Done</span>`);
 
-    // after npm install or git clone — auto pull files into editor
-    if (/^(npm install|npm i|git clone|npx create)/.test(command)) {
+    // remove spinner
+    clearInterval(spinner);
+    const spinEl = document.getElementById(runId);
+    if (spinEl) spinEl.remove();
+
+    // print output line by line so it looks real
+    if (d.stdout) {
+      d.stdout.split("\n").forEach(line => {
+        if (line.trim()) printTermLine(`<span class="t-log">${escTerm(line)}</span>`);
+      });
+    }
+    if (d.stderr) {
+      d.stderr.split("\n").forEach(line => {
+        if (line.trim()) {
+          const isErr = /error|failed|not found/i.test(line);
+          printTermLine(`<span class="${isErr ? "t-err" : "t-warn"}">${escTerm(line)}</span>`);
+        }
+      });
+    }
+    if (d.error && !d.stderr)  printTermLine(`<span class="t-err">✗ ${escTerm(d.error)}</span>`);
+    if (!d.stdout && !d.stderr && !d.error) printTermLine(`<span class="t-ok">✓ Done (exit 0)</span>`);
+
+    // after git clone or npm install — pull ALL files from server into editor
+    if (/^(npm install|npm i|git clone|npx create|npx)/.test(command)) {
+      printTermLine(`<span class="t-info">⟳ Scanning server for files...</span>`);
       setTimeout(async () => {
-        printTermLine(`<span class="t-info">⟳ Pulling new files into editor...</span>`);
         try {
-          const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles");
+          // list files from the CURRENT cwd, not just PROJECT_DIR
+          const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles?cwd=" + encodeURIComponent(termCwd || ""));
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {
-            // merge into window.files
-            Object.keys(d2.files).forEach(f => { window.files[f] = d2.files[f]; });
+            let count = 0;
+            Object.keys(d2.files).forEach(f => {
+              // skip node_modules
+              if (f.includes("node_modules/")) return;
+              window.files[f] = d2.files[f];
+              count++;
+            });
             if (typeof saveToStorage === "function") saveToStorage();
             if (typeof renderFiles   === "function") renderFiles();
             if (typeof renderTabs    === "function") renderTabs();
-            // open first HTML file automatically
-            const htmlFile = Object.keys(d2.files).find(f => f.endsWith(".html"));
+            const htmlFile = Object.keys(d2.files).find(f => f.endsWith(".html") && !f.includes("node_modules"));
             if (htmlFile && typeof openFile === "function") openFile(htmlFile);
-            printTermLine(`<span class="t-ok">✓ ${Object.keys(d2.files).length} files pulled into editor</span>`);
-            showToast(`✓ ${Object.keys(d2.files).length} files loaded from server`, "success");
+            printTermLine(`<span class="t-ok">✓ ${count} files loaded into editor sidebar</span>`);
+            if (typeof showToast === "function") showToast(`✓ ${count} files loaded`, "success");
           } else {
-            printTermLine(`<span class="t-warn">⚠ No files found on server yet</span>`);
+            printTermLine(`<span class="t-warn">⚠ No files found — try running 'pull-files' manually</span>`);
           }
         } catch(e) {
-          printTermLine(`<span class="t-err">✗ Pull failed: ${escTerm(e.message)}</span>`);
+          printTermLine(`<span class="t-err">✗ File sync failed: ${escTerm(e.message)}</span>`);
         }
-      }, 3000);
+      }, 2500);
     }
   } catch(e) {
+    clearInterval(spinner);
+    const spinEl = document.getElementById(runId);
+    if (spinEl) spinEl.remove();
     printTermLine(`<span class="t-err">✗ Server error: ${escTerm(e.message)}</span>`);
   }
 }
@@ -600,6 +650,152 @@ function toggleTerminal() {
 }
 
 /* log from preview goes to terminal too */
+/* =========================
+   FULL PREVIEW
+========================= */
+let fpRotated = false;
+let fpCurrentDevice = "desktop";
+
+const FP_DEVICES = {
+  desktop:    { w: null,     h: null,     label: "Desktop",        chrome: false },
+  laptop:     { w: 1280,     h: 800,      label: "Laptop 1280×800", chrome: true  },
+  tablet:     { w: 768,      h: 1024,     label: "iPad 768×1024",  chrome: true  },
+  mobile:     { w: 390,      h: 844,      label: "iPhone 390×844", chrome: true  },
+  smallphone: { w: 360,      h: 740,      label: "Android 360×740",chrome: true  },
+};
+
+function openFullPreview() {
+  const modal    = document.getElementById("fullPreviewModal");
+  const fullFrame= document.getElementById("fullPreviewFrame");
+  const srcFrame = document.getElementById("previewFrame");
+  if (!modal || !fullFrame) return;
+
+  // copy the EXACT same srcdoc or src from the live preview iframe
+  if (srcFrame) {
+    if (srcFrame.srcdoc) {
+      fullFrame.srcdoc = srcFrame.srcdoc;
+    } else if (srcFrame.src && srcFrame.src !== "about:blank") {
+      fullFrame.src = srcFrame.src;
+    } else {
+      // build from current file
+      if (typeof currentFile !== "undefined" && typeof files !== "undefined") {
+        const content = files[currentFile] || "";
+        fullFrame.srcdoc = content;
+      }
+    }
+  }
+
+  modal.style.display = "flex";
+  fpRotated = false;
+  setPreviewDevice("desktop");
+}
+
+function closeFullPreview() {
+  const modal = document.getElementById("fullPreviewModal");
+  if (modal) modal.style.display = "none";
+}
+
+function setPreviewDevice(device) {
+  fpCurrentDevice = device;
+  const cfg    = FP_DEVICES[device];
+  const frame  = document.getElementById("fullPreviewFrame");
+  const frmDiv = document.getElementById("fp-device-frame");
+  const chrTop = document.getElementById("fp-chrome-top");
+  const chrBot = document.getElementById("fp-chrome-bottom");
+  const label  = document.getElementById("fp-size-label");
+  const stage  = document.getElementById("fp-stage");
+  if (!frame || !frmDiv || !stage) return;
+
+  // update button styles
+  Object.keys(FP_DEVICES).forEach(d => {
+    const btn = document.getElementById("fpd-" + d);
+    if (!btn) return;
+    if (d === device) {
+      btn.style.borderColor = "#58a6ff";
+      btn.style.background  = "rgba(88,166,255,0.15)";
+      btn.style.color       = "#58a6ff";
+    } else {
+      btn.style.borderColor = "#1a2332";
+      btn.style.background  = "transparent";
+      btn.style.color       = "#8b949e";
+    }
+  });
+
+  if (label) label.innerText = cfg.label;
+
+  if (device === "desktop") {
+    // fill entire stage
+    stage.style.padding = "0";
+    stage.style.alignItems = "stretch";
+    stage.style.justifyContent = "stretch";
+    frmDiv.style.width  = "100%";
+    frmDiv.style.height = "100%";
+    frmDiv.style.boxShadow = "none";
+    frmDiv.style.borderRadius = "0";
+    frame.style.width  = "100%";
+    frame.style.height = "100%";
+    if (chrTop) chrTop.style.display = "none";
+    if (chrBot) chrBot.style.display = "none";
+  } else {
+    // device frame — scale down if screen is too small
+    let w = fpRotated ? cfg.h : cfg.w;
+    let h = fpRotated ? cfg.w : cfg.h;
+
+    // get available stage size
+    const stageW = stage.clientWidth  - 32;
+    const stageH = stage.clientHeight - 32;
+
+    // scale down to fit if needed
+    let scale = 1;
+    if (w > stageW || h > stageH) {
+      scale = Math.min(stageW / w, stageH / h);
+    }
+
+    const scaledW = Math.floor(w * scale);
+    const scaledH = Math.floor(h * scale);
+
+    stage.style.padding = "16px";
+    stage.style.alignItems = "center";
+    stage.style.justifyContent = "center";
+
+    frmDiv.style.width  = scaledW + "px";
+    frmDiv.style.height = "auto";
+    frmDiv.style.boxShadow = "0 20px 60px rgba(0,0,0,0.7),0 0 0 2px #1a2332";
+    frmDiv.style.borderRadius = cfg.chrome ? "20px" : "8px";
+
+    // iframe keeps original size then scaled via transform
+    frame.style.width  = w + "px";
+    frame.style.height = h + "px";
+    frame.style.transformOrigin = "top left";
+    frame.style.transform = `scale(${scale})`;
+
+    frmDiv.style.width  = scaledW + "px";
+    frmDiv.style.height = scaledH + (cfg.chrome ? 60 : 0) + "px";
+    frmDiv.style.overflow = "hidden";
+
+    if (chrTop) chrTop.style.display = cfg.chrome ? "flex" : "none";
+    if (chrBot) chrBot.style.display = cfg.chrome ? "flex" : "none";
+  }
+}
+
+function rotatePreview() {
+  fpRotated = !fpRotated;
+  setPreviewDevice(fpCurrentDevice);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("fullPreviewModal");
+    if (modal && modal.style.display !== "none") closeFullPreview();
+  }
+});
+
+window.addEventListener("resize", () => {
+  const modal = document.getElementById("fullPreviewModal");
+  if (modal && modal.style.display !== "none" && fpCurrentDevice !== "desktop") {
+    setPreviewDevice(fpCurrentDevice);
+  }
+});
 window.addEventListener("message", e => {
   if (e.data?.type === "console" && termOpen) {
     const lvl = e.data.level;

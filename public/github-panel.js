@@ -312,8 +312,7 @@ async function ghPullAll() {
   ghSetProgress(20);
 
   try {
-    const branch = ghBranch || ghGetSavedBranch() || "main";
-  const result = await ghAPI("POST", "/pull-all", { owner, repo, branch });
+    const result = await ghAPI("POST", "/pull-all", { owner, repo, branch });
     ghSetProgress(80);
 
     if (result.files && Object.keys(result.files).length) {

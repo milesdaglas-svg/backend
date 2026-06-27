@@ -429,9 +429,19 @@ async function runRealCommand(command) {
     // after git clone or npm install — pull ALL files from server into editor
     if (/^(npm install|npm i|git clone|npx create|npx)/.test(command)) {
       printTermLine(`<span class="t-info">⟳ Scanning server for files...</span>`);
+
+      // for git clone, extract the folder name and cd into it
+      if (command.startsWith("git clone")) {
+        const urlMatch = command.match(/git clone\s+\S+\/([\w.-]+?)(?:\.git)?\s*$/);
+        if (urlMatch) {
+          const clonedFolder = urlMatch[1];
+          termCwd = `/tmp/vscode_godmode_project/${clonedFolder}`;
+          printTermLine(`<span class="t-info">📁 Reading from: ${escTerm(termCwd)}</span>`);
+        }
+      }
+
       setTimeout(async () => {
         try {
-          // list files from the CURRENT cwd, not just PROJECT_DIR
           const r2 = await fetch(TERM_SERVER + "/api/terminal/listfiles?cwd=" + encodeURIComponent(termCwd || ""));
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {

@@ -15,6 +15,11 @@ app.get("/api/myip", async (req, res) => {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
   res.json({ ip });
 });
+
+app.get("/api/myip", async (req, res) => {
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
+  res.json({ ip });
+});
 /* =========================
    SYSTEM PROMPT
 ========================= */

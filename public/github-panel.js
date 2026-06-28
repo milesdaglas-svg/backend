@@ -316,18 +316,17 @@ async function ghPullAll() {
     ghSetProgress(80);
 
     if (result.files && Object.keys(result.files).length) {
-      // merge pulled files into project
-      if (!window.files) window.files = {};
-      Object.assign(window.files, result.files);
+      // clear existing files
+      Object.keys(files).forEach(k => delete files[k]);
+      // load pulled files
+      Object.assign(files, result.files);
+      window.files = files;
       if (typeof saveToStorage === "function") saveToStorage();
       if (typeof renderFiles === "function") renderFiles();
       if (typeof renderTabs === "function") renderTabs();
-      // open first pulled file in editor
+      // open first file in editor
       const firstFile = Object.keys(result.files)[0];
-      if (firstFile && window.editor1) {
-        if (typeof openFile === "function") openFile(firstFile);
-        else window.editor1.setValue(result.files[firstFile]);
-      }
+      if (firstFile && typeof openFile === "function") openFile(firstFile);
       ghSetProgress(100);
       ghSetStatus(`✓ Pulled ${result.count} file${result.count!==1?"s":""}`, "success");
       showToast(`✓ Pulled ${result.count} files from GitHub`, "success");

@@ -101,3 +101,58 @@
   .term-input    { font-size: 12px; }
   .t-ps1         { font-size: 10px; }
 }
+/* ══ TERMINAL v2 — TAB STYLES ══ */
+
+.term-tabs-row {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  padding: 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.term-tabs-row::-webkit-scrollbar { display: none; }
+
+.term-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255,255,255,0.3);
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: .15s;
+  height: 100%;
+}
+.term-tab-btn:hover { color: rgba(255,255,255,0.7); }
+.term-tab-btn.active {
+  color: var(--tab-color, #00ff88);
+  border-bottom-color: var(--tab-color, #00ff88);
+}
+
+.term-tab-pane {
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* PS1 PROMPTS */
+.t-ps1-cmd  { color: #00d4ff; font-weight: 700; flex-shrink: 0; white-space: nowrap; font-family: 'Share Tech Mono', monospace; }
+.t-ps1-vsc  { color: #007acc; font-weight: 700; flex-shrink: 0; white-space: nowrap; font-family: 'Share Tech Mono', monospace; }
+.t-ps1-node { color: #68d391; font-weight: 700; flex-shrink: 0; white-space: nowrap; font-family: 'Share Tech Mono', monospace; }
+
+/* HEAD VARIANTS */
+.t-head-cmd  { color: #00d4ff; font-weight: 700; }
+.t-head-vsc  { color: #007acc; font-weight: 700; }
+.t-head-node { color: #68d391; font-weight: 700; }
+
+/* OK VARIANTS */
+.t-ok-vsc  { color: #007acc; }
+.t-ok-node { color: #68d391; }
+
+/* RESULT */
+.t-result { color: #f0a050; }

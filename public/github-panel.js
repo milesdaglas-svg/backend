@@ -317,7 +317,8 @@ async function ghPullAll() {
 
     if (result.files && Object.keys(result.files).length) {
       // merge pulled files into project
-      Object.assign(window.files, result.files);
+      if (!window.files) window.files = {};
+Object.assign(window.files, result.files);
       if (typeof saveToStorage === "function") saveToStorage();
       if (typeof renderFiles === "function") renderFiles();
       if (typeof renderTabs === "function") renderTabs();

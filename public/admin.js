@@ -23,19 +23,10 @@ async function initVisitorTracking() {
   // get user IP from free API
   let ip = "unknown", country = "", city = "", isp = "";
   try {
-    const r = await fetch("https://ipapi.co/json/");
+    const r = await fetch("/api/myip");
     const d = await r.json();
     ip = d.ip || "unknown";
-    country = d.country_name || "";
-    city    = d.city || "";
-    isp     = d.org || "";
-  } catch {
-    try {
-      const r2 = await fetch("https://api.ipify.org?format=json");
-      const d2 = await r2.json();
-      ip = d2.ip || "unknown";
-    } catch {}
-  }
+  } catch {}
 
   const db = await initAnnounceDB(); if (!db) return;
 

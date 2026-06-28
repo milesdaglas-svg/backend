@@ -202,6 +202,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('vault',this)">
             <span class="adm-nav-icon">🔐</span><span>Vault</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('theme',this)">
+            <span class="adm-nav-icon">🎨</span><span>Theme</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -315,6 +318,9 @@ async function showAdminPanel() {
           <!-- ── HISTORY ── -->
           <div class="adm-tab" id="adm-tab-vault">
             <div id="adm-vault-content"></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-theme">
+            <div id="adm-theme-content"></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
@@ -671,6 +677,217 @@ function copyKeyToVault(inputId, label) {
     showToast(`✓ ${label} added to vault`, "success");
   }
 }
+/* =========================
+   THEME CUSTOMIZER
+   Syncs via Firebase globally
+========================= */
+const THEME_CLOUD_DOC = "admin_theme";
+const THEME_LOCAL_KEY = "vscode_admin_theme";
+
+const THEME_DEFAULTS = {
+  accent:     "#00ff88",
+  background: "#020c0a",
+  surface:    "#0d1117",
+  text:       "#c0f0d0",
+  border:     "#1a2332",
+  topbar:     "#161b22",
+  sidebar:    "#11161d",
+  editorBg:   "#0d1117",
+  previewBg:  "#ffffff",
+  aiPanel:    "#0b141a",
+};
+
+function getTheme() {
+  try { return { ...THEME_DEFAULTS, ...JSON.parse(localStorage.getItem(THEME_LOCAL_KEY) || "{}") }; } catch { return { ...THEME_DEFAULTS }; }
+}
+
+async function saveTheme(theme) {
+  localStorage.setItem(THEME_LOCAL_KEY, JSON.stringify(theme));
+  // sync to Firebase so all devices get same theme
+  try {
+    const db = await initAnnounceDB(); if (!db) return;
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", THEME_CLOUD_DOC), { ...theme, updatedAt: Date.now() });
+  } catch {}
+}
+
+async function loadThemeFromCloud() {
+  try {
+    const db = await initAnnounceDB(); if (!db) return null;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", THEME_CLOUD_DOC));
+    if (snap.exists()) {
+      const t = snap.data();
+      localStorage.setItem(THEME_LOCAL_KEY, JSON.stringify(t));
+      return t;
+    }
+  } catch {}
+  return null;
+}
+
+function applyTheme(theme) {
+  const r = document.documentElement.style;
+  if (theme.topbar)   { document.querySelectorAll(".topbar").forEach(el => el.style.background = theme.topbar); }
+  if (theme.sidebar)  { document.querySelectorAll(".sidebar").forEach(el => el.style.background = theme.sidebar); }
+  if (theme.surface)  { document.querySelectorAll(".preview-header,.ai-header,.console-header,.tab,.split-header").forEach(el => el.style.background = theme.surface); }
+  if (theme.editorBg) { document.querySelectorAll("#editor1,.editor-area,.editors-row").forEach(el => el.style.background = theme.editorBg); }
+  if (theme.aiPanel)  { document.querySelectorAll("#aiPanel").forEach(el => el.style.background = theme.aiPanel); }
+  if (theme.border)   { document.querySelectorAll(".topbar,.sidebar,.preview-header").forEach(el => el.style.borderColor = theme.border); }
+  if (theme.accent) {
+    document.querySelectorAll(".tab.active").forEach(el => el.style.borderTopColor = theme.accent);
+    document.querySelectorAll("#aiSend").forEach(el => el.style.background = theme.accent === "#00ff88" ? "#00a884" : theme.accent);
+  }
+  // inject CSS variables
+  document.documentElement.style.setProperty("--accent", theme.accent || "#00ff88");
+  document.documentElement.style.setProperty("--bg", theme.background || "#020c0a");
+  document.documentElement.style.setProperty("--surface", theme.surface || "#0d1117");
+  document.documentElement.style.setProperty("--text", theme.text || "#c0f0d0");
+}
+
+async function applyGlobalSettings() {
+  const cloud = await loadThemeFromCloud();
+  const theme = cloud || getTheme();
+  applyTheme(theme);
+}
+
+function renderThemePanel() {
+  const el = document.getElementById("adm-theme-content");
+  if (!el) return;
+  const theme = getTheme();
+
+  const colors = [
+    { key: "accent",    label: "Accent Color",      hint: "Buttons, highlights, active tabs" },
+    { key: "background",label: "Main Background",   hint: "Page/body background" },
+    { key: "surface",   label: "Surface / Cards",   hint: "Topbar, panels, headers" },
+    { key: "topbar",    label: "Topbar",             hint: "Top navigation bar" },
+    { key: "sidebar",   label: "Sidebar",            hint: "File explorer sidebar" },
+    { key: "editorBg",  label: "Editor Background",  hint: "Monaco editor area" },
+    { key: "aiPanel",   label: "AI Panel",           hint: "Right AI chat panel" },
+    { key: "text",      label: "Text Color",         hint: "Primary text color" },
+    { key: "border",    label: "Border Color",       hint: "Dividers and borders" },
+  ];
+
+  el.innerHTML = `
+    <div class="adm-section-title">// 🎨 APP THEME</div>
+    <div style="font-size:11px;color:rgba(0,255,136,0.3);margin-bottom:16px;">
+      Theme syncs to all devices via Firebase. Changes apply live instantly.
+    </div>
+
+    <!-- PRESETS -->
+    <div class="adm-section-title">// PRESETS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <button onclick="applyThemePreset('default')"
+        style="padding:8px 14px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        🌿 Default Green
+      </button>
+      <button onclick="applyThemePreset('ocean')"
+        style="padding:8px 14px;background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.3);color:#58a6ff;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        🌊 Ocean Blue
+      </button>
+      <button onclick="applyThemePreset('purple')"
+        style="padding:8px 14px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:#a855f7;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        💜 Purple
+      </button>
+      <button onclick="applyThemePreset('red')"
+        style="padding:8px 14px;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);color:#ff5050;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        🔴 Red
+      </button>
+      <button onclick="applyThemePreset('gold')"
+        style="padding:8px 14px;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        ✨ Gold
+      </button>
+      <button onclick="applyThemePreset('dark')"
+        style="padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#ccc;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;">
+        ⬛ Pure Dark
+      </button>
+    </div>
+
+    <!-- COLOR PICKERS -->
+    <div class="adm-section-title">// CUSTOM COLORS</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      ${colors.map(c => `
+        <div style="background:#010a08;border:1px solid rgba(0,255,136,0.08);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;">
+          <input type="color" value="${theme[c.key] || '#000000'}"
+            id="tc-${c.key}"
+            onchange="themeColorChange('${c.key}', this.value)"
+            style="width:36px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;">
+          <div style="flex:1;">
+            <div style="font-size:12px;color:#c0f0d0;font-weight:600;">${c.label}</div>
+            <div style="font-size:10px;color:#3a5a4a;">${c.hint}</div>
+          </div>
+          <span style="font-size:11px;color:#3a5a4a;font-family:monospace;" id="tc-val-${c.key}">${theme[c.key]}</span>
+        </div>
+      `).join("")}
+    </div>
+
+    <!-- SAVE BUTTON -->
+    <button onclick="saveThemeAndApply()"
+      style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(0,200,100,0.06));
+      border:1px solid rgba(0,255,136,0.3);color:#00ff88;border-radius:8px;
+      font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:1px;">
+      💾 SAVE & SYNC TO ALL DEVICES
+    </button>
+    <button onclick="resetTheme()"
+      style="width:100%;margin-top:8px;padding:10px;background:transparent;
+      border:1px solid rgba(255,80,80,0.2);color:rgba(255,80,80,0.5);border-radius:8px;
+      font-size:11px;cursor:pointer;font-family:inherit;">
+      ↺ Reset to Default
+    </button>
+    <div id="theme-save-status" style="font-size:11px;color:rgba(0,255,136,0.4);text-align:center;margin-top:8px;"></div>
+  `;
+}
+
+function themeColorChange(key, value) {
+  const valEl = document.getElementById("tc-val-" + key);
+  if (valEl) valEl.innerText = value;
+  // live preview as you pick
+  const t = getTheme();
+  t[key] = value;
+  applyTheme(t);
+}
+
+async function saveThemeAndApply() {
+  const t = { ...THEME_DEFAULTS };
+  Object.keys(THEME_DEFAULTS).forEach(key => {
+    const input = document.getElementById("tc-" + key);
+    if (input) t[key] = input.value;
+  });
+  await saveTheme(t);
+  applyTheme(t);
+  const st = document.getElementById("theme-save-status");
+  if (st) st.innerText = "✓ Saved and synced to all devices!";
+  if (typeof showToast === "function") showToast("✓ Theme saved to all devices", "success");
+}
+
+const THEME_PRESETS = {
+  default: { accent:"#00ff88", background:"#020c0a", surface:"#0d1117", topbar:"#161b22", sidebar:"#11161d", editorBg:"#0d1117", aiPanel:"#0b141a", text:"#c0f0d0", border:"#1a2332" },
+  ocean:   { accent:"#58a6ff", background:"#050d1a", surface:"#0d1b2e", topbar:"#0d1b2e", sidebar:"#081525", editorBg:"#050d1a", aiPanel:"#061220", text:"#a5c8f0", border:"#1a2a4a" },
+  purple:  { accent:"#a855f7", background:"#0a0510", surface:"#130a1f", topbar:"#130a1f", sidebar:"#0d0715", editorBg:"#0a0510", aiPanel:"#0d0818", text:"#d4aaff", border:"#2a1a3a" },
+  red:     { accent:"#ff5050", background:"#0f0505", surface:"#1a0a0a", topbar:"#1a0a0a", sidebar:"#150808", editorBg:"#0f0505", aiPanel:"#120707", text:"#ffaaaa", border:"#3a1a1a" },
+  gold:    { accent:"#ffaa00", background:"#0f0a00", surface:"#1a1200", topbar:"#1a1200", sidebar:"#150e00", editorBg:"#0f0a00", aiPanel:"#120c00", text:"#ffe599", border:"#3a2a00" },
+  dark:    { accent:"#ffffff", background:"#000000", surface:"#0a0a0a", topbar:"#111111", sidebar:"#0d0d0d", editorBg:"#000000", aiPanel:"#080808", text:"#cccccc", border:"#222222" },
+};
+
+function applyThemePreset(name) {
+  const preset = THEME_PRESETS[name];
+  if (!preset) return;
+  // update color pickers
+  Object.entries(preset).forEach(([key, val]) => {
+    const input = document.getElementById("tc-" + key);
+    const valEl = document.getElementById("tc-val-" + key);
+    if (input) input.value = val;
+    if (valEl) valEl.innerText = val;
+  });
+  applyTheme(preset);
+}
+
+async function resetTheme() {
+  if (!confirm("Reset to default theme?")) return;
+  await saveTheme(THEME_DEFAULTS);
+  applyTheme(THEME_DEFAULTS);
+  renderThemePanel();
+  if (typeof showToast === "function") showToast("Theme reset ✓", "info");
+}
 function vaultReset() {
   if (!confirm("This will DELETE your entire vault permanently. Are you sure?")) return;
   localStorage.removeItem(VAULT_KEY);
@@ -693,6 +910,7 @@ function admTab(name, btn) {
   if (el) { el.innerHTML = "<div class='adm-feed-loading'>// Loading stats...</div>"; buildAdStatsDashboard().then(html => { el.innerHTML = html; }); }
 }
   if (name === "vault") renderVaultPanel();
+  if (name === "theme") renderThemePanel();
   if (name === "ads") {
     const el = document.getElementById("adm-ads-content");
     if (el && typeof buildAdControlPanel === "function") {

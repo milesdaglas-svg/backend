@@ -429,7 +429,30 @@ function updatePreview(page=currentFile){
   html=html.replace(/<script[^>]+src=["'](?!http)([^"']+)["'][^>]*><\/script>/gi,"");
 
   let css="";Object.keys(files).forEach(f=>{if(f.endsWith(".css"))css+=`<style>${resolveMediaPaths(files[f])}</style>`;});
-  let js="";Object.keys(files).forEach(f=>{if(f.endsWith(".js")&&!f.includes("sw.js")&&files[f]!==undefined)js+=`<script>${files[f]}<\/script>`;});
+  // Only inject JS files that are linked in the HTML, not ALL js files
+  const linkedScripts=[];
+  const scriptTagRe=/<script[^>]+src=["'](?!http)([^"'?#]+\.js)[^"']*["']/gi;
+  let sm;
+  while((sm=scriptTagRe.exec(files[page]))!==null){
+    const name=sm[1].replace(/^\.?\//,"");
+    // find matching file (exact or by filename)
+    const match=Object.keys(files).find(f=>f===name||f.endsWith("/"+name));
+    if(match&&files[match])linkedScripts.push(match);
+  }
+  // if no script tags found, fall back to injecting only root-level js files (not editor files)
+  const jsFiles = linkedScripts.length>0 ? linkedScripts :
+    Object.keys(files).filter(f=>
+      f.endsWith(".js") &&
+      !f.includes("/") && // only root level
+      !["sw.js","app.js","admin.js","ai.js","terminal.js","github-panel.js",
+        "keyboard.js","media.js","bin.js","dragdrop.js","extensions.js",
+        "sidebar-shell.js","source-control.js","models.js","ad_control.js",
+        "ad_stats.js","announcements.js","extensions-pack1.js","extensions-pack2.js",
+        "extensions-pack3.js","extensions-pack4.js","extensions-pack5.js",
+        "extensions-cloud.js","main.js","check_parens.js","find_unclosed.js",
+        "track_balance.js","firebase-config.js"].includes(f)
+    );
+  let js="";jsFiles.forEach(f=>{if(files[f]!==undefined)js+=`<script>${files[f]}<\/script>`;});
   // inject scrollbar styling
   const scrollCSS=`<style>::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f1f1}::-webkit-scrollbar-thumb{background:#888;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#555}body{overflow:auto!important}</style>`;
   html=html.includes("</head>")?html.replace("</head>",css+scrollCSS+"</head>"):css+scrollCSS+html;

@@ -422,6 +422,12 @@ function updatePreview(page=currentFile){
   // Replace local media references (img/video/audio/source/link href + css url()) with base64 data URIs
   html=resolveMediaPaths(html);
 
+  // Remove external <link> tags pointing to local css files (we inject them ourselves)
+  html=html.replace(/<link[^>]+rel=["']stylesheet["'][^>]*href=["'](?!http)([^"']+)["'][^>]*\/?>/gi,"");
+  html=html.replace(/<link[^>]+href=["'](?!http)([^"']+)["'][^>]+rel=["']stylesheet["'][^>]*\/?>/gi,"");
+  // Remove external <script src=""> tags pointing to local js files (we inject them ourselves)
+  html=html.replace(/<script[^>]+src=["'](?!http)([^"']+)["'][^>]*><\/script>/gi,"");
+
   let css="";Object.keys(files).forEach(f=>{if(f.endsWith(".css"))css+=`<style>${resolveMediaPaths(files[f])}</style>`;});
   let js="";Object.keys(files).forEach(f=>{if(f.endsWith(".js")&&!f.includes("sw.js")&&files[f]!==undefined)js+=`<script>${files[f]}<\/script>`;});
   // inject scrollbar styling

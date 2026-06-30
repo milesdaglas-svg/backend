@@ -172,16 +172,37 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* ========================= MOBILE ========================= */
 @media(max-width:768px){
   .mobile-only{display:flex!important;}
-  .desktop-only{display:none!important;}
+  .desktop-only{display:flex!important;} /* show ALL buttons on mobile too */
   .mobile-nav{display:flex;}
   #terminalPanel{margin-left:0!important;width:100%!important;left:0!important;}
 
   body{height:100vh;}
   .main{height:calc(100vh - 48px - 56px);}
 
-  .topbar{padding:0 7px;}
+  /* topbar scrolls horizontally — all buttons visible */
+  .topbar{
+    padding: 0 4px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+  .topbar::-webkit-scrollbar{ display: none; }
+  .top-center{
+    gap: 2px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top-center::-webkit-scrollbar{ display: none; }
+  .top-center button{
+    padding: 4px 7px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 30px;
+  }
   .logo-text{display:none;}
-  button{padding:5px 8px;font-size:11px;}
 
   .sidebar{position:fixed;left:0;top:48px;height:calc(100vh - 48px - 56px);width:280px!important;z-index:999;transform:translateX(-100%);transition:transform .25s;}
   .sidebar.open{transform:translateX(0);}
@@ -198,9 +219,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
     white-space: nowrap;
     flex-shrink: 0;
   }
-  /* hide less important buttons on mobile to save space */
-  #fontMinusBtn, #fontPlusBtn, #formatBtn,
-  #splitBtn, #togglePreviewBtn, #imageSearchBtn{ display: none !important; }
+  
 
   /* ── ACTIVITY BAR BOTTOM BUTTON FIX ── */
   .activity-bar-bottom{
@@ -239,7 +258,39 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 }
 
 @media(max-width:420px){
-  .top-center button:nth-child(n+7){display:none;}
+  @media(max-width:768px){
+  .mobile-only{display:flex!important;}
+  .desktop-only{display:flex!important;} /* show ALL buttons on mobile too */
+  .mobile-nav{display:flex;}
+  #terminalPanel{margin-left:0!important;width:100%!important;left:0!important;}
+
+  body{height:100vh;}
+  .main{height:calc(100vh - 48px - 56px);}
+
+  /* topbar scrolls horizontally — all buttons visible */
+  .topbar{
+    padding: 0 4px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+  .topbar::-webkit-scrollbar{ display: none; }
+  .top-center{
+    gap: 2px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top-center::-webkit-scrollbar{ display: none; }
+  .top-center button{
+    padding: 4px 7px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 30px;
+  }
+  .logo-text{display:none;}
   #toggleAiBtn,#runBtn,#saveBtn{display:flex!important;}
 }
 
@@ -406,7 +457,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 /* ===== MOBILE FIXES ===== */
 @media(max-width: 768px) {
   .mobile-only { display: flex !important; }
-  .desktop-only { display: none !important; }
+  .desktop-only { display: flex !important; }
   .mobile-nav { display: flex; }
   .main { height: calc(100vh - 48px - 56px); }
   .toast { bottom: 70px; }
@@ -433,8 +484,13 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 }
 
 @media(max-width: 420px) {
-  .top-center button:nth-child(n+8) { display: none; }
-  #runBtn, #toggleAiBtn, #saveBtn, #themeBtn, #consoleToggleBtn, #settingsBtn { display: flex !important; }
+  /* show ALL buttons — swipe to see more */
+  .top-center button { 
+    padding: 3px 5px !important; 
+    font-size: 9px !important; 
+    height: 26px;
+    flex-shrink: 0;
+  }
 }
 .adsense-box{
   margin:10px;

@@ -152,6 +152,8 @@ const BASH_CMDS = {
   history         — command history`,
 
   ls: (args) => {
+    // if we have a server cwd, run real ls on server
+    if (termCwd) { runServerCommand("ls " + (args[0]||""), "bash"); return ""; }
     const prefix = args[0] ? args[0].replace(/\/?$/, "/") : "";
     const fileList = typeof files !== "undefined" ? Object.keys(files) : [];
     const matching = fileList.filter(f => {
@@ -681,14 +683,28 @@ async function runServerCommand(command, tab) {
 
   if (cmd === "cd") {
     const target = command.slice(3).trim();
+    // build absolute path
+    let newPath;
+    if (!target || target === "~") {
+      newPath = TERM_SERVER.includes("render") ? "/tmp/vscode_godmode_project" : "~";
+    } else if (target.startsWith("/")) {
+      newPath = target;
+    } else {
+      const base = termCwd || "/tmp/vscode_godmode_project";
+      newPath = base.replace(/\/$/, "") + "/" + target;
+    }
     try {
       const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
         method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ command: `cd ${target} && pwd`, cwd: termCwd })
+        body: JSON.stringify({ command: `cd "${newPath}" && pwd`, cwd: termCwd || "/tmp/vscode_godmode_project" })
       });
       const d = await r.json();
-      if (d.stdout && !d.error) { termCwd = d.stdout.trim(); printLine(`<span class="t-ok">✓ ${escTerm(termCwd)}</span>`, tab); }
-      else printLine(`<span class="t-err">✗ cd: ${escTerm(target)}: No such directory</span>`, tab);
+      if (d.stdout && !d.stderr.includes("No such")) {
+        termCwd = d.stdout.trim();
+        printLine(`<span class="t-ok">✓ ${escTerm(termCwd)}</span>`, tab);
+      } else {
+        printLine(`<span class="t-err">✗ cd: ${escTerm(target)}: No such file or directory</span>`, tab);
+      }
     } catch(e) { printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, tab); }
     return;
   }
@@ -771,8 +787,10 @@ async function runServerCommand(command, tab) {
       if (command.startsWith("git clone")) {
         const urlMatch = command.match(/git clone\s+\S+\/([\w.-]+?)(?:\.git)?\s*$/);
         if (urlMatch) {
-          termCwd = `/tmp/vscode_godmode_project/${urlMatch[1]}`;
-          printLine(`<span class="t-info">📁 Reading: ${escTerm(termCwd)}</span>`, tab);
+          const clonedFolder = urlMatch[1];
+          termCwd = `/tmp/vscode_godmode_project/${clonedFolder}`;
+          printLine(`<span class="t-ok">✓ Auto cd into: ${escTerm(termCwd)}</span>`, tab);
+          printLine(`<span class="t-info">📁 Reading files from: ${escTerm(termCwd)}</span>`, tab);
         }
       }
       setTimeout(async () => {
@@ -781,10 +799,12 @@ async function runServerCommand(command, tab) {
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {
             let count = 0;
+            if (!window.files) window.files = {};
             Object.keys(d2.files).forEach(f => {
               if (f.includes("node_modules/")) return;
-              if (!window.files) window.files = {};
-              window.files[f] = d2.files[f]; count++;
+              window.files[f] = d2.files[f];
+              files[f] = d2.files[f];
+              count++;
             });
             if (typeof saveToStorage==="function") saveToStorage();
             if (typeof renderFiles==="function") renderFiles();

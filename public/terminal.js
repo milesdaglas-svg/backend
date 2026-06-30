@@ -1040,7 +1040,8 @@ function toggleTerminal() {
   const panel = document.getElementById("terminalPanel");
   if (!panel) return;
   termOpen = !termOpen;
-  panel.style.height = termOpen ? "280px" : "0px";
+  const isMobile = window.innerWidth <= 768;
+  panel.style.height = termOpen ? (isMobile ? "55vh" : "280px") : "0px";
   panel.style.borderTopWidth = termOpen ? "2px" : "0px";
   if (termOpen) {
     buildTerminal();

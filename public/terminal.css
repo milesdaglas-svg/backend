@@ -96,10 +96,44 @@
 
 /* MOBILE */
 @media(max-width: 768px){
-  #terminalPanel { font-size: 11px; width: 100%!important; margin-left: 0!important; position: relative; z-index: 3; }
-  .term-output   { padding: 6px 8px; }
-  .term-input    { font-size: 12px; }
-  .t-ps1         { font-size: 10px; }
+  #terminalPanel {
+    font-size: 11px;
+    width: 100% !important;
+    margin-left: 0 !important;
+    position: fixed !important;
+    bottom: 56px !important; /* above mobile nav bar */
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 997 !important; /* below sidebar (999) but above content */
+    height: 0px;
+    max-height: 60vh !important;
+    border-top: 2px solid #1f6feb;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+  }
+  #terminalPanel .term-titlebar {
+    height: 36px;
+  }
+  .term-tab-btn {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+  }
+  .term-tabs-row {
+    gap: 1px !important;
+  }
+  .term-output {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .term-input {
+    font-size: 12px;
+  }
+  .t-ps1, .t-ps1-cmd, .t-ps1-vsc, .t-ps1-node {
+    font-size: 10px;
+  }
+  .term-btn {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+  }
 }
 /* ══ TERMINAL v2 — TAB STYLES ══ */
 

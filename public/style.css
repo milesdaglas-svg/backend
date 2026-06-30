@@ -10,9 +10,11 @@ body{height:100vh;overflow:hidden;background:#0d1117;color:white;}
 .toast.info   {background:#1a3a5c;border-left:3px solid #3498db;}
 
 /* ========================= TOPBAR ========================= */
-.topbar{height:48px;background:#161b22;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-bottom:1px solid #222;box-shadow:0 2px 10px rgba(0,0,0,.5);gap:8px;overflow-x:auto;flex-shrink:0;}
+.topbar{height:48px;background:#161b22;display:flex;align-items:center;justify-content:space-between;padding:0 6px;border-bottom:1px solid #222;box-shadow:0 2px 10px rgba(0,0,0,.5);gap:4px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.topbar::-webkit-scrollbar{display:none;}
 .top-left{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.top-center{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;}
+.top-center{display:flex;gap:3px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+.top-center::-webkit-scrollbar{display:none;}
 .logo{font-size:14px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:4px;}
 .logo-text{background:linear-gradient(45deg,#00f0ff,#7a5cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 
@@ -186,6 +188,28 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
   #terminalPanel{position:relative;z-index:1;width:100%;}
   .activity-bar{z-index:2;position:relative;}
   .main-layout{padding-bottom:0;}
+
+  /* ── TOPBAR MOBILE FIX ── */
+  .topbar{ padding: 0 4px; gap: 2px; }
+  .top-center{ gap: 2px; }
+  .top-center button{
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  /* hide less important buttons on mobile to save space */
+  #fontMinusBtn, #fontPlusBtn, #formatBtn,
+  #splitBtn, #togglePreviewBtn, #imageSearchBtn{ display: none !important; }
+
+  /* ── ACTIVITY BAR BOTTOM BUTTON FIX ── */
+  .activity-bar-bottom{
+    padding-bottom: 60px !important; /* above mobile nav */
+  }
+  .activity-bar{
+    height: calc(100vh - 48px - 56px) !important;
+    overflow-y: auto;
+  }
 
   .resizer{display:none;}
 

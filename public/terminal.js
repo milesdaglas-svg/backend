@@ -12,6 +12,15 @@ let termOpen      = false;
 let termCwd       = null;
 let termActiveTab = "bash";
 
+/* ══════════════════════
+   DEVICE FILESYSTEM
+   File System Access API
+══════════════════════ */
+let deviceRootHandle = null;   // the granted root folder handle
+let deviceCwd        = null;   // current device directory handle
+let deviceCwdPath    = "";     // current path string e.g. "Downloads/MyProject"
+let deviceMode       = false;  // true = navigating device, false = server mode
+
 // Per-tab state
 const termState = {
   bash: { history: [], histIdx: 0, output: [] },
@@ -86,7 +95,8 @@ function printWelcome(tab) {
       `<span class="t-head">┌─────────────────────────────────────┐</span>`,
       `<span class="t-head">│  🐧 BASH TERMINAL  — Linux Shell    │</span>`,
       `<span class="t-head">└─────────────────────────────────────┘</span>`,
-      `<span class="t-muted">Runs real commands on the server. Try: <span class="t-cmd">help</span></span>`,
+      `<span class="t-muted">Server mode: real commands run on Render. Try: <span class="t-cmd">ls</span> or <span class="t-cmd">git clone [url]</span></span>`,
+      `<span class="t-muted">📁 Device mode: click <span class="t-cmd">Mount</span> button to navigate your real phone/PC files</span>`,
       ``
     ],
     cmd: [
@@ -152,8 +162,6 @@ const BASH_CMDS = {
   history         — command history`,
 
   ls: (args) => {
-    // if we have a server cwd, run real ls on server
-    if (termCwd) { runServerCommand("ls " + (args[0]||""), "bash"); return ""; }
     const prefix = args[0] ? args[0].replace(/\/?$/, "/") : "";
     const fileList = typeof files !== "undefined" ? Object.keys(files) : [];
     const matching = fileList.filter(f => {
@@ -683,28 +691,14 @@ async function runServerCommand(command, tab) {
 
   if (cmd === "cd") {
     const target = command.slice(3).trim();
-    // build absolute path
-    let newPath;
-    if (!target || target === "~") {
-      newPath = TERM_SERVER.includes("render") ? "/tmp/vscode_godmode_project" : "~";
-    } else if (target.startsWith("/")) {
-      newPath = target;
-    } else {
-      const base = termCwd || "/tmp/vscode_godmode_project";
-      newPath = base.replace(/\/$/, "") + "/" + target;
-    }
     try {
       const r = await fetch(TERM_SERVER + "/api/terminal/exec", {
         method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ command: `cd "${newPath}" && pwd`, cwd: termCwd || "/tmp/vscode_godmode_project" })
+        body: JSON.stringify({ command: `cd ${target} && pwd`, cwd: termCwd })
       });
       const d = await r.json();
-      if (d.stdout && !d.stderr.includes("No such")) {
-        termCwd = d.stdout.trim();
-        printLine(`<span class="t-ok">✓ ${escTerm(termCwd)}</span>`, tab);
-      } else {
-        printLine(`<span class="t-err">✗ cd: ${escTerm(target)}: No such file or directory</span>`, tab);
-      }
+      if (d.stdout && !d.error) { termCwd = d.stdout.trim(); printLine(`<span class="t-ok">✓ ${escTerm(termCwd)}</span>`, tab); }
+      else printLine(`<span class="t-err">✗ cd: ${escTerm(target)}: No such directory</span>`, tab);
     } catch(e) { printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, tab); }
     return;
   }
@@ -787,10 +781,8 @@ async function runServerCommand(command, tab) {
       if (command.startsWith("git clone")) {
         const urlMatch = command.match(/git clone\s+\S+\/([\w.-]+?)(?:\.git)?\s*$/);
         if (urlMatch) {
-          const clonedFolder = urlMatch[1];
-          termCwd = `/tmp/vscode_godmode_project/${clonedFolder}`;
-          printLine(`<span class="t-ok">✓ Auto cd into: ${escTerm(termCwd)}</span>`, tab);
-          printLine(`<span class="t-info">📁 Reading files from: ${escTerm(termCwd)}</span>`, tab);
+          termCwd = `/tmp/vscode_godmode_project/${urlMatch[1]}`;
+          printLine(`<span class="t-info">📁 Reading: ${escTerm(termCwd)}</span>`, tab);
         }
       }
       setTimeout(async () => {
@@ -799,12 +791,10 @@ async function runServerCommand(command, tab) {
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {
             let count = 0;
-            if (!window.files) window.files = {};
             Object.keys(d2.files).forEach(f => {
               if (f.includes("node_modules/")) return;
-              window.files[f] = d2.files[f];
-              files[f] = d2.files[f];
-              count++;
+              if (!window.files) window.files = {};
+              window.files[f] = d2.files[f]; count++;
             });
             if (typeof saveToStorage==="function") saveToStorage();
             if (typeof renderFiles==="function") renderFiles();
@@ -822,6 +812,267 @@ async function runServerCommand(command, tab) {
     document.getElementById(runId)?.remove();
     printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, tab);
   }
+}
+
+/* ══════════════════════
+   DEVICE FILESYSTEM
+   Real phone/PC file access
+   via File System Access API
+══════════════════════ */
+
+async function mountDeviceFolder() {
+  if (!window.showDirectoryPicker) {
+    printLine(`<span class="t-err">✗ Your browser doesn't support File System Access.</span>`, "bash");
+    printLine(`<span class="t-warn">Use Chrome or Edge on Android/PC.</span>`, "bash");
+    return;
+  }
+  try {
+    printLine(`<span class="t-info">📂 Opening folder picker — select your root folder (e.g. Internal Storage, C:\\Users\\you)...</span>`, "bash");
+    const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+    deviceRootHandle = handle;
+    deviceCwd        = handle;
+    deviceCwdPath    = handle.name;
+    deviceMode       = true;
+    updateDevicePS1();
+    printLine(`<span class="t-ok">✓ Mounted: <span class="t-path">${escTerm(handle.name)}</span></span>`, "bash");
+    printLine(`<span class="t-muted">Device mode active. Commands now navigate your real device. Type <span class="t-cmd">unmount</span> to go back to server.</span>`, "bash");
+    await deviceLS([]);
+  } catch(e) {
+    if (e.name === "AbortError") printLine(`<span class="t-warn">⚠ Folder picker cancelled.</span>`, "bash");
+    else printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, "bash");
+  }
+}
+
+function unmountDevice() {
+  deviceRootHandle = null;
+  deviceCwd        = null;
+  deviceCwdPath    = "";
+  deviceMode       = false;
+  updateDevicePS1();
+  printLine(`<span class="t-ok">✓ Unmounted device. Back to server mode.</span>`, "bash");
+}
+
+function updateDevicePS1() {
+  const shortPath = deviceMode
+    ? `device:/${deviceCwdPath}`
+    : (termCwd ? termCwd.replace("/tmp/vscode_godmode_project", "~") : "~");
+  document.querySelectorAll(".term-tab-pane[data-tab='bash'] .t-ps1").forEach(el => {
+    el.textContent = `user@godmode:${shortPath}$ `;
+  });
+  // also update the inline prompt in the input row
+  const inputRow = document.querySelector(".term-tab-pane[data-tab='bash'] .term-input-row .t-ps1");
+  if (inputRow) inputRow.textContent = `user@godmode:${shortPath}$ `;
+}
+
+async function getDeviceEntries(handle) {
+  const entries = [];
+  for await (const [name, h] of handle.entries()) {
+    entries.push({ name, kind: h.kind, handle: h });
+  }
+  return entries.sort((a,b) => {
+    if (a.kind !== b.kind) return a.kind === "directory" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+async function deviceLS(args) {
+  if (!deviceCwd) return;
+  try {
+    const entries = await getDeviceEntries(deviceCwd);
+    if (!entries.length) { printLine(`<span class="t-muted">(empty folder)</span>`, "bash"); return; }
+    const dirs  = entries.filter(e => e.kind === "directory");
+    const fls   = entries.filter(e => e.kind === "file");
+    let out = `<span class="t-muted">total ${entries.length} (${dirs.length} dirs, ${fls.length} files) — ${escTerm(deviceCwdPath)}</span>\n`;
+    dirs.forEach(e => { out += `<span class="t-dir">📁 ${escTerm(e.name)}/</span>\n`; });
+    fls.forEach(e  => { out += `<span class="t-file">📄 ${escTerm(e.name)}</span>\n`; });
+    printLine(out, "bash");
+  } catch(e) { printLine(`<span class="t-err">✗ ls: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceCD(args) {
+  if (!deviceCwd) return;
+  const target = args[0];
+  if (!target || target === "~" || target === "/") {
+    deviceCwd     = deviceRootHandle;
+    deviceCwdPath = deviceRootHandle.name;
+    updateDevicePS1();
+    printLine(`<span class="t-ok">✓ ${escTerm(deviceCwdPath)}</span>`, "bash");
+    return;
+  }
+  if (target === "..") {
+    // go up one level
+    const parts = deviceCwdPath.split("/");
+    if (parts.length <= 1) {
+      deviceCwd     = deviceRootHandle;
+      deviceCwdPath = deviceRootHandle.name;
+    } else {
+      parts.pop();
+      // navigate from root to reconstruct parent handle
+      let h = deviceRootHandle;
+      for (const part of parts.slice(1)) {
+        try { h = await h.getDirectoryHandle(part); } catch { break; }
+      }
+      deviceCwd     = h;
+      deviceCwdPath = parts.join("/");
+    }
+    updateDevicePS1();
+    printLine(`<span class="t-ok">✓ ${escTerm(deviceCwdPath)}</span>`, "bash");
+    return;
+  }
+  // navigate into subfolder
+  try {
+    const newHandle = await deviceCwd.getDirectoryHandle(target);
+    deviceCwd     = newHandle;
+    deviceCwdPath = deviceCwdPath + "/" + target;
+    updateDevicePS1();
+    printLine(`<span class="t-ok">✓ ${escTerm(deviceCwdPath)}</span>`, "bash");
+  } catch(e) {
+    printLine(`<span class="t-err">cd: ${escTerm(target)}: No such directory</span>`, "bash");
+  }
+}
+
+async function deviceCAT(args) {
+  if (!deviceCwd || !args[0]) { printLine(`<span class="t-err">Usage: cat [file]</span>`, "bash"); return; }
+  try {
+    const fileHandle = await deviceCwd.getFileHandle(args[0]);
+    const file       = await fileHandle.getFile();
+    const text       = await file.text();
+    printLine(`<span class="t-muted">// ${escTerm(args[0])} (${file.size} bytes)</span>\n${escTerm(text)}`, "bash");
+  } catch(e) { printLine(`<span class="t-err">cat: ${escTerm(args[0])}: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function devicePWD() {
+  printLine(`<span class="t-path">${escTerm(deviceCwdPath)}</span>`, "bash");
+}
+
+async function deviceMKDIR(args) {
+  if (!args[0]) { printLine(`<span class="t-err">Usage: mkdir [name]</span>`, "bash"); return; }
+  try {
+    await deviceCwd.getDirectoryHandle(args[0], { create: true });
+    printLine(`<span class="t-ok">✓ mkdir: created '${escTerm(args[0])}'</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">mkdir: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceRM(args) {
+  if (!args[0]) { printLine(`<span class="t-err">Usage: rm [file]</span>`, "bash"); return; }
+  try {
+    await deviceCwd.removeEntry(args[0], { recursive: args.includes("-rf") || args.includes("-r") });
+    printLine(`<span class="t-ok">✓ removed '${escTerm(args[0])}'</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">rm: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceCP(args) {
+  if (!args[0] || !args[1]) { printLine(`<span class="t-err">Usage: cp [src] [dst]</span>`, "bash"); return; }
+  try {
+    const srcHandle  = await deviceCwd.getFileHandle(args[0]);
+    const srcFile    = await srcHandle.getFile();
+    const srcText    = await srcFile.text();
+    const dstHandle  = await deviceCwd.getFileHandle(args[1], { create: true });
+    const writable   = await dstHandle.createWritable();
+    await writable.write(srcText);
+    await writable.close();
+    printLine(`<span class="t-ok">✓ '${escTerm(args[0])}' → '${escTerm(args[1])}'</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">cp: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceMV(args) {
+  if (!args[0] || !args[1]) { printLine(`<span class="t-err">Usage: mv [src] [dst]</span>`, "bash"); return; }
+  try {
+    // copy then delete
+    const srcHandle = await deviceCwd.getFileHandle(args[0]);
+    const srcFile   = await srcHandle.getFile();
+    const srcText   = await srcFile.text();
+    const dstHandle = await deviceCwd.getFileHandle(args[1], { create: true });
+    const writable  = await dstHandle.createWritable();
+    await writable.write(srcText);
+    await writable.close();
+    await deviceCwd.removeEntry(args[0]);
+    printLine(`<span class="t-ok">✓ '${escTerm(args[0])}' → '${escTerm(args[1])}'</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">mv: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceFIND(args) {
+  if (!args[0]) { printLine(`<span class="t-err">Usage: find [name]</span>`, "bash"); return; }
+  const q = args[0].toLowerCase();
+  const results = [];
+  async function walk(handle, path) {
+    for await (const [name, h] of handle.entries()) {
+      const fullPath = path + "/" + name;
+      if (name.toLowerCase().includes(q)) results.push({ path: fullPath, kind: h.kind });
+      if (h.kind === "directory" && results.length < 200) await walk(h, fullPath);
+    }
+  }
+  printLine(`<span class="t-info">⟳ Searching...</span>`, "bash");
+  await walk(deviceCwd, deviceCwdPath);
+  if (!results.length) { printLine(`<span class="t-warn">find: no matches for '${escTerm(args[0])}'</span>`, "bash"); return; }
+  results.forEach(r => {
+    printLine(`<span class="${r.kind==="directory"?"t-dir":"t-file"}">${escTerm(r.path)}${r.kind==="directory"?"/":""}</span>`, "bash");
+  });
+  printLine(`<span class="t-muted">${results.length} result(s)</span>`, "bash");
+}
+
+async function deviceOpenInEditor(args) {
+  if (!args[0]) { printLine(`<span class="t-err">Usage: open [file]</span>`, "bash"); return; }
+  try {
+    const fileHandle = await deviceCwd.getFileHandle(args[0]);
+    const file       = await fileHandle.getFile();
+    const text       = await file.text();
+    const path       = deviceCwdPath + "/" + args[0];
+    if (typeof files !== "undefined") {
+      files[args[0]] = text;
+      if (typeof saveToStorage === "function") saveToStorage();
+      if (typeof renderFiles === "function") renderFiles();
+      if (typeof openFile === "function") openFile(args[0]);
+    }
+    printLine(`<span class="t-ok-vsc">✓ Opened '${escTerm(args[0])}' in editor</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">open: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function deviceUploadToServer(args) {
+  if (!deviceCwd) return;
+  printLine(`<span class="t-info">⟳ Reading device files...</span>`, "bash");
+  const collected = {};
+  async function walk(handle, base) {
+    for await (const [name, h] of handle.entries()) {
+      if (name === "node_modules" || name === ".git") continue;
+      const rel = base ? base + "/" + name : name;
+      if (h.kind === "file") {
+        try {
+          const file = await h.getFile();
+          if (file.size < 5 * 1024 * 1024) { // skip files >5MB
+            collected[rel] = await file.text();
+          }
+        } catch {}
+      } else {
+        await walk(h, rel);
+      }
+    }
+  }
+  const folderName = args[0] ? args[0] : "";
+  const startHandle = folderName
+    ? await deviceCwd.getDirectoryHandle(folderName).catch(() => deviceCwd)
+    : deviceCwd;
+  await walk(startHandle, "");
+  const count = Object.keys(collected).length;
+  printLine(`<span class="t-info">⟳ Uploading ${count} files to server...</span>`, "bash");
+  try {
+    const r = await fetch(TERM_SERVER + "/api/terminal/sync", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files: collected })
+    });
+    const d = await r.json();
+    // also load into editor
+    if (typeof files !== "undefined") {
+      Object.assign(files, collected);
+      if (typeof saveToStorage === "function") saveToStorage();
+      if (typeof renderFiles === "function") renderFiles();
+    }
+    // set cwd to the uploaded folder name
+    const folderKey = Object.keys(collected)[0]?.split("/")[0] || "";
+    if (folderKey) termCwd = `/tmp/vscode_godmode_project/${folderKey}`;
+    printLine(`<span class="t-ok">✓ Uploaded ${d.synced} files to server</span>`, "bash");
+    printLine(`<span class="t-muted">Now run: <span class="t-cmd">npm install && npm start</span> or whatever the project needs</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">✗ Upload failed: ${escTerm(e.message)}</span>`, "bash"); }
 }
 
 /* ══════════════════════
@@ -848,14 +1099,55 @@ function execTermCommand(raw, tab) {
 
   if (tab === "bash") {
     if (cmd === "clear" || cmd === "cls") { clearTab("bash"); return; }
-    if (cmd === "history") { const r = BASH_CMDS.history(args, "bash"); if(r) printLine(r, "bash"); return; }
-    if (BASH_CMDS[cmd]) {
-      const result = BASH_CMDS[cmd](args);
-      if (result) printLine(result, "bash");
-    } else {
-      // send to real server
-      runServerCommand(trimmed, "bash");
+
+    // ── DEVICE MOUNT COMMANDS (always available) ──
+    if (cmd === "mount" || trimmed === "mount-device") { mountDeviceFolder(); return; }
+    if (cmd === "unmount") { unmountDevice(); return; }
+
+    // ── DEVICE MODE — intercept filesystem commands ──
+    if (deviceMode) {
+      if (cmd === "ls" || cmd === "dir")     { deviceLS(args); return; }
+      if (cmd === "cd")                       { deviceCD(args); return; }
+      if (cmd === "pwd")                      { devicePWD(); return; }
+      if (cmd === "cat")                      { deviceCAT(args); return; }
+      if (cmd === "mkdir")                    { deviceMKDIR(args); return; }
+      if (cmd === "rm")                       { deviceRM(args); return; }
+      if (cmd === "cp")                       { deviceCP(args); return; }
+      if (cmd === "mv")                       { deviceMV(args); return; }
+      if (cmd === "find")                     { deviceFIND(args); return; }
+      if (cmd === "open")                     { deviceOpenInEditor(args); return; }
+      if (cmd === "upload" || cmd === "upload-to-server") { deviceUploadToServer(args); return; }
+      if (cmd === "help") {
+        printLine(`<span class="t-head">// DEVICE MODE — Commands</span>
+<span class="t-cmd">Navigation:</span>
+  ls              — list files in current device folder
+  cd [folder]     — enter folder
+  cd ..           — go up one level
+  pwd             — show current path
+
+<span class="t-cmd">Files:</span>
+  cat [file]      — read file contents
+  mkdir [name]    — create folder on device
+  rm [file]       — delete file from device
+  cp [src] [dst]  — copy file
+  mv [src] [dst]  — move/rename file
+  find [name]     — search recursively
+  open [file]     — open file in editor
+
+<span class="t-cmd">Run Projects:</span>
+  upload          — upload current folder to server then run it
+  upload [folder] — upload specific subfolder to server
+
+<span class="t-cmd">Exit:</span>
+  unmount         — exit device mode, back to server`, "bash");
+        return;
+      }
+      printLine(`<span class="t-warn">⚠ '${escTerm(cmd)}' not available in device mode. Type <span class="t-cmd">help</span> or <span class="t-cmd">unmount</span> to go back to server.</span>`, "bash");
+      return;
     }
+
+    // ── SERVER MODE — send everything to real server ──
+    runServerCommand(trimmed, "bash");
     return;
   }
 
@@ -933,6 +1225,7 @@ function buildTerminal() {
           </button>`).join("")}
       </div>
       <div class="term-actions">
+        <button class="term-btn" onclick="mountDeviceFolder()" title="Mount device folder" style="background:#1a3a2a;color:#00ff88;">📁 Mount</button>
         <button class="term-btn" onclick="clearTab(termActiveTab)">⌫ Clear</button>
         <button class="term-btn" onclick="toggleTerminal()">✕</button>
       </div>
@@ -1040,8 +1333,7 @@ function toggleTerminal() {
   const panel = document.getElementById("terminalPanel");
   if (!panel) return;
   termOpen = !termOpen;
-  const isMobile = window.innerWidth <= 768;
-  panel.style.height = termOpen ? (isMobile ? "55vh" : "280px") : "0px";
+  panel.style.height = termOpen ? "280px" : "0px";
   panel.style.borderTopWidth = termOpen ? "2px" : "0px";
   if (termOpen) {
     buildTerminal();

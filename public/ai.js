@@ -202,12 +202,26 @@ CRITICAL RULES:
 
 /* ===== MAIN CALL ===== */
 async function callAI({provider,model,prompt,currentFile,currentCode,files,history}){
-  if(SERVER_URL){
+  // if user is logged in — use backend with your API keys (free for user)
+  if(currentAiUser){
     try{
-      const res=await fetch(SERVER_URL+"/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider,model,prompt,currentFile,currentCode,files,history}),signal:AbortSignal.timeout(8000)});
-      if(res.ok){const d=await res.json();if(d&&!d.error)return d;}
-    }catch{console.warn("Server unreachable");}
+      const backendUrl = "https://backend-forz.onrender.com";
+      const res = await fetch(backendUrl+"/ai", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          provider, model, prompt, currentFile, currentCode, files, history,
+          aiUser: { username: currentAiUser.username } // send user token
+        }),
+        signal: AbortSignal.timeout(60000)
+      });
+      if(res.ok){
+        const d = await res.json();
+        if(d && !d.error) return d;
+      }
+    } catch(e){ console.warn("Backend unreachable, falling back:", e.message); }
   }
+  // not logged in — use their own API keys directly
   return await callDirect({provider,model,prompt,currentFile,currentCode,files,history});
 }
 

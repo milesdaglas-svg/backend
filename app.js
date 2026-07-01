@@ -100,10 +100,15 @@ function safeParseJSON(text) {
 
 app.post("/ai", async (req, res) => {
   try {
-    const { provider, model, prompt, currentFile, currentCode, files } = req.body;
+    const { provider, model, prompt, currentFile, currentCode, files, aiUser } = req.body;
 
     if (!provider || !model || !prompt) {
       return res.json({ reply: "Missing provider, model or prompt", changes: [] });
+    }
+
+    // verify user is logged in via Firebase before giving free AI access
+    if (!aiUser || !aiUser.username) {
+      return res.json({ reply: "⚠ Please log in to the AI chat to use the AI assistant.", changes: [] });
     }
 
     const userMessage = `

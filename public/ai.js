@@ -13,6 +13,113 @@ function getFirebaseConfig(){
   try{return JSON.parse(localStorage.getItem("vscode_firebase")||"null");}catch{return null;}
 }
 
+/* ===== USER AUTH ===== */
+let currentAiUser = null;
+
+function getAiUser(){
+  try{ return JSON.parse(localStorage.getItem("ai_user")||"null"); }catch{ return null; }
+}
+function saveAiUser(u){ localStorage.setItem("ai_user", JSON.stringify(u)); }
+function logoutAiUser(){
+  localStorage.removeItem("ai_user");
+  currentAiUser = null;
+  history = [];
+  document.getElementById("aiChat").innerHTML = "";
+  renderAiLoginUI();
+  showToast("Logged out ✓", "info");
+}
+
+async function hashPassword(password){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function aiRegister(username, password){
+  if(!username||!password) return showToast("Enter username and password","error");
+  if(password.length < 4) return showToast("Password too short (min 4 chars)","error");
+  if(!await initFirebase()) return showToast("Firebase not ready","error");
+  const{collection,getDocs,query,where,addDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  // check if username taken
+  const q = query(collection(firebaseDB,"ai_users"), where("username","==",username.toLowerCase()));
+  const snap = await getDocs(q);
+  if(!snap.empty) return showToast("Username already taken","error");
+  const hashed = await hashPassword(password);
+  await addDoc(collection(firebaseDB,"ai_users"),{
+    username: username.toLowerCase(),
+    displayName: username,
+    password: hashed,
+    createdAt: Date.now()
+  });
+  const user = { username: username.toLowerCase(), displayName: username };
+  saveAiUser(user);
+  currentAiUser = user;
+  showToast(`✓ Account created! Welcome ${username}`, "success");
+  renderAiUserHeader();
+  await loadUserChat();
+}
+
+async function aiLogin(username, password){
+  if(!username||!password) return showToast("Enter username and password","error");
+  if(!await initFirebase()) return showToast("Firebase not ready","error");
+  const{collection,getDocs,query,where}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const q = query(collection(firebaseDB,"ai_users"), where("username","==",username.toLowerCase()));
+  const snap = await getDocs(q);
+  if(snap.empty) return showToast("Username not found","error");
+  const userData = snap.docs[0].data();
+  const hashed = await hashPassword(password);
+  if(userData.password !== hashed) return showToast("Wrong password","error");
+  const user = { username: username.toLowerCase(), displayName: userData.displayName };
+  saveAiUser(user);
+  currentAiUser = user;
+  showToast(`✓ Welcome back, ${userData.displayName}!`, "success");
+  renderAiUserHeader();
+  await loadUserChat();
+}
+
+function renderAiLoginUI(){
+  const chat = document.getElementById("aiChat");
+  if(!chat) return;
+  chat.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px;padding:20px 10px;max-width:320px;margin:0 auto;">
+      <div style="text-align:center;font-size:22px;margin-bottom:4px;">🤖</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;color:#ccc;">AI Chat — Sign In</div>
+      <div style="font-size:11px;color:#555;text-align:center;">Your chat history is private and saved to your account</div>
+      <input id="ai-login-user" type="text" placeholder="Username"
+        style="padding:10px;border-radius:8px;border:1px solid #333;background:#111b21;color:white;font-size:13px;outline:none;width:100%;">
+      <input id="ai-login-pass" type="password" placeholder="Password"
+        style="padding:10px;border-radius:8px;border:1px solid #333;background:#111b21;color:white;font-size:13px;outline:none;width:100%;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="aiLoginFromUI()" style="flex:1;padding:10px;background:#00a884;border-radius:8px;font-size:13px;font-weight:600;">Login</button>
+        <button onclick="aiRegisterFromUI()" style="flex:1;padding:10px;background:#1f6feb;border-radius:8px;font-size:13px;font-weight:600;">Register</button>
+      </div>
+      <div style="font-size:10px;color:#444;text-align:center;">No email needed — just username & password</div>
+    </div>`;
+}
+
+function renderAiUserHeader(){
+  const chat = document.getElementById("aiChat");
+  if(!chat) return;
+  chat.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#111b21;border-radius:8px;margin-bottom:8px;flex-shrink:0;">
+      <span style="font-size:12px;color:#00a884;">👤 ${escapeHtml(currentAiUser?.displayName||"")}</span>
+      <button onclick="logoutAiUser()" style="padding:3px 10px;font-size:11px;background:#2a1a1a;color:#f85149;border-radius:6px;">Logout</button>
+    </div>`;
+}
+
+async function aiLoginFromUI(){
+  const u = document.getElementById("ai-login-user")?.value.trim();
+  const p = document.getElementById("ai-login-pass")?.value;
+  await aiLogin(u, p);
+}
+
+async function aiRegisterFromUI(){
+  const u = document.getElementById("ai-login-user")?.value.trim();
+  const p = document.getElementById("ai-login-pass")?.value;
+  await aiRegister(u, p);
+}
+
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
 async function initFirebase(){
   const cfg=getFirebaseConfig();
   if(!cfg||!cfg.apiKey) return false;
@@ -29,18 +136,50 @@ async function initFirebase(){
 
 async function saveConversationToCloud(sessionId,messages){
   if(!await initFirebase())return;
-  try{const{collection,addDoc}=window._fb;await addDoc(collection(firebaseDB,"conversations"),{sessionId,messages,timestamp:Date.now()});}
-  catch(e){console.warn("Cloud save:",e.message);}
+  if(!currentAiUser) return; // don't save if not logged in
+  try{
+    const{doc,setDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    // save under user's own document — overwrites previous, keeps latest chat
+    await setDoc(doc(firebaseDB,"ai_chats",currentAiUser.username),{
+      username: currentAiUser.username,
+      messages,
+      updatedAt: Date.now()
+    });
+  }catch(e){console.warn("Cloud save:",e.message);}
+}
+
+async function loadUserChat(){
+  if(!await initFirebase())return;
+  if(!currentAiUser) return;
+  try{
+    const{doc,getDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(firebaseDB,"ai_chats",currentAiUser.username));
+    if(snap.exists()){
+      const data = snap.data();
+      history = data.messages || [];
+      // render loaded messages
+      const chat = document.getElementById("aiChat");
+      if(chat){
+        renderAiUserHeader();
+        history.forEach(m => {
+          const div = document.createElement("div");
+          div.className = `message ${m.role==="user"?"user-message":"ai-message"}`;
+          div.innerHTML = formatAiMessage(m.content||"");
+          chat.appendChild(div);
+        });
+        chat.scrollTop = chat.scrollHeight;
+      }
+    } else {
+      // new user — no chat yet
+      renderAiUserHeader();
+      history = [];
+    }
+  }catch(e){console.warn("Cloud load:",e.message);}
 }
 
 async function loadLastConversationFromCloud(){
-  if(!await initFirebase())return null;
-  try{
-    const{collection,getDocs,query,orderBy,limit}=window._fb;
-    const q=query(collection(firebaseDB,"conversations"),orderBy("timestamp","desc"),limit(1));
-    const snap=await getDocs(q);
-    return snap.empty?null:snap.docs[0].data();
-  }catch(e){console.warn("Cloud load:",e.message);return null;}
+  // legacy — now handled by loadUserChat
+  return null;
 }
 
 /* ===== SYSTEM PROMPT ===== */
@@ -380,3 +519,27 @@ function deleteCustomProvider(i){
 }
 
 function getUnsplashKey(){return getStoredKeys().unsplash||"";}
+
+/* ===== AUTO AUTH INIT ===== */
+function formatAiMessage(text){
+  // basic formatting for loaded messages
+  return String(text)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>")
+    .replace(/`([^`]+)`/g,"<code style='background:#1a2332;padding:1px 5px;border-radius:3px;font-family:monospace'>$1</code>")
+    .replace(/\n/g,"<br>");
+}
+
+window.addEventListener("load", () => {
+  setTimeout(async () => {
+    const saved = getAiUser();
+    if (saved) {
+      currentAiUser = saved;
+      await initFirebase();
+      renderAiUserHeader();
+      await loadUserChat();
+    } else {
+      renderAiLoginUI();
+    }
+  }, 1200);
+});

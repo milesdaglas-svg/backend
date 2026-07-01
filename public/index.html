@@ -204,8 +204,9 @@
             <button class="search-toggle-btn" title="Toggle Replace" onclick="toggleReplaceBox()">⇄</button>
           </div>
           <div class="search-replace-row" id="searchReplaceRow" style="display:none;">
-            <input id="searchReplaceInput" type="text" placeholder="Replace">
-            <button class="search-replace-btn" onclick="replaceAllInProject()">Replace All</button>
+            <input id="searchReplaceInput" type="text" placeholder="Replace with...">
+            <button class="search-replace-btn" onclick="replaceNextInProject()" title="Replace next match">⇄ Replace</button>
+            <button class="search-replace-btn" onclick="replaceAllInProject()" title="Replace all matches">⇄ All</button>
           </div>
         </div>
         <div class="search-results-summary" id="searchSummary"></div>

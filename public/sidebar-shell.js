@@ -165,7 +165,71 @@ function toggleSearchOption(opt, btn) {
 
 function toggleReplaceBox() {
   const box = document.getElementById("searchReplaceRow");
-  if (box) box.style.display = box.style.display === "none" ? "flex" : "none";
+  if (!box) return;
+  const isOpen = box.style.display !== "none";
+  box.style.display = isOpen ? "none" : "flex";
+  if (!isOpen) document.getElementById("searchReplaceInput")?.focus();
+}
+let replaceMatchIndex = 0;
+
+function replaceNextInProject() {
+  const term = document.getElementById("searchInput")?.value || "";
+  const replacement = document.getElementById("searchReplaceInput")?.value || "";
+  if (!term) { showToast("Enter a search term first", "error"); return; }
+
+  let pattern;
+  try {
+    if (searchUseRegex) {
+      pattern = new RegExp(term, searchCaseSensitive ? "g" : "gi");
+    } else {
+      let esc = escRegex(term);
+      if (searchWholeWord) esc = "\\b" + esc + "\\b";
+      pattern = new RegExp(esc, searchCaseSensitive ? "g" : "gi");
+    }
+  } catch { showToast("Invalid regex", "error"); return; }
+
+  // collect all matches across files
+  const matches = [];
+  Object.keys(files).forEach(path => {
+    if (isMediaFileCheck(path)) return;
+    const content = files[path];
+    if (typeof content !== "string") return;
+    let m;
+    const singlePattern = new RegExp(pattern.source, searchCaseSensitive ? "" : "i");
+    const lines = content.split("\n");
+    lines.forEach((line, lineIdx) => {
+      if (singlePattern.test(line)) matches.push({ path, lineIdx });
+    });
+  });
+
+  if (!matches.length) { showToast("No matches found", "info"); return; }
+
+  // wrap around
+  if (replaceMatchIndex >= matches.length) replaceMatchIndex = 0;
+  const match = matches[replaceMatchIndex];
+
+  // replace in that file
+  const singlePattern = new RegExp(pattern.source, searchCaseSensitive ? "" : "i");
+  files[match.path] = files[match.path].replace(singlePattern, replacement);
+
+  // if current file — update editor
+  if (match.path === currentFile && window.editor1) {
+    window.editor1.setValue(files[match.path]);
+    // jump to line
+    setTimeout(() => {
+      window.editor1.revealLineInCenter(match.lineIdx + 1);
+      window.editor1.setPosition({ lineNumber: match.lineIdx + 1, column: 1 });
+      window.editor1.focus();
+    }, 50);
+  } else {
+    // open the file so user sees the change
+    if (typeof openFile === "function") openFile(match.path);
+  }
+
+  if (typeof saveToStorage === "function") saveToStorage();
+  replaceMatchIndex++;
+  showToast(`Replaced match ${replaceMatchIndex} of ${matches.length} in ${match.path}`, "success");
+  performSearch(); // refresh results
 }
 
 function replaceAllInProject() {
@@ -246,5 +310,16 @@ window.addEventListener("load", () => {
     if (window.editor1 && typeof window.editor1.onDidChangeCursorPosition === "function") {
       window.editor1.onDidChangeCursorPosition(updateStatusBar);
     }
+  }, 2000);
+});
+// Replace box — Enter key triggers replace next
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    document.getElementById("searchReplaceInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); replaceNextInProject(); }
+      if (e.key === "Enter" && e.shiftKey)  { e.preventDefault(); replaceAllInProject(); }
+    });
+    // also reset match index when search term changes
+    document.getElementById("searchInput")?.addEventListener("input", () => { replaceMatchIndex = 0; });
   }, 2000);
 });

@@ -596,7 +596,7 @@ function logConsole(level,msg){
   renderConsoleLines();
   const b=document.getElementById("consoleBadge");
   if(b){b.innerText=(parseInt(b.innerText)||0)+1;b.style.display="inline";}
-  if(level==="error")document.getElementById("consolePanel").classList.remove("hidden");
+  if(level==="error" && window.innerWidth > 768) document.getElementById("consolePanel").classList.remove("hidden");
 }
 function renderConsoleLines(){
   const panel=document.getElementById("consoleOutput");if(!panel)return;

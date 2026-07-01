@@ -209,6 +209,7 @@ function replaceAllInProject() {
    STATUS BAR
 ══════════════════════ */
 function updateStatusBar() {
+  try {
   const langEl = document.getElementById("sbLang");
   const fileEl = document.getElementById("sbFile");
   const posEl  = document.getElementById("sbPos");
@@ -232,6 +233,7 @@ function updateStatusBar() {
     errEl.innerHTML = `<span style="margin-right:8px;">✕ ${errors}</span><span>⚠ ${warns}</span>`;
     if (bar) bar.classList.toggle("has-errors", errors > 0);
   }
+  } catch(e) {}
 }
 
 /* poll cursor position periodically (Monaco events fire too often for some setups) */

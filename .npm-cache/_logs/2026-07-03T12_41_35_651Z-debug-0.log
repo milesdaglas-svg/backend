@@ -1,0 +1,526 @@
+0 verbose cli C:\node.exe C:\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.13.0
+2 info using node@v24.16.0
+3 silly config load:file:C:\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\HEAVENS\OneDrive\Desktop\app\.npmrc
+5 silly config load:file:C:\Users\HEAVENS\.npmrc
+6 silly config load:file:C:\Users\HEAVENS\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install ws node-pty
+8 verbose argv "install" "ws" "node-pty"
+9 verbose logfile logs-max:10 dir:C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T12_41_35_651Z-
+10 verbose logfile C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T12_41_35_651Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2253127680 maxSize:563281920 maxEntrySize:281640960
+13 silly idealTree buildDeps
+14 silly fetch manifest node-pty@^0.10.1
+15 silly packumentCache full:https://registry.npmjs.org/node-pty cache-miss
+16 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+17 http fetch GET 200 https://registry.npmjs.org/node-pty 1177ms (cache revalidated)
+18 silly packumentCache full:https://registry.npmjs.org/node-pty set size:516961 disposed:false
+19 silly fetch manifest ws@^8.18.0
+20 silly packumentCache full:https://registry.npmjs.org/ws cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/ws 132ms (cache revalidated)
+22 silly packumentCache full:https://registry.npmjs.org/ws set size:427106 disposed:false
+23 silly fetch manifest bufferutil@^4.0.1
+24 silly packumentCache full:https://registry.npmjs.org/bufferutil cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/bufferutil 102ms (cache revalidated)
+26 silly packumentCache full:https://registry.npmjs.org/bufferutil set size:52763 disposed:false
+27 silly fetch manifest utf-8-validate@>=5.0.2
+28 silly packumentCache full:https://registry.npmjs.org/utf-8-validate cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/utf-8-validate 590ms (cache revalidated)
+30 silly packumentCache full:https://registry.npmjs.org/utf-8-validate set size:77148 disposed:false
+31 silly fetch manifest @capacitor/android@^6.0.0
+32 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fandroid cache-miss
+33 http fetch GET 200 https://registry.npmjs.org/@capacitor%2fandroid 2482ms (cache miss)
+34 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fandroid set size:undefined disposed:false
+35 silly fetch manifest @capacitor/core@^6.0.0
+36 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcore cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/@capacitor%2fcore 1958ms (cache revalidated)
+38 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcore set size:4580864 disposed:false
+39 silly fetch manifest @capacitor/cli@^6.0.0
+40 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcli cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/@capacitor%2fcli 1438ms (cache revalidated)
+42 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcli set size:4938953 disposed:false
+43 silly placeDep ROOT @capacitor/android@6.2.1 OK for: vscode-god-mode@1.0.0 want: ^6.0.0
+44 silly placeDep ROOT @capacitor/core@6.2.1 OK for: @capacitor/android@6.2.1 want: ^6.2.0
+45 silly placeDep ROOT @capacitor/cli@6.2.1 OK for: vscode-god-mode@1.0.0 want: ^6.0.0
+46 silly placeDep ROOT node-pty@0.10.1 OK for: vscode-god-mode@1.0.0 want: ^0.10.1
+47 silly placeDep ROOT ws@8.21.0 OK for: vscode-god-mode@1.0.0 want: ^8.18.0
+48 silly fetch manifest tslib@^2.1.0
+49 silly packumentCache full:https://registry.npmjs.org/tslib cache-miss
+50 silly fetch manifest tar@^6.1.11
+51 silly packumentCache full:https://registry.npmjs.org/tar cache-miss
+52 silly fetch manifest open@^8.4.0
+53 silly packumentCache full:https://registry.npmjs.org/open cache-miss
+54 http fetch GET 200 https://registry.npmjs.org/tar 164ms (cache revalidated)
+55 silly packumentCache full:https://registry.npmjs.org/tar set size:571726 disposed:false
+56 silly fetch manifest kleur@^4.1.4
+57 silly packumentCache full:https://registry.npmjs.org/kleur cache-miss
+58 http fetch GET 200 https://registry.npmjs.org/tslib 638ms (cache revalidated)
+59 silly packumentCache full:https://registry.npmjs.org/tslib set size:108843 disposed:false
+60 silly fetch manifest plist@^3.0.5
+61 silly packumentCache full:https://registry.npmjs.org/plist cache-miss
+62 http fetch GET 200 https://registry.npmjs.org/open 681ms (cache revalidated)
+63 silly packumentCache full:https://registry.npmjs.org/open set size:136392 disposed:false
+64 silly fetch manifest tslib@^2.4.0
+65 silly packumentCache full:https://registry.npmjs.org/tslib cache-hit
+66 silly fetch manifest rimraf@^4.4.1
+67 silly packumentCache full:https://registry.npmjs.org/rimraf cache-miss
+68 http fetch GET 200 https://registry.npmjs.org/kleur 526ms (cache revalidated)
+69 silly packumentCache full:https://registry.npmjs.org/kleur set size:61853 disposed:false
+70 silly fetch manifest semver@^7.3.7
+71 silly packumentCache full:https://registry.npmjs.org/semver cache-miss
+72 http fetch GET 200 https://registry.npmjs.org/plist 107ms (cache revalidated)
+73 silly packumentCache full:https://registry.npmjs.org/plist set size:60755 disposed:false
+74 silly fetch manifest xml2js@^0.5.0
+75 silly packumentCache full:https://registry.npmjs.org/xml2js cache-miss
+76 http fetch GET 200 https://registry.npmjs.org/rimraf 87ms (cache revalidated)
+77 silly packumentCache full:https://registry.npmjs.org/rimraf set size:212626 disposed:false
+78 silly fetch manifest prompts@^2.4.2
+79 silly packumentCache full:https://registry.npmjs.org/prompts cache-miss
+80 http fetch GET 200 https://registry.npmjs.org/semver 110ms (cache revalidated)
+81 silly packumentCache full:https://registry.npmjs.org/semver set size:246125 disposed:false
+82 silly fetch manifest commander@^9.3.0
+83 silly packumentCache full:https://registry.npmjs.org/commander cache-miss
+84 http fetch GET 200 https://registry.npmjs.org/xml2js 115ms (cache revalidated)
+85 silly packumentCache full:https://registry.npmjs.org/xml2js set size:198018 disposed:false
+86 silly fetch manifest env-paths@^2.2.0
+87 silly packumentCache full:https://registry.npmjs.org/env-paths cache-miss
+88 http fetch GET 200 https://registry.npmjs.org/prompts 550ms (cache revalidated)
+89 silly packumentCache full:https://registry.npmjs.org/prompts set size:115896 disposed:false
+90 silly fetch manifest native-run@^2.0.0
+91 silly packumentCache full:https://registry.npmjs.org/native-run cache-miss
+92 http fetch GET 200 https://registry.npmjs.org/commander 1023ms (cache revalidated)
+93 silly packumentCache full:https://registry.npmjs.org/commander set size:353115 disposed:false
+94 silly fetch manifest @ionic/utils-fs@^3.1.6
+95 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-fs cache-miss
+96 http fetch GET 200 https://registry.npmjs.org/env-paths 2320ms (cache revalidated)
+97 silly packumentCache full:https://registry.npmjs.org/env-paths set size:26913 disposed:false
+98 silly fetch manifest @ionic/utils-terminal@^2.3.3
+99 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-terminal cache-miss
+100 http fetch GET 200 https://registry.npmjs.org/native-run 1894ms (cache revalidated)
+101 silly packumentCache full:https://registry.npmjs.org/native-run set size:221047 disposed:false
+102 silly fetch manifest @ionic/utils-subprocess@2.1.11
+103 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-subprocess cache-miss
+104 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-fs 2451ms (cache revalidated)
+105 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-fs set size:155283 disposed:false
+106 silly fetch manifest @ionic/cli-framework-output@^2.2.5
+107 silly packumentCache full:https://registry.npmjs.org/@ionic%2fcli-framework-output cache-miss
+108 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-terminal 2226ms (cache revalidated)
+109 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-terminal set size:118057 disposed:false
+110 silly fetch manifest nan@^2.14.0
+111 silly packumentCache full:https://registry.npmjs.org/nan cache-miss
+112 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-subprocess 3147ms (cache revalidated)
+113 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-subprocess set size:166292 disposed:false
+114 http fetch GET 200 https://registry.npmjs.org/@ionic%2fcli-framework-output 4179ms (cache revalidated)
+115 silly packumentCache full:https://registry.npmjs.org/@ionic%2fcli-framework-output set size:65039 disposed:false
+116 http fetch GET 200 https://registry.npmjs.org/nan 3218ms (cache revalidated)
+117 silly packumentCache full:https://registry.npmjs.org/nan set size:245791 disposed:false
+118 silly placeDep ROOT @ionic/cli-framework-output@2.2.8 OK for: @capacitor/cli@6.2.1 want: ^2.2.5
+119 silly placeDep ROOT @ionic/utils-fs@3.1.7 OK for: @capacitor/cli@6.2.1 want: ^3.1.6
+120 silly placeDep ROOT @ionic/utils-subprocess@2.1.11 OK for: @capacitor/cli@6.2.1 want: 2.1.11
+121 silly placeDep ROOT @ionic/utils-terminal@2.3.5 OK for: @capacitor/cli@6.2.1 want: ^2.3.3
+122 silly placeDep ROOT commander@9.5.0 OK for: @capacitor/cli@6.2.1 want: ^9.3.0
+123 silly placeDep ROOT env-paths@2.2.1 OK for: @capacitor/cli@6.2.1 want: ^2.2.0
+124 silly placeDep ROOT kleur@4.1.5 OK for: @capacitor/cli@6.2.1 want: ^4.1.4
+125 silly placeDep ROOT native-run@2.0.3 OK for: @capacitor/cli@6.2.1 want: ^2.0.0
+126 silly placeDep ROOT open@8.4.2 OK for: @capacitor/cli@6.2.1 want: ^8.4.0
+127 silly placeDep ROOT plist@3.1.1 OK for: @capacitor/cli@6.2.1 want: ^3.0.5
+128 silly placeDep ROOT prompts@2.4.2 OK for: @capacitor/cli@6.2.1 want: ^2.4.2
+129 silly placeDep ROOT rimraf@4.4.1 OK for: @capacitor/cli@6.2.1 want: ^4.4.1
+130 silly placeDep ROOT semver@7.8.5 OK for: @capacitor/cli@6.2.1 want: ^7.3.7
+131 silly placeDep ROOT tar@6.2.1 OK for: @capacitor/cli@6.2.1 want: ^6.1.11
+132 silly placeDep ROOT tslib@2.8.1 OK for: @capacitor/cli@6.2.1 want: ^2.4.0
+133 silly placeDep ROOT xml2js@0.5.0 OK for: @capacitor/cli@6.2.1 want: ^0.5.0
+134 silly fetch manifest @ionic/utils-terminal@2.3.5
+135 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-terminal cache-hit
+136 silly fetch manifest tslib@^2.0.1
+137 silly packumentCache full:https://registry.npmjs.org/tslib cache-hit
+138 silly fetch manifest @types/fs-extra@^8.0.0
+139 silly packumentCache full:https://registry.npmjs.org/@types%2ffs-extra cache-miss
+140 silly fetch manifest fs-extra@^9.0.0
+141 silly packumentCache full:https://registry.npmjs.org/fs-extra cache-miss
+142 silly fetch manifest @ionic/utils-array@2.1.5
+143 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-array cache-miss
+144 http fetch GET 200 https://registry.npmjs.org/fs-extra 2630ms (cache revalidated)
+145 silly packumentCache full:https://registry.npmjs.org/fs-extra set size:237251 disposed:false
+146 silly fetch manifest @ionic/utils-fs@3.1.6
+147 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-fs cache-hit
+148 silly fetch manifest @ionic/utils-process@2.1.10
+149 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-process cache-miss
+150 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-array 2674ms (cache revalidated)
+151 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-array set size:86082 disposed:false
+152 silly fetch manifest @ionic/utils-stream@3.1.5
+153 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-stream cache-miss
+154 http fetch GET 200 https://registry.npmjs.org/@types%2ffs-extra 2997ms (cache revalidated)
+155 silly packumentCache full:https://registry.npmjs.org/@types%2ffs-extra set size:159323 disposed:false
+156 silly fetch manifest @ionic/utils-terminal@2.3.3
+157 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-terminal cache-hit
+158 silly fetch manifest cross-spawn@^7.0.3
+159 silly packumentCache full:https://registry.npmjs.org/cross-spawn cache-miss
+160 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-process 1344ms (cache revalidated)
+161 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-process set size:128236 disposed:false
+162 silly fetch manifest @types/slice-ansi@^4.0.0
+163 silly packumentCache full:https://registry.npmjs.org/@types%2fslice-ansi cache-miss
+164 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-stream 2730ms (cache revalidated)
+165 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-stream set size:89195 disposed:false
+166 silly fetch manifest signal-exit@^3.0.3
+167 silly packumentCache full:https://registry.npmjs.org/signal-exit cache-miss
+168 http fetch GET 200 https://registry.npmjs.org/cross-spawn 2483ms (cache revalidated)
+169 silly packumentCache full:https://registry.npmjs.org/cross-spawn set size:109066 disposed:false
+170 silly fetch manifest slice-ansi@^4.0.0
+171 silly packumentCache full:https://registry.npmjs.org/slice-ansi cache-miss
+172 http fetch GET 200 https://registry.npmjs.org/@types%2fslice-ansi 2474ms (cache revalidated)
+173 silly packumentCache full:https://registry.npmjs.org/@types%2fslice-ansi set size:12386 disposed:false
+174 silly fetch manifest string-width@^4.1.0
+175 silly packumentCache full:https://registry.npmjs.org/string-width cache-miss
+176 http fetch GET 200 https://registry.npmjs.org/signal-exit 1043ms (cache revalidated)
+177 silly packumentCache full:https://registry.npmjs.org/signal-exit set size:53489 disposed:false
+178 silly fetch manifest strip-ansi@^6.0.0
+179 silly packumentCache full:https://registry.npmjs.org/strip-ansi cache-miss
+180 http fetch GET 200 https://registry.npmjs.org/slice-ansi 5332ms (cache revalidated)
+181 silly packumentCache full:https://registry.npmjs.org/slice-ansi set size:36418 disposed:false
+182 silly fetch manifest untildify@^4.0.0
+183 silly packumentCache full:https://registry.npmjs.org/untildify cache-miss
+184 http fetch GET 200 https://registry.npmjs.org/strip-ansi 7368ms (cache revalidated)
+185 silly packumentCache full:https://registry.npmjs.org/strip-ansi set size:44998 disposed:false
+186 silly fetch manifest wrap-ansi@^7.0.0
+187 silly packumentCache full:https://registry.npmjs.org/wrap-ansi cache-miss
+188 http fetch GET 200 https://registry.npmjs.org/string-width 7471ms (cache revalidated)
+189 silly packumentCache full:https://registry.npmjs.org/string-width set size:70381 disposed:false
+190 silly fetch manifest bplist-parser@^0.3.2
+191 silly packumentCache full:https://registry.npmjs.org/bplist-parser cache-miss
+192 http fetch GET 200 https://registry.npmjs.org/untildify 5900ms (cache revalidated)
+193 silly packumentCache full:https://registry.npmjs.org/untildify set size:22319 disposed:false
+194 silly fetch manifest elementtree@^0.1.7
+195 silly packumentCache full:https://registry.npmjs.org/elementtree cache-miss
+196 http fetch GET 200 https://registry.npmjs.org/wrap-ansi 7620ms (cache revalidated)
+197 silly packumentCache full:https://registry.npmjs.org/wrap-ansi set size:55299 disposed:false
+198 silly fetch manifest ini@^4.1.1
+199 silly packumentCache full:https://registry.npmjs.org/ini cache-miss
+200 http fetch GET 200 https://registry.npmjs.org/bplist-parser 7625ms (cache revalidated)
+201 silly packumentCache full:https://registry.npmjs.org/bplist-parser set size:21877 disposed:false
+202 silly fetch manifest plist@^3.1.0
+203 silly packumentCache full:https://registry.npmjs.org/plist cache-hit
+204 silly fetch manifest split2@^4.2.0
+205 silly packumentCache full:https://registry.npmjs.org/split2 cache-miss
+206 http fetch GET 200 https://registry.npmjs.org/elementtree 5337ms (cache revalidated)
+207 silly packumentCache full:https://registry.npmjs.org/elementtree set size:18608 disposed:false
+208 silly fetch manifest through2@^4.0.2
+209 silly packumentCache full:https://registry.npmjs.org/through2 cache-miss
+210 http fetch GET 200 https://registry.npmjs.org/ini 604ms (cache revalidated)
+211 silly packumentCache full:https://registry.npmjs.org/ini set size:59180 disposed:false
+212 silly fetch manifest tslib@^2.6.2
+213 silly packumentCache full:https://registry.npmjs.org/tslib cache-hit
+214 silly fetch manifest yauzl@^2.10.0
+215 silly packumentCache full:https://registry.npmjs.org/yauzl cache-miss
+216 http fetch GET 200 https://registry.npmjs.org/split2 2707ms (cache revalidated)
+217 silly packumentCache full:https://registry.npmjs.org/split2 set size:47438 disposed:false
+218 silly fetch manifest is-wsl@^2.2.0
+219 silly packumentCache full:https://registry.npmjs.org/is-wsl cache-miss
+220 http fetch GET 200 https://registry.npmjs.org/through2 2292ms (cache revalidated)
+221 silly packumentCache full:https://registry.npmjs.org/through2 set size:104105 disposed:false
+222 silly fetch manifest is-docker@^2.1.1
+223 silly packumentCache full:https://registry.npmjs.org/is-docker cache-miss
+224 http fetch GET 200 https://registry.npmjs.org/yauzl 2271ms (cache revalidated)
+225 silly packumentCache full:https://registry.npmjs.org/yauzl set size:114252 disposed:false
+226 silly fetch manifest define-lazy-prop@^2.0.0
+227 silly packumentCache full:https://registry.npmjs.org/define-lazy-prop cache-miss
+228 http fetch GET 200 https://registry.npmjs.org/is-wsl 231ms (cache revalidated)
+229 silly packumentCache full:https://registry.npmjs.org/is-wsl set size:20683 disposed:false
+230 silly fetch manifest base64-js@^1.5.1
+231 silly packumentCache full:https://registry.npmjs.org/base64-js cache-miss
+232 http fetch GET 200 https://registry.npmjs.org/is-docker 178ms (cache revalidated)
+233 silly packumentCache full:https://registry.npmjs.org/is-docker set size:23690 disposed:false
+234 silly fetch manifest xmlbuilder@^15.1.1
+235 silly packumentCache full:https://registry.npmjs.org/xmlbuilder cache-miss
+236 http fetch GET 200 https://registry.npmjs.org/define-lazy-prop 170ms (cache revalidated)
+237 silly packumentCache full:https://registry.npmjs.org/define-lazy-prop set size:9337 disposed:false
+238 silly fetch manifest @xmldom/xmldom@^0.9.10
+239 silly packumentCache full:https://registry.npmjs.org/@xmldom%2fxmldom cache-miss
+240 http fetch GET 200 https://registry.npmjs.org/base64-js 92ms (cache revalidated)
+241 silly packumentCache full:https://registry.npmjs.org/base64-js set size:41270 disposed:false
+242 silly fetch manifest kleur@^3.0.3
+243 silly packumentCache full:https://registry.npmjs.org/kleur cache-hit
+244 silly fetch manifest sisteransi@^1.0.5
+245 silly packumentCache full:https://registry.npmjs.org/sisteransi cache-miss
+246 http fetch GET 200 https://registry.npmjs.org/xmlbuilder 577ms (cache revalidated)
+247 silly packumentCache full:https://registry.npmjs.org/xmlbuilder set size:158707 disposed:false
+248 silly fetch manifest glob@^9.2.0
+249 silly packumentCache full:https://registry.npmjs.org/glob cache-miss
+250 http fetch GET 200 https://registry.npmjs.org/@xmldom%2fxmldom 1370ms (cache revalidated)
+251 silly packumentCache full:https://registry.npmjs.org/@xmldom%2fxmldom set size:166253 disposed:false
+252 silly fetch manifest chownr@^2.0.0
+253 silly packumentCache full:https://registry.npmjs.org/chownr cache-miss
+254 http fetch GET 200 https://registry.npmjs.org/sisteransi 1377ms (cache revalidated)
+255 silly packumentCache full:https://registry.npmjs.org/sisteransi set size:25723 disposed:false
+256 silly fetch manifest mkdirp@^1.0.3
+257 silly packumentCache full:https://registry.npmjs.org/mkdirp cache-miss
+258 http fetch GET 200 https://registry.npmjs.org/chownr 794ms (cache revalidated)
+259 silly packumentCache full:https://registry.npmjs.org/chownr set size:22157 disposed:false
+260 silly fetch manifest yallist@^4.0.0
+261 silly packumentCache full:https://registry.npmjs.org/yallist cache-miss
+262 http fetch GET 200 https://registry.npmjs.org/mkdirp 2704ms (cache revalidated)
+263 silly packumentCache full:https://registry.npmjs.org/mkdirp set size:116431 disposed:false
+264 silly fetch manifest minipass@^5.0.0
+265 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+266 http fetch GET 200 https://registry.npmjs.org/yallist 2824ms (cache revalidated)
+267 silly packumentCache full:https://registry.npmjs.org/yallist set size:34610 disposed:false
+268 silly fetch manifest minizlib@^2.1.1
+269 silly packumentCache full:https://registry.npmjs.org/minizlib cache-miss
+270 http fetch GET 200 https://registry.npmjs.org/glob 4806ms (cache miss)
+271 silly packumentCache full:https://registry.npmjs.org/glob set size:undefined disposed:false
+272 silly fetch manifest fs-minipass@^2.0.0
+273 silly packumentCache full:https://registry.npmjs.org/fs-minipass cache-miss
+274 http fetch GET 200 https://registry.npmjs.org/minipass 1823ms (cache miss)
+275 silly packumentCache full:https://registry.npmjs.org/minipass set size:undefined disposed:false
+276 silly fetch manifest sax@>=0.6.0
+277 silly packumentCache full:https://registry.npmjs.org/sax cache-miss
+278 http fetch GET 200 https://registry.npmjs.org/minizlib 2752ms (cache revalidated)
+279 silly packumentCache full:https://registry.npmjs.org/minizlib set size:62862 disposed:false
+280 silly fetch manifest xmlbuilder@~11.0.0
+281 silly packumentCache full:https://registry.npmjs.org/xmlbuilder cache-hit
+282 http fetch GET 200 https://registry.npmjs.org/fs-minipass 2982ms (cache revalidated)
+283 silly packumentCache full:https://registry.npmjs.org/fs-minipass set size:44606 disposed:false
+284 http fetch GET 200 https://registry.npmjs.org/sax 2438ms (cache miss)
+285 silly packumentCache full:https://registry.npmjs.org/sax set size:undefined disposed:false
+286 silly placeDep ROOT @types/fs-extra@8.1.5 OK for: @ionic/utils-fs@3.1.7 want: ^8.0.0
+287 silly placeDep node_modules/@ionic/utils-fs fs-extra@9.1.0 OK for: @ionic/utils-fs@3.1.7 want: ^9.0.0
+288 silly fetch manifest @types/node@*
+289 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+290 silly fetch manifest at-least-node@^1.0.0
+291 silly packumentCache full:https://registry.npmjs.org/at-least-node cache-miss
+292 http fetch GET 200 https://registry.npmjs.org/at-least-node 13540ms (cache revalidated)
+293 silly packumentCache full:https://registry.npmjs.org/at-least-node set size:4075 disposed:false
+294 silly placeDep ROOT @ionic/utils-array@2.1.5 OK for: @ionic/utils-subprocess@2.1.11 want: 2.1.5
+295 silly placeDep node_modules/@ionic/utils-subprocess @ionic/utils-fs@3.1.6 OK for: @ionic/utils-subprocess@2.1.11 want: 3.1.6
+296 silly placeDep ROOT @ionic/utils-process@2.1.10 OK for: @ionic/utils-subprocess@2.1.11 want: 2.1.10
+297 silly placeDep ROOT @ionic/utils-stream@3.1.5 OK for: @ionic/utils-subprocess@2.1.11 want: 3.1.5
+298 silly placeDep node_modules/@ionic/utils-subprocess @ionic/utils-terminal@2.3.3 OK for: @ionic/utils-subprocess@2.1.11 want: 2.3.3
+299 silly placeDep ROOT cross-spawn@7.0.6 OK for: @ionic/utils-subprocess@2.1.11 want: ^7.0.3
+300 silly fetch manifest @ionic/utils-object@2.1.5
+301 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-object cache-miss
+302 silly fetch manifest tree-kill@^1.2.2
+303 silly packumentCache full:https://registry.npmjs.org/tree-kill cache-miss
+304 silly fetch manifest which@^2.0.1
+305 silly packumentCache full:https://registry.npmjs.org/which cache-miss
+306 http fetch GET 200 https://registry.npmjs.org/@ionic%2futils-object 1111ms (cache miss)
+307 silly packumentCache full:https://registry.npmjs.org/@ionic%2futils-object set size:undefined disposed:false
+308 silly fetch manifest path-key@^3.1.0
+309 silly packumentCache full:https://registry.npmjs.org/path-key cache-miss
+310 http fetch GET 200 https://registry.npmjs.org/which 1668ms (cache miss)
+311 silly packumentCache full:https://registry.npmjs.org/which set size:undefined disposed:false
+312 silly fetch manifest shebang-command@^2.0.0
+313 silly packumentCache full:https://registry.npmjs.org/shebang-command cache-miss
+314 http fetch GET 200 https://registry.npmjs.org/tree-kill 3054ms (cache revalidated)
+315 silly packumentCache full:https://registry.npmjs.org/tree-kill set size:24180 disposed:false
+316 http fetch GET 200 https://registry.npmjs.org/path-key 2039ms (cache miss)
+317 silly packumentCache full:https://registry.npmjs.org/path-key set size:undefined disposed:false
+318 http fetch GET 200 https://registry.npmjs.org/shebang-command 1476ms (cache miss)
+319 silly packumentCache full:https://registry.npmjs.org/shebang-command set size:undefined disposed:false
+320 silly placeDep ROOT @ionic/utils-object@2.1.5 OK for: @ionic/utils-process@2.1.10 want: 2.1.5
+321 silly placeDep node_modules/@ionic/utils-process @ionic/utils-terminal@2.3.3 OK for: @ionic/utils-process@2.1.10 want: 2.3.3
+322 silly placeDep ROOT signal-exit@3.0.7 OK for: @ionic/utils-process@2.1.10 want: ^3.0.3
+323 silly placeDep ROOT tree-kill@1.2.2 OK for: @ionic/utils-process@2.1.10 want: ^1.2.2
+324 silly placeDep ROOT @types/slice-ansi@4.0.0 OK for: @ionic/utils-terminal@2.3.5 want: ^4.0.0
+325 silly placeDep ROOT slice-ansi@4.0.0 OK for: @ionic/utils-terminal@2.3.5 want: ^4.0.0
+326 silly placeDep ROOT string-width@4.2.3 OK for: @ionic/utils-terminal@2.3.5 want: ^4.1.0
+327 silly placeDep ROOT strip-ansi@6.0.1 OK for: @ionic/utils-terminal@2.3.5 want: ^6.0.0
+328 silly placeDep ROOT untildify@4.0.0 OK for: @ionic/utils-terminal@2.3.5 want: ^4.0.0
+329 silly placeDep ROOT wrap-ansi@7.0.0 OK for: @ionic/utils-terminal@2.3.5 want: ^7.0.0
+330 silly fetch manifest ansi-styles@^4.0.0
+331 silly packumentCache full:https://registry.npmjs.org/ansi-styles cache-miss
+332 silly fetch manifest astral-regex@^2.0.0
+333 silly packumentCache full:https://registry.npmjs.org/astral-regex cache-miss
+334 silly fetch manifest is-fullwidth-code-point@^3.0.0
+335 silly packumentCache full:https://registry.npmjs.org/is-fullwidth-code-point cache-miss
+336 http fetch GET 200 https://registry.npmjs.org/ansi-styles 128ms (cache miss)
+337 silly packumentCache full:https://registry.npmjs.org/ansi-styles set size:undefined disposed:false
+338 silly fetch manifest strip-ansi@^6.0.1
+339 silly packumentCache full:https://registry.npmjs.org/strip-ansi cache-hit
+340 silly fetch manifest emoji-regex@^8.0.0
+341 silly packumentCache full:https://registry.npmjs.org/emoji-regex cache-miss
+342 http fetch GET 200 https://registry.npmjs.org/is-fullwidth-code-point 577ms (cache miss)
+343 silly packumentCache full:https://registry.npmjs.org/is-fullwidth-code-point set size:undefined disposed:false
+344 silly fetch manifest ansi-regex@^5.0.1
+345 silly packumentCache full:https://registry.npmjs.org/ansi-regex cache-miss
+346 http fetch GET 200 https://registry.npmjs.org/astral-regex 1085ms (cache miss)
+347 silly packumentCache full:https://registry.npmjs.org/astral-regex set size:undefined disposed:false
+348 http fetch GET 200 https://registry.npmjs.org/emoji-regex 1485ms (cache miss)
+349 silly packumentCache full:https://registry.npmjs.org/emoji-regex set size:undefined disposed:false
+350 http fetch GET 200 https://registry.npmjs.org/ansi-regex 1182ms (cache miss)
+351 silly packumentCache full:https://registry.npmjs.org/ansi-regex set size:undefined disposed:false
+352 silly fetch manifest @types/node@*
+353 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+354 silly placeDep node_modules/@types/fs-extra @types/node@ OK for: @types/fs-extra@8.1.5 want: *
+355 silly placeDep ROOT path-key@3.1.1 OK for: cross-spawn@7.0.6 want: ^3.1.0
+356 silly placeDep ROOT shebang-command@2.0.0 OK for: cross-spawn@7.0.6 want: ^2.0.0
+357 silly placeDep ROOT which@2.0.2 OK for: cross-spawn@7.0.6 want: ^2.0.1
+358 silly fetch manifest shebang-regex@^3.0.0
+359 silly packumentCache full:https://registry.npmjs.org/shebang-regex cache-miss
+360 silly fetch manifest isexe@^2.0.0
+361 silly packumentCache full:https://registry.npmjs.org/isexe cache-miss
+362 http fetch GET 200 https://registry.npmjs.org/shebang-regex 555ms (cache miss)
+363 silly packumentCache full:https://registry.npmjs.org/shebang-regex set size:undefined disposed:false
+364 http fetch GET 200 https://registry.npmjs.org/isexe 1065ms (cache miss)
+365 silly packumentCache full:https://registry.npmjs.org/isexe set size:undefined disposed:false
+366 silly placeDep ROOT bplist-parser@0.3.2 OK for: native-run@2.0.3 want: ^0.3.2
+367 silly placeDep ROOT elementtree@0.1.7 OK for: native-run@2.0.3 want: ^0.1.7
+368 silly placeDep ROOT ini@4.1.3 OK for: native-run@2.0.3 want: ^4.1.1
+369 silly placeDep ROOT split2@4.2.0 OK for: native-run@2.0.3 want: ^4.2.0
+370 silly placeDep ROOT through2@4.0.2 OK for: native-run@2.0.3 want: ^4.0.2
+371 silly placeDep ROOT yauzl@2.10.0 OK for: native-run@2.0.3 want: ^2.10.0
+372 silly fetch manifest big-integer@1.6.x
+373 silly packumentCache full:https://registry.npmjs.org/big-integer cache-miss
+374 silly fetch manifest sax@1.1.4
+375 silly packumentCache full:https://registry.npmjs.org/sax cache-miss
+376 silly fetch manifest readable-stream@3
+377 silly packumentCache full:https://registry.npmjs.org/readable-stream cache-miss
+378 http cache https://registry.npmjs.org/sax 16ms (cache hit)
+379 silly packumentCache full:https://registry.npmjs.org/sax set size:91199 disposed:false
+380 silly fetch manifest fd-slicer@~1.1.0
+381 silly packumentCache full:https://registry.npmjs.org/fd-slicer cache-miss
+382 http fetch GET 200 https://registry.npmjs.org/big-integer 540ms (cache miss)
+383 silly packumentCache full:https://registry.npmjs.org/big-integer set size:undefined disposed:false
+384 silly fetch manifest buffer-crc32@~0.2.3
+385 silly packumentCache full:https://registry.npmjs.org/buffer-crc32 cache-miss
+386 http fetch GET 200 https://registry.npmjs.org/readable-stream 625ms (cache miss)
+387 silly packumentCache full:https://registry.npmjs.org/readable-stream set size:undefined disposed:false
+388 http fetch GET 200 https://registry.npmjs.org/fd-slicer 1097ms (cache miss)
+389 silly packumentCache full:https://registry.npmjs.org/fd-slicer set size:undefined disposed:false
+390 http fetch GET 200 https://registry.npmjs.org/buffer-crc32 1302ms (cache miss)
+391 silly packumentCache full:https://registry.npmjs.org/buffer-crc32 set size:undefined disposed:false
+392 silly placeDep ROOT big-integer@1.6.52 OK for: bplist-parser@0.3.2 want: 1.6.x
+393 silly placeDep ROOT sax@1.1.4 OK for: elementtree@0.1.7 want: 1.1.4
+394 silly placeDep ROOT nan@2.28.0 OK for: node-pty@0.10.1 want: ^2.14.0
+395 silly placeDep ROOT define-lazy-prop@2.0.0 OK for: open@8.4.2 want: ^2.0.0
+396 silly placeDep ROOT is-docker@2.2.1 OK for: open@8.4.2 want: ^2.1.1
+397 silly placeDep ROOT is-wsl@2.2.0 OK for: open@8.4.2 want: ^2.2.0
+398 silly placeDep ROOT @xmldom/xmldom@0.9.10 OK for: plist@3.1.1 want: ^0.9.10
+399 silly placeDep ROOT base64-js@1.5.1 OK for: plist@3.1.1 want: ^1.5.1
+400 silly placeDep ROOT xmlbuilder@15.1.1 OK for: plist@3.1.1 want: ^15.1.1
+401 silly placeDep node_modules/prompts kleur@3.0.3 OK for: prompts@2.4.2 want: ^3.0.3
+402 silly placeDep ROOT sisteransi@1.0.5 OK for: prompts@2.4.2 want: ^1.0.5
+403 silly placeDep ROOT glob@9.3.5 OK for: rimraf@4.4.1 want: ^9.2.0
+404 silly fetch manifest minipass@^4.2.4
+405 silly packumentCache full:https://registry.npmjs.org/minipass cache-miss
+406 silly fetch manifest minimatch@^8.0.2
+407 silly packumentCache full:https://registry.npmjs.org/minimatch cache-miss
+408 silly fetch manifest fs.realpath@^1.0.0
+409 silly packumentCache full:https://registry.npmjs.org/fs.realpath cache-miss
+410 http cache https://registry.npmjs.org/minipass 24ms (cache hit)
+411 silly packumentCache full:https://registry.npmjs.org/minipass set size:276925 disposed:false
+412 silly fetch manifest path-scurry@^1.6.1
+413 silly packumentCache full:https://registry.npmjs.org/path-scurry cache-miss
+414 http fetch GET 200 https://registry.npmjs.org/minimatch 593ms (cache miss)
+415 silly packumentCache full:https://registry.npmjs.org/minimatch set size:undefined disposed:false
+416 http fetch GET 200 https://registry.npmjs.org/fs.realpath 626ms (cache miss)
+417 silly packumentCache full:https://registry.npmjs.org/fs.realpath set size:undefined disposed:false
+418 http fetch GET 200 https://registry.npmjs.org/path-scurry 1121ms (cache miss)
+419 silly packumentCache full:https://registry.npmjs.org/path-scurry set size:undefined disposed:false
+420 silly placeDep ROOT fs.realpath@1.0.0 OK for: glob@9.3.5 want: ^1.0.0
+421 silly placeDep ROOT minimatch@8.0.7 OK for: glob@9.3.5 want: ^8.0.2
+422 silly placeDep ROOT minipass@4.2.8 OK for: glob@9.3.5 want: ^4.2.4
+423 silly placeDep ROOT path-scurry@1.11.1 OK for: glob@9.3.5 want: ^1.6.1
+424 silly fetch manifest brace-expansion@^2.0.1
+425 silly packumentCache full:https://registry.npmjs.org/brace-expansion cache-miss
+426 silly fetch manifest minipass@^5.0.0 || ^6.0.2 || ^7.0.0
+427 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+428 silly fetch manifest lru-cache@^10.2.0
+429 silly packumentCache full:https://registry.npmjs.org/lru-cache cache-miss
+430 http fetch GET 200 https://registry.npmjs.org/brace-expansion 92ms (cache miss)
+431 silly packumentCache full:https://registry.npmjs.org/brace-expansion set size:undefined disposed:false
+432 http fetch GET 200 https://registry.npmjs.org/lru-cache 1022ms (cache miss)
+433 silly packumentCache full:https://registry.npmjs.org/lru-cache set size:undefined disposed:false
+434 silly placeDep ROOT brace-expansion@2.1.1 OK for: minimatch@8.0.7 want: ^2.0.1
+435 silly fetch manifest balanced-match@^1.0.0
+436 silly packumentCache full:https://registry.npmjs.org/balanced-match cache-miss
+437 http fetch GET 200 https://registry.npmjs.org/balanced-match 90ms (cache miss)
+438 silly packumentCache full:https://registry.npmjs.org/balanced-match set size:undefined disposed:false
+439 silly placeDep ROOT balanced-match@1.0.2 OK for: brace-expansion@2.1.1 want: ^1.0.0
+440 silly placeDep ROOT lru-cache@10.4.3 OK for: path-scurry@1.11.1 want: ^10.2.0
+441 silly placeDep node_modules/path-scurry minipass@7.1.3 OK for: path-scurry@1.11.1 want: ^5.0.0 || ^6.0.2 || ^7.0.0
+442 silly placeDep ROOT shebang-regex@3.0.0 OK for: shebang-command@2.0.0 want: ^3.0.0
+443 silly placeDep ROOT ansi-styles@4.3.0 OK for: slice-ansi@4.0.0 want: ^4.0.0
+444 silly placeDep ROOT astral-regex@2.0.0 OK for: slice-ansi@4.0.0 want: ^2.0.0
+445 silly placeDep ROOT is-fullwidth-code-point@3.0.0 OK for: slice-ansi@4.0.0 want: ^3.0.0
+446 silly fetch manifest color-convert@^2.0.1
+447 silly packumentCache full:https://registry.npmjs.org/color-convert cache-miss
+448 http fetch GET 200 https://registry.npmjs.org/color-convert 469ms (cache miss)
+449 silly packumentCache full:https://registry.npmjs.org/color-convert set size:undefined disposed:false
+450 silly placeDep ROOT color-convert@2.0.1 OK for: ansi-styles@4.3.0 want: ^2.0.1
+451 silly fetch manifest color-name@~1.1.4
+452 silly packumentCache full:https://registry.npmjs.org/color-name cache-miss
+453 http fetch GET 200 https://registry.npmjs.org/color-name 61ms (cache miss)
+454 silly packumentCache full:https://registry.npmjs.org/color-name set size:undefined disposed:false
+455 silly placeDep ROOT color-name@1.1.4 OK for: color-convert@2.0.1 want: ~1.1.4
+456 silly placeDep ROOT emoji-regex@8.0.0 OK for: string-width@4.2.3 want: ^8.0.0
+457 silly placeDep ROOT ansi-regex@5.0.1 OK for: strip-ansi@6.0.1 want: ^5.0.1
+458 silly placeDep ROOT chownr@2.0.0 OK for: tar@6.2.1 want: ^2.0.0
+459 silly placeDep ROOT fs-minipass@2.1.0 OK for: tar@6.2.1 want: ^2.0.0
+460 silly placeDep node_modules/tar minipass@5.0.0 OK for: tar@6.2.1 want: ^5.0.0
+461 silly placeDep ROOT minizlib@2.1.2 OK for: tar@6.2.1 want: ^2.1.1
+462 silly placeDep ROOT mkdirp@1.0.4 OK for: tar@6.2.1 want: ^1.0.3
+463 silly placeDep ROOT yallist@4.0.0 OK for: tar@6.2.1 want: ^4.0.0
+464 silly fetch manifest minipass@^3.0.0
+465 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+466 silly fetch manifest minipass@^3.0.0
+467 silly packumentCache full:https://registry.npmjs.org/minipass cache-hit
+468 silly placeDep node_modules/fs-minipass minipass@3.3.6 OK for: fs-minipass@2.1.0 want: ^3.0.0
+469 silly placeDep node_modules/minizlib minipass@3.3.6 OK for: minizlib@2.1.2 want: ^3.0.0
+470 silly placeDep ROOT readable-stream@3.6.2 OK for: through2@4.0.2 want: 3
+471 silly fetch manifest string_decoder@^1.1.1
+472 silly packumentCache full:https://registry.npmjs.org/string_decoder cache-miss
+473 silly fetch manifest util-deprecate@^1.0.1
+474 silly packumentCache full:https://registry.npmjs.org/util-deprecate cache-miss
+475 http fetch GET 200 https://registry.npmjs.org/string_decoder 541ms (cache miss)
+476 silly packumentCache full:https://registry.npmjs.org/string_decoder set size:undefined disposed:false
+477 http fetch GET 200 https://registry.npmjs.org/util-deprecate 1045ms (cache miss)
+478 silly packumentCache full:https://registry.npmjs.org/util-deprecate set size:undefined disposed:false
+479 silly placeDep ROOT string_decoder@1.3.0 OK for: readable-stream@3.6.2 want: ^1.1.1
+480 silly placeDep ROOT util-deprecate@1.0.2 OK for: readable-stream@3.6.2 want: ^1.0.1
+481 silly fetch manifest safe-buffer@~5.2.0
+482 silly packumentCache full:https://registry.npmjs.org/safe-buffer cache-miss
+483 http fetch GET 200 https://registry.npmjs.org/safe-buffer 563ms (cache miss)
+484 silly packumentCache full:https://registry.npmjs.org/safe-buffer set size:undefined disposed:false
+485 silly placeDep ROOT safe-buffer@5.2.1 OK for: string_decoder@1.3.0 want: ~5.2.0
+486 silly placeDep ROOT isexe@2.0.0 OK for: which@2.0.2 want: ^2.0.0
+487 silly placeDep node_modules/xml2js xmlbuilder@11.0.1 OK for: xml2js@0.5.0 want: ~11.0.0
+488 silly placeDep ROOT buffer-crc32@0.2.13 OK for: yauzl@2.10.0 want: ~0.2.3
+489 silly placeDep ROOT fd-slicer@1.1.0 OK for: yauzl@2.10.0 want: ~1.1.0
+490 silly fetch manifest pend@~1.2.0
+491 silly packumentCache full:https://registry.npmjs.org/pend cache-miss
+492 http fetch GET 200 https://registry.npmjs.org/pend 451ms (cache miss)
+493 silly packumentCache full:https://registry.npmjs.org/pend set size:undefined disposed:false
+494 silly placeDep ROOT pend@1.2.0 OK for: fd-slicer@1.1.0 want: ~1.2.0
+495 silly placeDep ROOT at-least-node@1.0.0 OK for: fs-extra@9.1.0 want: ^1.0.0
+496 silly placeDep node_modules/@ionic/utils-subprocess fs-extra@9.1.0 OK for: @ionic/utils-fs@3.1.6 want: ^9.0.0
+497 verbose type system
+498 verbose stack FetchError: Invalid response body while trying to fetch https://registry.npmjs.org/@types%2fnode: read ECONNRESET
+498 verbose stack     at C:\node_modules\npm\node_modules\minipass-fetch\lib\body.js:174:15
+498 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+498 verbose stack     at async Response.json (C:\node_modules\npm\node_modules\minipass-fetch\lib\body.js:75:17)
+498 verbose stack     at async RegistryFetcher.packument (C:\node_modules\npm\node_modules\pacote\lib\registry.js:98:25)
+498 verbose stack     at async RegistryFetcher.manifest (C:\node_modules\npm\node_modules\pacote\lib\registry.js:128:23)
+498 verbose stack     at async #fetchManifest (C:\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:1217:20)
+498 verbose stack     at async #nodeFromEdge (C:\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:1054:19)
+498 verbose stack     at async #buildDepStep (C:\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:917:11)
+498 verbose stack     at async Arborist.buildIdealTree (C:\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:170:7)
+498 verbose stack     at async Promise.all (index 1)
+499 error code ECONNRESET
+500 error syscall read
+501 error errno ECONNRESET
+502 error network Invalid response body while trying to fetch https://registry.npmjs.org/@types%2fnode: read ECONNRESET
+503 error network This is a problem related to network connectivity.
+503 error network In most cases you are behind a proxy or have bad network settings.
+503 error network
+503 error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+504 silly unfinished npm timer reify 1783082498551
+505 silly unfinished npm timer reify:loadTrees 1783082498558
+506 verbose cwd C:\Users\HEAVENS\OneDrive\Desktop\app
+507 verbose os Windows_NT 10.0.19045
+508 verbose node v24.16.0
+509 verbose npm  v11.13.0
+510 verbose exit 1
+511 verbose code 1
+512 error A complete log of this run can be found in: C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T12_41_35_651Z-debug-0.log

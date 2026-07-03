@@ -1,0 +1,69 @@
+0 verbose cli C:\node.exe C:\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.13.0
+2 info using node@v24.16.0
+3 silly config load:file:C:\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\HEAVENS\OneDrive\Desktop\app\.npmrc
+5 silly config load:file:C:\Users\HEAVENS\.npmrc
+6 silly config load:file:C:\Users\HEAVENS\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install ws node-pty
+8 verbose argv "install" "ws" "node-pty"
+9 verbose logfile logs-max:10 dir:C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T11_59_27_194Z-
+10 verbose logfile C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T11_59_27_194Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+13 silly packumentCache heap:2253127680 maxSize:563281920 maxEntrySize:281640960
+14 silly idealTree buildDeps
+15 silly fetch manifest node-pty@^0.10.1
+16 silly packumentCache full:https://registry.npmjs.org/node-pty cache-miss
+17 http fetch GET https://registry.npmjs.org/node-pty attempt 1 failed with ENOTFOUND
+18 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+19 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with ENOTFOUND
+20 http fetch GET https://registry.npmjs.org/node-pty attempt 2 failed with ENOTFOUND
+21 http fetch GET https://registry.npmjs.org/npm attempt 3 failed with ENOTFOUND
+22 http fetch GET https://registry.npmjs.org/node-pty attempt 3 failed with ENOTFOUND
+23 silly fetch manifest ws@^8.18.0
+24 silly packumentCache full:https://registry.npmjs.org/ws cache-miss
+25 http fetch GET https://registry.npmjs.org/ws attempt 1 failed with ENOTFOUND
+26 http fetch GET https://registry.npmjs.org/ws attempt 2 failed with ENOTFOUND
+27 http fetch GET https://registry.npmjs.org/ws attempt 3 failed with ENOTFOUND
+28 silly fetch manifest @capacitor/android@^6.0.0
+29 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fandroid cache-miss
+30 http fetch GET https://registry.npmjs.org/@capacitor%2fandroid attempt 1 failed with ENOTFOUND
+31 http fetch GET https://registry.npmjs.org/@capacitor%2fandroid attempt 2 failed with ENOTFOUND
+32 http fetch GET https://registry.npmjs.org/@capacitor%2fandroid attempt 3 failed with ENOTFOUND
+33 silly fetch manifest @capacitor/cli@^6.0.0
+34 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcli cache-miss
+35 http fetch GET https://registry.npmjs.org/@capacitor%2fcli attempt 1 failed with ENOTFOUND
+36 http fetch GET https://registry.npmjs.org/@capacitor%2fcli attempt 2 failed with ENOTFOUND
+37 silly fetch manifest @capacitor/core@^6.0.0
+38 silly packumentCache full:https://registry.npmjs.org/@capacitor%2fcore cache-miss
+39 silly placeDep ROOT @capacitor/android@ OK for: vscode-god-mode@1.0.0 want: ^6.0.0
+40 silly placeDep ROOT @capacitor/cli@ OK for: vscode-god-mode@1.0.0 want: ^6.0.0
+41 silly placeDep ROOT @capacitor/core@ OK for: vscode-god-mode@1.0.0 want: ^6.0.0
+42 silly placeDep ROOT node-pty@ OK for: vscode-god-mode@1.0.0 want: ^0.10.1
+43 silly placeDep ROOT ws@ OK for: vscode-god-mode@1.0.0 want: ^8.18.0
+44 verbose type system
+45 verbose stack FetchError: request to https://registry.npmjs.org/@capacitor%2fandroid failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+45 verbose stack     at ClientRequest.<anonymous> (C:\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+45 verbose stack     at ClientRequest.emit (node:events:509:28)
+45 verbose stack     at emitErrorEvent (node:_http_client:109:11)
+45 verbose stack     at _destroy (node:_http_client:993:9)
+45 verbose stack     at onSocketNT (node:_http_client:1014:5)
+45 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:91:21)
+46 error code ENOTFOUND
+47 error syscall getaddrinfo
+48 error errno ENOTFOUND
+49 error network request to https://registry.npmjs.org/@capacitor%2fandroid failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+50 error network This is a problem related to network connectivity.
+50 error network In most cases you are behind a proxy or have bad network settings.
+50 error network
+50 error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+51 silly unfinished npm timer reify 1783079973257
+52 silly unfinished npm timer reify:loadTrees 1783079973265
+53 verbose cwd C:\Users\HEAVENS\OneDrive\Desktop\app
+54 verbose os Windows_NT 10.0.19045
+55 verbose node v24.16.0
+56 verbose npm  v11.13.0
+57 verbose exit 1
+58 verbose code 1
+59 error A complete log of this run can be found in: C:\Users\HEAVENS\OneDrive\Desktop\app\.npm-cache\_logs\2026-07-03T11_59_27_194Z-debug-0.log

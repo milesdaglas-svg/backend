@@ -864,3 +864,59 @@ makeResizable("sidebarResizer","sidebar","right",40);
 makeResizable("previewResizer","preview","left",80);
 makeResizable("aiResizer","aiPanel","left",80);
 makeSplitResizable();
+
+/* ══ GITHUB OAUTH HANDLER ══ */
+function loginWithGitHub() {
+  window.location.href = "https://backend-forz.onrender.com/auth/github";
+}
+
+function logoutGitHub() {
+  if (!confirm("Disconnect GitHub?")) return;
+  localStorage.removeItem("gh_token");
+  localStorage.removeItem("gh_user");
+  showToast("GitHub disconnected", "info");
+  const btn = document.getElementById("githubLoginBtn");
+  if (btn) { btn.style.display = "flex"; btn.innerText = "🐙 Login with GitHub"; }
+}
+
+function handleGithubOAuth() {
+  const params = new URLSearchParams(window.location.search);
+  const auth = params.get("auth");
+  if (!auth) return;
+  if (auth === "success") {
+    const token  = params.get("token");
+    const login  = params.get("login");
+    const name   = params.get("name");
+    const avatar = params.get("avatar");
+    const repos  = params.get("repos");
+    if (token) localStorage.setItem("gh_token", token);
+    localStorage.setItem("gh_user", JSON.stringify({
+      login, name, avatar_url: avatar, public_repos: parseInt(repos)||0
+    }));
+    if (!localStorage.getItem("ai_user")) {
+      localStorage.setItem("ai_user", JSON.stringify({
+        username: login.toLowerCase(), displayName: name||login
+      }));
+    }
+    window.history.replaceState({}, "", "/");
+    const btn = document.getElementById("githubLoginBtn");
+    if (btn) btn.style.display = "none";
+    showToast(`✓ Welcome ${name||login}! GitHub connected 🎉`, "success");
+    setTimeout(() => {
+      if (typeof ghLoadRepos === "function") ghLoadRepos().then(() => {
+        if (typeof renderGithubPanel === "function") renderGithubPanel();
+      });
+    }, 1000);
+  } else if (auth === "error") {
+    window.history.replaceState({}, "", "/");
+    showToast("GitHub login failed — try again", "error");
+  }
+}
+
+// run OAuth handler + show/hide login button
+handleGithubOAuth();
+setTimeout(() => {
+  const btn = document.getElementById("githubLoginBtn");
+  const token = localStorage.getItem("gh_token");
+  if (btn) btn.style.display = token ? "none" : "flex";
+}, 800);

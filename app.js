@@ -10,7 +10,59 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "100mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+/* ══════════════════════
+   GITHUB OAUTH
+══════════════════════ */
+app.get("/auth/github", (req, res) => {
+  const params = new URLSearchParams({
+    client_id: process.env.GITHUB_CLIENT_ID,
+    redirect_uri: "https://backend-forz.onrender.com/auth/github/callback",
+    scope: "repo user workflow read:org",
+    state: Math.random().toString(36).slice(2)
+  });
+  res.redirect(`https://github.com/login/oauth/authorize?${params}`);
+});
 
+app.get("/auth/github/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.redirect("/?auth=error");
+  try {
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+        redirect_uri: "https://backend-forz.onrender.com/auth/github/callback"
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (tokenData.error) return res.redirect("/?auth=error&msg=" + tokenData.error_description);
+    const token = tokenData.access_token;
+    // get user info
+    const userRes = await fetch("https://api.github.com/user", {
+      headers: { "Authorization": `token ${token}`, "User-Agent": "VSCodeGodMode" }
+    });
+    const user = await userRes.json();
+    // redirect back to app with token and user info
+    const params = new URLSearchParams({
+      auth: "success",
+      token,
+      login: user.login,
+      name: user.name || user.login,
+      avatar: user.avatar_url,
+      repos: user.public_repos || 0
+    });
+    res.redirect(`/?${params}`);
+  } catch(e) {
+    res.redirect("/?auth=error&msg=" + encodeURIComponent(e.message));
+  }
+});
+
+app.get("/auth/github/logout", (req, res) => {
+  res.redirect("/?auth=logout");
+});
 app.get("/api/myip", async (req, res) => {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
   res.json({ ip });

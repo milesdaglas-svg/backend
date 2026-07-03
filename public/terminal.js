@@ -86,73 +86,34 @@ function getPS1(tab) {
   return ps1[tab] || ps1.bash;
 }
 
-/* ══════════════════════
-   WELCOME MESSAGES
-══════════════════════ */
 function printWelcome(tab) {
   const msgs = {
-    /* ══════════════════════
-   GOOGLE CLOUD SHELL
-   Opens real Google VM
-   in new tab with options
-══════════════════════ */
-function openGoogleCloudShell(repoUrl) {
-  const base = "https://shell.cloud.google.com/cloudshell/editor";
-
-  if (repoUrl) {
-    // open with specific repo already cloned
-    const params = new URLSearchParams({
-      cloudshell_git_repo: repoUrl,
-      cloudshell_print: ".cloudshell/readme.md",
-      shellonly: "true"
-    });
-    window.open(`${base}?${params.toString()}`, "_blank");
-    printLine(`<span class="t-ok">✓ Opening Google Cloud Shell with repo: ${escTerm(repoUrl)}</span>`, "bash");
-    printLine(`<span class="t-muted">Google will clone the repo automatically in your Cloud Shell VM</span>`, "bash");
-  } else {
-    // open plain cloud shell
-    window.open("https://shell.cloud.google.com", "_blank");
-    printLine(`<span class="t-ok">✓ Opening Google Cloud Shell...</span>`, "bash");
-    printLine(`<span class="t-muted">Sign in with your Google account to get a full Linux VM</span>`, "bash");
-  }
-
-  printLine(`
-    <div style="margin:6px 0;padding:10px;background:#0d2030;border:1px solid #1f6feb;border-radius:8px;font-size:11px;">
-      <div style="color:#58a6ff;font-weight:700;margin-bottom:6px;">☁️ Google Cloud Shell — What you get:</div>
-      <div style="color:#8b949e;line-height:1.8;">
-        ✓ Full Ubuntu Linux VM (free)<br>
-        ✓ 5GB persistent home directory<br>
-        ✓ apt install, sudo access<br>
-        ✓ Node, Python, Go, Docker pre-installed<br>
-        ✓ Built-in VS Code editor<br>
-        ✓ Web preview on any port
-      </div>
-      <div style="margin-top:8px;color:#3fb950;font-size:10px;">Tip: Files you create there persist across sessions</div>
-    </div>`, "bash");
-}
+    bash: [
+      `<span class="t-head">┌─────────────────────────────────────┐</span>`,
+      `<span class="t-head">│  🐧 BASH TERMINAL  — Linux Shell    │</span>`,
+      `<span class="t-head">└─────────────────────────────────────┘</span>`,
+      `<span class="t-muted">Server mode: real commands on Render. Try: <span class="t-cmd">ls</span> or <span class="t-cmd">git clone [url]</span></span>`,
+      `<span class="t-muted">📁 Device mode: click <span class="t-cmd">Mount</span> to navigate your real phone/PC files</span>`,
+      ``
+    ],
     cmd: [
-      `<span class="t-head-cmd">╔═════════════════════════════════════╗</span>`,
-      `<span class="t-head-cmd">║  🪟 CMD TERMINAL — Windows Style    ║</span>`,
-      `<span class="t-head-cmd">╚═════════════════════════════════════╝</span>`,
-      `<span class="t-muted">Windows-style commands. Type <span class="t-cmd">help</span></span>`,
+      `<span class="t-head-cmd">🪟 CMD TERMINAL  — Windows Shell</span>`,
+      `<span class="t-muted">Try: <span class="t-cmd">dir</span>, <span class="t-cmd">echo hello</span>, or <span class="t-cmd">help</span></span>`,
       ``
     ],
     vsc: [
-      `<span class="t-head-vsc">╔═════════════════════════════════════╗</span>`,
-      `<span class="t-head-vsc">║  💙 VS CODE TERMINAL — Editor Shell ║</span>`,
-      `<span class="t-head-vsc">╚═════════════════════════════════════╝</span>`,
-      `<span class="t-muted">Editor commands. Type <span class="t-cmd">help</span></span>`,
+      `<span class="t-head-vsc">💙 VS CODE COMMANDS</span>`,
+      `<span class="t-muted">Try: <span class="t-cmd">open [file]</span>, <span class="t-cmd">new [file]</span>, or <span class="t-cmd">help</span></span>`,
       ``
     ],
     node: [
-      `<span class="t-head-node">╔═════════════════════════════════════╗</span>`,
-      `<span class="t-head-node">║  🟢 NODE.JS REPL — JavaScript REPL  ║</span>`,
-      `<span class="t-head-node">╚═════════════════════════════════════╝</span>`,
-      `<span class="t-muted">Live JS execution. Try: <span class="t-cmd">2 + 2</span> or <span class="t-cmd">files</span></span>`,
+      `<span class="t-head">> NODE REPL</span>`,
+      `<span class="t-muted">Try: <span class="t-cmd">2+2</span>, <span class="t-cmd">files</span>, or <span class="t-cmd">.help</span></span>`,
       ``
     ]
   };
-  (msgs[tab]||[]).forEach(m => printLine(m, tab));
+  const lines = msgs[tab] || msgs.bash;
+  lines.forEach(line => printLine(line, tab));
 }
 
 /* ══════════════════════
@@ -160,159 +121,40 @@ function openGoogleCloudShell(repoUrl) {
 ══════════════════════ */
 const BASH_CMDS = {
   help: () => `
-<span class="t-head">// BASH — Available Commands</span>
+<span class="t-head">// BASH — Linux Shell Commands</span>
 
 <span class="t-cmd">File System:</span>
-  ls [dir]        — list files
-  cat [file]      — print file contents
-  touch [file]    — create file
-  mkdir [dir]     — create folder
+  ls              — list files
+  ls -la          — list with details
+  cd [dir]        — change directory
+  pwd             — show current path
+  cat [file]      — print file
+  mkdir [dir]     — create directory
   rm [file]       — delete file
-  mv [src] [dst]  — rename/move
   cp [src] [dst]  — copy file
-  pwd             — current directory
-  find [name]     — search files
+  mv [src] [dst]  — move/rename
 
-<span class="t-cmd">Project:</span>
-  sync            — push editor files to server
-  pull-files      — pull server files to editor
-  git clone [url] — clone a repo
+<span class="t-cmd">Git:</span>
+  git clone [url] — clone repository
+  git status      — show status
+  git add [file]  — stage file
+  git commit -m   — commit changes
+
+<span class="t-cmd">Node:</span>
+  npm install     — install dependencies
+  npm start       — start project
+  node [file]     — run JS file
+  npx [pkg] [cmd] — run package
 
 <span class="t-cmd">Server:</span>
-  npm install     — install packages
-  npm start       — start dev server
-  node [file]     — run Node.js file
-  python [file]   — run Python script
-  kill [port]     — stop a running server
+  sync            — sync files to server
+  pull-files      — download from server`,
 
-<span class="t-cmd">System:</span>
-  whoami          — user info
-  date / uname    — system info
-  ps              — running processes
-  clear / cls     — clear terminal
-  history         — command history`,
-
-  ls: (args) => {
-    const prefix = args[0] ? args[0].replace(/\/?$/, "/") : "";
-    const fileList = typeof files !== "undefined" ? Object.keys(files) : [];
-    const matching = fileList.filter(f => {
-      if (!prefix) return !f.includes("/") || f.split("/").length === 2;
-      return f.startsWith(prefix);
-    }).filter(f => !f.endsWith("/.gitkeep"));
-    if (!matching.length) return `<span class="t-err">ls: ${prefix||"."}: No such file or directory</span>`;
-    const seen = new Set(); const out = [];
-    matching.forEach(f => {
-      const rel = prefix ? f.slice(prefix.length) : f;
-      const part = rel.split("/")[0];
-      if (seen.has(part)) return; seen.add(part);
-      const isDir = matching.some(x => x.startsWith((prefix||"")+part+"/"));
-      if (isDir) out.push(`<span class="t-dir">📁 ${part}/</span>`);
-      else out.push(`<span class="t-file">${typeof getFileIcon==="function"?getFileIcon(part):"📄"} ${part}</span>`);
-    });
-    return `<span class="t-muted">total ${out.length}</span>\n` + out.join("\n");
-  },
-
-  cat: (args) => {
-    if (!args[0]) return `<span class="t-err">Usage: cat [file]</span>`;
-    const content = typeof files !== "undefined" ? files[args[0]] : null;
-    if (content === undefined) return `<span class="t-err">cat: ${args[0]}: No such file or directory</span>`;
-    return `<span class="t-muted">// ${args[0]} (${String(content).split("\n").length} lines)</span>\n${escTerm(String(content))}`;
-  },
-
-  touch: (args) => {
-    if (!args[0]) return `<span class="t-err">Usage: touch [file]</span>`;
-    if (typeof files === "undefined") return `<span class="t-err">File system unavailable</span>`;
-    if (files[args[0]] !== undefined) return `<span class="t-warn">touch: ${args[0]}: already exists</span>`;
-    files[args[0]] = "";
-    if (typeof renderFiles === "function") renderFiles();
-    if (typeof saveToStorage === "function") saveToStorage();
-    return `<span class="t-ok">✓ ${args[0]}</span>`;
-  },
-
-  mkdir: (args) => {
-    if (!args[0]) return `<span class="t-err">Usage: mkdir [dir]</span>`;
-    files[args[0] + "/.gitkeep"] = "";
-    if (typeof openFolders !== "undefined") openFolders.add(args[0]);
-    if (typeof renderFiles === "function") renderFiles();
-    if (typeof saveToStorage === "function") saveToStorage();
-    return `<span class="t-ok">✓ mkdir: created directory '${args[0]}'</span>`;
-  },
-
-  rm: (args) => {
-    if (!args[0]) return `<span class="t-err">Usage: rm [file]</span>`;
-    if (typeof files === "undefined" || files[args[0]] === undefined)
-      return `<span class="t-err">rm: ${args[0]}: No such file or directory</span>`;
-    delete files[args[0]];
-    if (typeof renderFiles === "function") renderFiles();
-    if (typeof renderTabs === "function") renderTabs();
-    if (typeof saveToStorage === "function") saveToStorage();
-    return `<span class="t-ok">✓ removed '${args[0]}'</span>`;
-  },
-
-  mv: (args) => {
-    if (!args[0]||!args[1]) return `<span class="t-err">Usage: mv [src] [dst]</span>`;
-    if (files[args[0]] === undefined) return `<span class="t-err">mv: ${args[0]}: No such file or directory</span>`;
-    files[args[1]] = files[args[0]]; delete files[args[0]];
-    if (typeof renderFiles === "function") renderFiles();
-    if (typeof renderTabs === "function") renderTabs();
-    if (typeof saveToStorage === "function") saveToStorage();
-    return `<span class="t-ok">✓ '${args[0]}' → '${args[1]}'</span>`;
-  },
-
-  cp: (args) => {
-    if (!args[0]||!args[1]) return `<span class="t-err">Usage: cp [src] [dst]</span>`;
-    if (files[args[0]] === undefined) return `<span class="t-err">cp: ${args[0]}: No such file or directory</span>`;
-    files[args[1]] = files[args[0]];
-    if (typeof renderFiles === "function") renderFiles();
-    if (typeof saveToStorage === "function") saveToStorage();
-    return `<span class="t-ok">✓ '${args[0]}' → '${args[1]}'</span>`;
-  },
-
-  pwd: () => `<span class="t-path">${termCwd || "/workspace/vscodegodmode"}</span>`,
-
-  find: (args) => {
-    if (!args[0]) return `<span class="t-err">Usage: find [name]</span>`;
-    const q = args[0].toLowerCase();
-    const found = typeof files !== "undefined" ? Object.keys(files).filter(f => f.toLowerCase().includes(q) && !f.endsWith("/.gitkeep")) : [];
-    if (!found.length) return `<span class="t-warn">find: no matches for '${args[0]}'</span>`;
-    return found.map(f => `<span class="t-file">./${f}</span>`).join("\n");
-  },
-
-  whoami: () => {
-    const ua = navigator.userAgent;
-    const dev = /Mobi|Android/i.test(ua) ? "📱 Mobile" : "💻 Desktop";
-    return `<span class="t-info">user@vscodegodmode
-uid=1000(user) gid=1000(user)
-Device: ${dev}
-Screen: ${screen.width}x${screen.height}
-OS: ${navigator.platform}
-Lang: ${navigator.language}
-Online: ${navigator.onLine ? "yes" : "no"}</span>`;
-  },
-
-  uname: () => `<span class="t-info">Linux vscodegodmode 5.15.0-render x86_64 GNU/Linux</span>`,
-
-  date: () => `<span class="t-info">${new Date().toString()}</span>`,
-
-  ps: () => `<span class="t-info">  PID TTY          TIME CMD
-    1 pts/0    00:00:00 bash
-   42 pts/0    00:00:01 node
-   99 pts/0    00:00:00 ps</span>`,
-
-  history: (args, tab) => {
-    const h = termState[tab||termActiveTab].history;
-    return h.map((c,i) => `  <span class="t-muted">${String(i+1).padStart(4," ")}  ${escTerm(c)}</span>`).join("\n") || "No history";
-  },
-
-  echo: (args) => `<span class="t-log">${escTerm(args.join(" "))}</span>`,
-
-  clear: () => { clearTab(termActiveTab); return ""; },
-  cls:   () => { clearTab(termActiveTab); return ""; },
+  ls: () => `<span class="t-log">README.md  package.json  src/  public/</span>`,
+  pwd: () => `<span class="t-log">/tmp/vscode_godmode_project</span>`,
+  clear: () => { clearTab("bash"); return ""; }
 };
 
-/* ══════════════════════
-   CMD COMMANDS (Windows style)
-══════════════════════ */
 const CMD_CMDS = {
   help: () => `
 <span class="t-head-cmd">// CMD — Windows Commands</span>
@@ -1180,19 +1022,20 @@ function execTermCommand(raw, tab) {
     }
 
     // ── SERVER MODE — send everything to real server ──
-// ── GOOGLE CLOUD SHELL ──
-  if (cmd === "gcloud" || trimmed === "gcloud") {
-    openGoogleCloudShell();
-    return;
-  }
-  if (cmd === "gcloud" && args[0] === "clone") {
-    openGoogleCloudShell(args[1]);
-    return;
-  }
+    // ── GOOGLE CLOUD SHELL ──
+    if (cmd === "gcloud" || trimmed === "gcloud") {
+      openGoogleCloudShell();
+      return;
+    }
+    if (cmd === "gcloud" && args[0] === "clone") {
+      openGoogleCloudShell(args[1]);
+      return;
+    }
 
-  // ── SERVER MODE — send everything to real server ──
-  runServerCommand(trimmed, "bash");
-  return;
+    // ── SERVER MODE — send everything to real server ──
+    runServerCommand(trimmed, "bash");
+    return;
+  }
 
   if (tab === "cmd") {
     // handle "dir /w", "date /t" etc
@@ -1235,6 +1078,20 @@ function switchTermTab(tab) {
   });
   // focus input
   document.getElementById(`term-input-${tab}`)?.focus();
+}
+
+/* ══════════════════════
+   GOOGLE CLOUD SHELL
+══════════════════════ */
+function openGoogleCloudShell(repo) {
+  const baseUrl = "https://shell.cloud.google.com";
+  let url = baseUrl;
+  if (repo) {
+    // If a repo URL is provided, open with git clone command
+    url = `${baseUrl}?cloudshell=true&shellonly=true`;
+  }
+  window.open(url, "_blank");
+  printLine(`<span class="t-info">☁️ Opened Google Cloud Shell</span>`, "bash");
 }
 
 /* ══════════════════════

@@ -15,11 +15,6 @@ app.get("/api/myip", async (req, res) => {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
   res.json({ ip });
 });
-
-app.get("/api/myip", async (req, res) => {
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
-  res.json({ ip });
-});
 /* =========================
    SYSTEM PROMPT
 ========================= */
@@ -771,8 +766,86 @@ app.get("/api/terminal/listfiles", (req, res) => {
   res.json({ files: walk(readDir), dir: readDir });
 });
 
+/* ══════════════════════
+   REAL PTY TERMINAL
+   WebSocket + node-pty
+   Full interactive shell
+══════════════════════ */
+const { WebSocketServer } = require("ws");
+const pty = require("node-pty");
+
+const ptyProcesses = {};
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Running on port ${PORT}`);
+});
+
+// WebSocket PTY server
+const wss = new WebSocketServer({ server, path: "/pty" });
+
+wss.on("connection", (ws) => {
+  const sessionId = "pty_" + Date.now();
+  console.log(`PTY session started: ${sessionId}`);
+
+  let ptyProcess;
+  try {
+    ptyProcess = pty.spawn("bash", [], {
+      name: "xterm-color",
+      cols: 120,
+      rows: 30,
+      cwd: PROJECT_DIR,
+      env: {
+        ...process.env,
+        TERM: "xterm-color",
+        COLORTERM: "truecolor",
+        HOME: os.homedir(),
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      }
+    });
+  } catch(e) {
+    ws.send(JSON.stringify({ type: "output", data: `\r\n\x1b[31m✗ Could not start shell: ${e.message}\x1b[0m\r\n` }));
+    ws.close();
+    return;
+  }
+
+  ptyProcesses[sessionId] = ptyProcess;
+
+  // terminal output → browser
+  ptyProcess.onData(data => {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: "output", data }));
+    }
+  });
+
+  ptyProcess.onExit(() => {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: "exit" }));
+      ws.close();
+    }
+    delete ptyProcesses[sessionId];
+  });
+
+  // browser input → terminal
+  ws.on("message", msg => {
+    try {
+      const parsed = JSON.parse(msg.toString());
+      if (parsed.type === "input")  ptyProcess.write(parsed.data);
+      if (parsed.type === "resize") ptyProcess.resize(
+        Math.max(1, parsed.cols),
+        Math.max(1, parsed.rows)
+      );
+    } catch {
+      ptyProcess.write(msg.toString());
+    }
+  });
+
+  ws.on("close", () => {
+    try { ptyProcess.kill(); } catch {}
+    delete ptyProcesses[sessionId];
+    console.log(`PTY session ended: ${sessionId}`);
+  });
+
+  ws.send(JSON.stringify({ type: "output", data: "\r\n\x1b[32m✓ Real Linux shell connected\x1b[0m\r\n\r\n" }));
 });

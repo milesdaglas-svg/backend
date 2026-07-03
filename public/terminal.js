@@ -91,14 +91,45 @@ function getPS1(tab) {
 ══════════════════════ */
 function printWelcome(tab) {
   const msgs = {
-    bash: [
-      `<span class="t-head">┌─────────────────────────────────────┐</span>`,
-      `<span class="t-head">│  🐧 BASH TERMINAL  — Linux Shell    │</span>`,
-      `<span class="t-head">└─────────────────────────────────────┘</span>`,
-      `<span class="t-muted">Server mode: real commands run on Render. Try: <span class="t-cmd">ls</span> or <span class="t-cmd">git clone [url]</span></span>`,
-      `<span class="t-muted">📁 Device mode: click <span class="t-cmd">Mount</span> button to navigate your real phone/PC files</span>`,
-      ``
-    ],
+    /* ══════════════════════
+   GOOGLE CLOUD SHELL
+   Opens real Google VM
+   in new tab with options
+══════════════════════ */
+function openGoogleCloudShell(repoUrl) {
+  const base = "https://shell.cloud.google.com/cloudshell/editor";
+
+  if (repoUrl) {
+    // open with specific repo already cloned
+    const params = new URLSearchParams({
+      cloudshell_git_repo: repoUrl,
+      cloudshell_print: ".cloudshell/readme.md",
+      shellonly: "true"
+    });
+    window.open(`${base}?${params.toString()}`, "_blank");
+    printLine(`<span class="t-ok">✓ Opening Google Cloud Shell with repo: ${escTerm(repoUrl)}</span>`, "bash");
+    printLine(`<span class="t-muted">Google will clone the repo automatically in your Cloud Shell VM</span>`, "bash");
+  } else {
+    // open plain cloud shell
+    window.open("https://shell.cloud.google.com", "_blank");
+    printLine(`<span class="t-ok">✓ Opening Google Cloud Shell...</span>`, "bash");
+    printLine(`<span class="t-muted">Sign in with your Google account to get a full Linux VM</span>`, "bash");
+  }
+
+  printLine(`
+    <div style="margin:6px 0;padding:10px;background:#0d2030;border:1px solid #1f6feb;border-radius:8px;font-size:11px;">
+      <div style="color:#58a6ff;font-weight:700;margin-bottom:6px;">☁️ Google Cloud Shell — What you get:</div>
+      <div style="color:#8b949e;line-height:1.8;">
+        ✓ Full Ubuntu Linux VM (free)<br>
+        ✓ 5GB persistent home directory<br>
+        ✓ apt install, sudo access<br>
+        ✓ Node, Python, Go, Docker pre-installed<br>
+        ✓ Built-in VS Code editor<br>
+        ✓ Web preview on any port
+      </div>
+      <div style="margin-top:8px;color:#3fb950;font-size:10px;">Tip: Files you create there persist across sessions</div>
+    </div>`, "bash");
+}
     cmd: [
       `<span class="t-head-cmd">╔═════════════════════════════════════╗</span>`,
       `<span class="t-head-cmd">║  🪟 CMD TERMINAL — Windows Style    ║</span>`,
@@ -791,10 +822,12 @@ async function runServerCommand(command, tab) {
           const d2 = await r2.json();
           if (d2.files && Object.keys(d2.files).length) {
             let count = 0;
+            if (!window.files) window.files = {};
             Object.keys(d2.files).forEach(f => {
               if (f.includes("node_modules/")) return;
-              if (!window.files) window.files = {};
-              window.files[f] = d2.files[f]; count++;
+              window.files[f] = d2.files[f];
+              files[f] = d2.files[f];
+              count++;
             });
             if (typeof saveToStorage==="function") saveToStorage();
             if (typeof renderFiles==="function") renderFiles();
@@ -1147,9 +1180,19 @@ function execTermCommand(raw, tab) {
     }
 
     // ── SERVER MODE — send everything to real server ──
-    runServerCommand(trimmed, "bash");
+// ── GOOGLE CLOUD SHELL ──
+  if (cmd === "gcloud" || trimmed === "gcloud") {
+    openGoogleCloudShell();
     return;
   }
+  if (cmd === "gcloud" && args[0] === "clone") {
+    openGoogleCloudShell(args[1]);
+    return;
+  }
+
+  // ── SERVER MODE — send everything to real server ──
+  runServerCommand(trimmed, "bash");
+  return;
 
   if (tab === "cmd") {
     // handle "dir /w", "date /t" etc
@@ -1226,6 +1269,7 @@ function buildTerminal() {
       </div>
       <div class="term-actions">
         <button class="term-btn" onclick="mountDeviceFolder()" title="Mount device folder" style="background:#1a3a2a;color:#00ff88;">📁 Mount</button>
+        <button class="term-btn" onclick="openGoogleCloudShell()" title="Open Google Cloud Shell" style="background:#1a2a3a;color:#4285f4;">☁️ GCloud</button>
         <button class="term-btn" onclick="clearTab(termActiveTab)">⌫ Clear</button>
         <button class="term-btn" onclick="toggleTerminal()">✕</button>
       </div>

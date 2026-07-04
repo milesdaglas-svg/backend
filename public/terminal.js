@@ -614,6 +614,7 @@ function initPtyTerminal() {
   ptyFit = new FitAddon.FitAddon();
   ptyTerm.loadAddon(ptyFit);
   ptyTerm.open(container);
+  ptyTerm.focus();
   setTimeout(() => { try { ptyFit.fit(); } catch {} }, 100);
 
   const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://") + "/pty";
@@ -621,7 +622,11 @@ function initPtyTerminal() {
 
   try {
     ptyWs = new WebSocket(wsUrl);
-    ptyWs.onopen = () => ptyTerm.writeln("\x1b[32m✓ Connected — full bash shell\x1b[0m\r\n");
+    ptyWs.onopen = () => {
+      ptyTerm.writeln("\x1b[32m✓ Connected — full bash shell\x1b[0m\r\n");
+      try { ptyFit.fit(); } catch {}
+      ptyWs.send(JSON.stringify({ type:"resize", cols: ptyTerm.cols, rows: ptyTerm.rows }));
+    };
     ptyWs.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);

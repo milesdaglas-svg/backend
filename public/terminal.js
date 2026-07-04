@@ -29,6 +29,11 @@ let ptyTerm = null;
 let ptyWs   = null;
 let ptyFit  = null;
 
+let vmTerm  = null;
+let vmWs    = null;
+let vmFit   = null;
+let vmCodespaceName = null;
+
 // Per-tab state
 const termState = {
   bash: { history: [], histIdx: 0 },
@@ -650,6 +655,71 @@ function initPtyTerminal() {
 }
 
 /* ══════════════════════
+   USER VM TERMINAL
+   GitHub Codespaces
+══════════════════════ */
+async function initVmTerminal() {
+  const container = document.getElementById("term-out-vm");
+  if (!container) return;
+
+  if (vmTerm) {
+    if (vmWs && vmWs.readyState === WebSocket.OPEN) {
+      try { vmFit?.fit(); vmTerm.focus(); } catch {}
+      return;
+    }
+    try { vmTerm.dispose(); } catch {}
+    vmTerm = null; vmWs = null;
+  }
+
+  const ghToken = typeof ghGetToken === "function" ? ghGetToken() : localStorage.getItem("gh_token");
+  if (!ghToken) {
+    container.innerHTML = `<div style="padding:20px;color:#ff9500;font-family:monospace;">
+      ⚠ Login with GitHub first (use the GitHub panel) to get your own VM.
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  vmTerm = new Terminal({
+    theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7" },
+    fontFamily:"'Share Tech Mono',monospace", fontSize:13, cursorBlink:true, scrollback:5000
+  });
+  vmFit = new FitAddon.FitAddon();
+  vmTerm.loadAddon(vmFit);
+  vmTerm.open(container);
+  vmTerm.focus();
+  setTimeout(() => { try { vmFit.fit(); } catch {} }, 100);
+
+  vmTerm.writeln("\x1b[90mCreating your VM (first time takes ~60s)...\x1b[0m");
+
+  try {
+    const r = await fetch(TERM_SERVER + "/api/vm/create", {
+      method: "POST", headers: { "x-github-token": ghToken }
+    });
+    const d = await r.json();
+    if (d.error) { vmTerm.writeln(`\x1b[31m✗ ${d.error}\x1b[0m`); return; }
+    vmCodespaceName = d.name;
+    vmTerm.writeln("\x1b[32m✓ VM ready — connecting...\x1b[0m\r\n");
+
+    const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://")
+      + `/vm-pty?token=${encodeURIComponent(ghToken)}&name=${encodeURIComponent(vmCodespaceName)}`;
+    vmWs = new WebSocket(wsUrl);
+
+    vmWs.onopen = () => { try { vmFit.fit(); vmWs.send(JSON.stringify({type:"resize",cols:vmTerm.cols,rows:vmTerm.rows})); } catch {} };
+    vmWs.onmessage = (e) => {
+      try { const msg = JSON.parse(e.data); if (msg.type==="output") vmTerm.write(msg.data); if (msg.type==="exit") vmTerm.writeln("\r\n\x1b[31mVM session ended\x1b[0m"); }
+      catch { vmTerm.write(e.data); }
+    };
+    vmWs.onclose = () => vmTerm.writeln("\r\n\x1b[31m⚠ Disconnected\x1b[0m");
+    vmWs.onerror = () => vmTerm.writeln("\r\n\x1b[31m✗ Connection error\x1b[0m");
+    vmTerm.onData(data => { if (vmWs?.readyState === WebSocket.OPEN) vmWs.send(JSON.stringify({type:"input",data})); });
+    vmTerm.onResize(({cols,rows}) => { if (vmWs?.readyState === WebSocket.OPEN) vmWs.send(JSON.stringify({type:"resize",cols,rows})); });
+  } catch(e) {
+    vmTerm.writeln(`\x1b[31m✗ ${e.message}\x1b[0m`);
+  }
+}
+
+/* ══════════════════════
    DEVICE FILESYSTEM
 ══════════════════════ */
 async function mountDeviceFolder() {
@@ -1114,6 +1184,8 @@ function switchTermTab(tab) {
   document.querySelectorAll(".term-tab-pane").forEach(p => p.style.display = p.dataset.tab === tab ? "flex" : "none");
   if (tab === "pty") {
     setTimeout(() => { initPtyTerminal(); try { ptyFit?.fit(); } catch {} }, 100);
+  } else if (tab === "vm") {
+    setTimeout(() => { initVmTerminal(); try { vmFit?.fit(); } catch {} }, 100);
   } else {
     document.getElementById(`term-input-${tab}`)?.focus();
   }
@@ -1131,7 +1203,8 @@ function buildTerminal() {
     { id:"cmd",   label:"🪟 CMD",    color:"#00d4ff" },
     { id:"vsc",   label:"💙 VSCode", color:"#007acc" },
     { id:"node",  label:"🟢 Node",   color:"#68d391" },
-    { id:"pty",   label:"⚡ Shell",  color:"#ff9500" }
+    { id:"pty",   label:"⚡ Shell",  color:"#ff9500" },
+    { id:"vm",    label:"🖥 My VM",  color:"#a855f7" }
   ];
 
   container.innerHTML = `
@@ -1159,7 +1232,7 @@ function buildTerminal() {
         style="display:${termActiveTab===t.id?"flex":"none"};flex-direction:column;flex:1;min-height:0;">
         <div class="term-output" id="term-out-${t.id}"
           style="${t.id==='pty'?'padding:0;overflow:hidden;flex:1;':''}"></div>
-        ${t.id !== "pty" ? `
+        ${(t.id !== "pty" && t.id !== "vm") ? `
         <div class="term-input-row">
           ${t.id==="bash" ? `<span class="t-ps1">user@godmode:~$</span>` :
             t.id==="cmd"  ? `<span class="t-ps1-cmd">C:\\workspace&gt;</span>` :

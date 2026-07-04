@@ -819,6 +819,40 @@ app.get("/api/terminal/listfiles", (req, res) => {
 });
 
 /* ══════════════════════
+   USER VM — GITHUB CODESPACES
+══════════════════════ */
+const SANDBOX_REPO = "godmode-sandbox";
+
+app.post("/api/vm/create", async (req, res) => {
+  const token = req.headers["x-github-token"];
+  if (!token) return res.status(401).json({ error: "No GitHub token" });
+  try {
+    const user = await githubAPI("GET", "/user", token);
+    let repo;
+    try {
+      repo = await githubAPI("GET", `/repos/${user.login}/${SANDBOX_REPO}`, token);
+    } catch {
+      repo = await githubAPI("POST", "/user/repos", token, {
+        name: SANDBOX_REPO, private: true, auto_init: true
+      });
+    }
+    const codespace = await githubAPI("POST", "/user/codespaces", token, {
+      repository_id: repo.id, machine: "basicLinux32gb"
+    });
+    res.json({ name: codespace.name, state: codespace.state, web_url: codespace.web_url });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get("/api/vm/status/:name", async (req, res) => {
+  const token = req.headers["x-github-token"];
+  if (!token) return res.status(401).json({ error: "No token" });
+  try {
+    const cs = await githubAPI("GET", `/user/codespaces/${req.params.name}`, token);
+    res.json({ state: cs.state, web_url: cs.web_url });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ══════════════════════
    REAL PTY TERMINAL
    WebSocket + node-pty
    Full interactive shell
@@ -900,4 +934,34 @@ wss.on("connection", (ws) => {
   });
 
   ws.send(JSON.stringify({ type: "output", data: "\r\n\x1b[32m✓ Real Linux shell connected\x1b[0m\r\n\r\n" }));
+});
+/* ══════════════════════
+   VM TERMINAL — gh codespace ssh
+══════════════════════ */
+const ghPath = path.join(__dirname, "gh_2.62.0_linux_amd64", "bin", "gh");
+const vmWss = new WebSocketServer({ server, path: "/vm-pty" });
+
+vmWss.on("connection", (ws, req) => {
+  const params = new URLSearchParams(req.url.split("?")[1] || "");
+  const token = params.get("token");
+  const csName = params.get("name");
+  if (!token || !csName) { ws.send(JSON.stringify({type:"output",data:"✗ missing token/codespace name\r\n"})); ws.close(); return; }
+
+  const vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", csName], {
+    name: "xterm-color", cols: 120, rows: 30,
+    env: { ...process.env, GH_TOKEN: token }
+  });
+
+  vmPty.onData(data => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({type:"output",data})); });
+  vmPty.onExit(() => { if (ws.readyState === ws.OPEN) { ws.send(JSON.stringify({type:"exit"})); ws.close(); } });
+
+  ws.on("message", msg => {
+    try {
+      const p = JSON.parse(msg.toString());
+      if (p.type === "input") vmPty.write(p.data);
+      if (p.type === "resize") vmPty.resize(Math.max(1,p.cols), Math.max(1,p.rows));
+    } catch { vmPty.write(msg.toString()); }
+  });
+
+  ws.on("close", () => { try { vmPty.kill(); } catch {} });
 });

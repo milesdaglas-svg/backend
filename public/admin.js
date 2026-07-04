@@ -196,6 +196,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('theme',this)">
             <span class="adm-nav-icon">🎨</span><span>Theme</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('myapps',this);loadAdminMyAppsTab();">
+            <span class="adm-nav-icon">🚀</span><span>My Apps</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -312,6 +315,9 @@ async function showAdminPanel() {
           </div>
           <div class="adm-tab" id="adm-tab-theme">
             <div id="adm-theme-content"></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-myapps">
+            <div id="adm-myapps-content"><div class="adm-feed-loading">// Loading...</div></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">

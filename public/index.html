@@ -29,6 +29,7 @@
 <link rel="stylesheet" href="source-control.css">
 <link rel="stylesheet" href="github-panel.css">
 <link rel="stylesheet" href="extensions.css">
+<link rel="stylesheet" href="myapps.css">
 <link rel="stylesheet" href="admin-fixes.css">
 <script src="firebase-config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -178,6 +179,7 @@
       <button class="activity-btn" data-panel="outline" onclick="activitySwitch('outline')" title="Outline">⊟</button>
       <button class="activity-btn" data-panel="github" onclick="activitySwitch('github')" title="GitHub">🐙</button>
       <button class="activity-btn" data-panel="extensions" onclick="activitySwitch('extensions')" title="Extensions">🧩</button>
+      <button class="activity-btn" data-panel="myapps" onclick="activitySwitch('myapps');renderMyAppsPanel();" title="My Apps">🚀</button>
     </div>
     <div class="activity-bar-bottom">
       <button class="activity-btn" onclick="openSettings()" title="Settings">⚙</button>
@@ -269,7 +271,8 @@
         <div id="outline-list"><div class="outline-empty">// Open a file to see outline</div></div>
       </div>
     </div>
-    <div class="sidebar-panel" data-panel="extensions">
+    <script src="extensions-cloud.js"></script>
+<script src="myapps.js"></script>
       <div class="sidebar-header">
         <span>Extensions</span>
         <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>

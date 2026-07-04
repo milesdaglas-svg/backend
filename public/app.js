@@ -780,7 +780,48 @@ document.getElementById("collapsePreviewBtn").onclick=()=>document.getElementByI
 document.getElementById("collapseAiBtn").onclick=()=>{document.getElementById("aiPanel").classList.add("collapsed");document.getElementById("aiResizer").classList.add("hidden");};
 
 /* ========== TOPBAR ========== */
-document.getElementById("runBtn").onclick=()=>{updatePreview(currentFile);showToast("Preview refreshed","info");};
+document.getElementById("runBtn").onclick=smartRun;
+
+async function smartRun(){
+  const pkgFile = Object.keys(files).find(f => f === "package.json" || f.endsWith("/package.json"));
+  if(!pkgFile){
+    updatePreview(currentFile);
+    showToast("Preview refreshed","info");
+    return;
+  }
+  let pkg;
+  try{ pkg = JSON.parse(files[pkgFile]); }catch{
+    showToast("package.json is invalid — falling back to static preview","error");
+    updatePreview(currentFile);
+    return;
+  }
+  const script = pkg.scripts?.start ? "npm start" : pkg.scripts?.dev ? "npm run dev" : null;
+  if(!script){
+    showToast("No start/dev script found — falling back to static preview","info");
+    updatePreview(currentFile);
+    return;
+  }
+  showToast("⟳ Detected Node project — syncing & starting server...","info");
+  try{
+    await fetch(TERM_SERVER + "/api/terminal/sync", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ files: window.files || {} })
+    });
+    const r = await fetch(TERM_SERVER + "/api/terminal/start", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ command: script, port: 3000 })
+    });
+    const d = await r.json();
+    if(d.previewUrl){
+      openServerPreview(d.previewUrl);
+      showToast("✓ Server running — preview opened","success");
+    } else {
+      showToast("Server start failed: "+(d.error||"unknown error"),"error");
+    }
+  }catch(e){
+    showToast("Run failed: "+e.message,"error");
+  }
+}
 
 document.getElementById("newFileBtn").onclick=()=>{
   const name=prompt("File name (e.g. src/app.js):");if(!name?.trim())return;

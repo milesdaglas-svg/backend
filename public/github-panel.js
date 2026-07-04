@@ -33,6 +33,33 @@ function ghGetSavedRepo()    { return localStorage.getItem(GH_REPO_KEY) || ""; }
 function ghSaveRepo(r)       { localStorage.setItem(GH_REPO_KEY, r); }
 function ghGetSavedBranch()  { return localStorage.getItem(GH_BRANCH_KEY) || "main"; }
 function ghSaveBranch(b)     { localStorage.setItem(GH_BRANCH_KEY, b); }
+async function refreshCiBadge(){
+  const badge = document.getElementById("explorer-ci-badge");
+  if(!badge) return;
+  const token = ghGetToken();
+  const repo = ghGetSavedRepo();
+  if(!token || !repo){ badge.style.display="none"; return; }
+  const [owner, name] = repo.split("/");
+  try{
+    const r = await fetch(`${SERVER_BASE}/api/github/actions?owner=${owner}&repo=${name}`, { headers:{"x-github-token":token} });
+    const runs = await r.json();
+    const latest = Array.isArray(runs) ? runs[0] : null;
+    if(!latest){ badge.style.display="none"; return; }
+    const map = {
+      success:  ["✓ passing", "#00cc88", "rgba(0,255,136,0.12)"],
+      failure:  ["✗ failing", "#f85149", "rgba(248,81,73,0.12)"],
+      cancelled:["⊘ cancelled","#8b949e", "rgba(139,148,158,0.12)"]
+    };
+    const info = map[latest.conclusion] || ["⟳ running","#58a6ff","rgba(88,166,255,0.12)"];
+    badge.innerText = info[0];
+    badge.style.color = info[1];
+    badge.style.background = info[2];
+    badge.style.display = "inline-block";
+  }catch{ badge.style.display="none"; }
+}
+setInterval(refreshCiBadge, 60000);
+window.addEventListener("load", ()=> setTimeout(refreshCiBadge, 3000));
+
 
 /* ══════════════════════
    API HELPER

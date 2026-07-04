@@ -33,6 +33,36 @@ async function hashPassword(password){
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
+async function saveWorkspaceToCloud(){
+  if(!currentAiUser) return showToast("Login first to save your workspace","error");
+  if(!await initFirebase()) return showToast("Firebase not ready","error");
+  const{doc,setDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  try{
+    await setDoc(doc(firebaseDB,"workspaces",currentAiUser.username),{
+      files: window.files || {},
+      updatedAt: Date.now()
+    });
+    showToast("✓ Workspace saved to cloud","success");
+  }catch(e){ showToast("Save failed: "+e.message,"error"); }
+}
+
+async function loadWorkspaceFromCloud(){
+  if(!currentAiUser) return;
+  if(!await initFirebase()) return;
+  const{doc,getDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  try{
+    const snap = await getDoc(doc(firebaseDB,"workspaces",currentAiUser.username));
+    if(snap.exists() && snap.data().files){
+      if(!confirm("Load your saved workspace from the cloud? This will replace your current files.")) return;
+      window.files = snap.data().files;
+      files = window.files;
+      if(typeof saveToStorage==="function") saveToStorage();
+      if(typeof renderFiles==="function") renderFiles();
+      if(typeof renderTabs==="function") renderTabs();
+      showToast("✓ Workspace loaded from cloud","success");
+    }
+  }catch(e){ showToast("Load failed: "+e.message,"error"); }
+}
 
 async function aiRegister(username, password){
   if(!username||!password) return showToast("Enter username and password","error");
@@ -74,6 +104,7 @@ async function aiLogin(username, password){
   showToast(`✓ Welcome back, ${userData.displayName}!`, "success");
   renderAiUserHeader();
   await loadUserChat();
+  await loadWorkspaceFromCloud();
 }
 
 function renderAiLoginUI(){

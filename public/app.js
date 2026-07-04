@@ -730,6 +730,7 @@ document.getElementById("aiSend").onclick=async()=>{
 document.getElementById("aiInput").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")document.getElementById("aiSend").click();});
 document.getElementById("clearChatBtn").onclick=()=>{document.getElementById("aiChat").innerHTML="";aiChatHistory=[];showToast("Chat cleared","info");};
 document.getElementById("saveConversationBtn").onclick=saveCloudConversation;
+document.getElementById("saveWorkspaceBtn").onclick=saveWorkspaceToCloud;
 document.querySelectorAll(".prompt-btn").forEach(btn=>{btn.onclick=()=>{document.getElementById("aiInput").value=btn.dataset.prompt;document.getElementById("aiInput").focus();};});
 
 /* ========== IMAGE SEARCH ========== */

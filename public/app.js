@@ -16,6 +16,98 @@ let files = {
   "script.js":`console.log("VS Code God Mode");`
 };
 let openFolders=new Set();
+const PROJECT_TEMPLATES = {
+  blank: { "index.html":`<!DOCTYPE html>\n<html><head><title>New Project</title></head><body><h1>Hello</h1></body></html>` },
+  "react-cdn": {
+    "index.html":`<!DOCTYPE html>\n<html>\n<head>\n<title>React App</title>\n<script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>\n<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>\n<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>\n</head>\n<body>\n<div id="root"></div>\n<script type="text/babel" src="app.js"><\/script>\n</body>\n</html>`,
+    "app.js":`function App(){\n  return <h1>Hello React 👋</h1>;\n}\nReactDOM.createRoot(document.getElementById("root")).render(<App/>);`
+  },
+  "express-api": {
+    "server.js":`const express = require("express");\nconst app = express();\napp.get("/", (req,res)=>res.send("Hello from Express!"));\napp.listen(3000, ()=>console.log("Server on port 3000"));`,
+    "package.json":`{\n  "name": "my-api",\n  "scripts": { "start": "node server.js" },\n  "dependencies": { "express": "^4.18.2" }\n}`
+  }
+};
+
+function openTemplateMenu(){
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  const overlay = document.createElement("div");
+  overlay.className = "snippet-overlay";
+  overlay.onclick = ()=>{ overlay.remove(); menu.remove(); };
+  const menu = document.createElement("div");
+  menu.className = "snippet-menu";
+  menu.innerHTML = `
+    <div class="snippet-menu-header"><span>📦 New Project From Template</span><button onclick="this.closest('.snippet-menu').remove();document.querySelector('.snippet-overlay')?.remove();" style="background:transparent;border:none;color:#ccc;cursor:pointer;">✕</button></div>
+    <div class="snippet-menu-list">
+      <div class="snippet-item" onclick="applyTemplate('blank')"><div class="snippet-item-name">📄 Blank</div><div class="snippet-item-desc">Single empty HTML page</div></div>
+      <div class="snippet-item" onclick="applyTemplate('react-cdn')"><div class="snippet-item-name">⚛ React (CDN)</div><div class="snippet-item-desc">React + Babel, no build step</div></div>
+      <div class="snippet-item" onclick="applyTemplate('express-api')"><div class="snippet-item-name">🚂 Express API</div><div class="snippet-item-desc">Node server, use Smart Run to start</div></div>
+    </div>`;
+  document.body.append(overlay, menu);
+}
+
+function applyTemplate(key){
+  const tpl = PROJECT_TEMPLATES[key];
+  if(!tpl) return;
+  if(!confirm("Replace current project with this template? Unsaved work will be lost.")) return;
+  files = JSON.parse(JSON.stringify(tpl));
+  window.files = files;
+  currentFile = Object.keys(files)[0];
+  openFolders = new Set();
+  saveToStorage();
+  renderFiles(); renderTabs(); openFile(currentFile);
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  showToast(`✓ Loaded template: ${key}`,"success");
+}
+let pendingAiChanges = [];
+
+function showAiDiffModal(changes){
+  pendingAiChanges = changes;
+  document.querySelector(".gh-modal-overlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.className = "gh-modal-overlay";
+  overlay.innerHTML = `
+    <div class="gh-modal">
+      <div class="gh-modal-title">🤖 AI wants to change ${changes.length} file(s)</div>
+      <div style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+        ${changes.map(c=>`<div style="font-size:12px;color:#ccc;padding:6px 10px;background:#0d1117;border-radius:6px;">
+          ${files[c.file]!==undefined?"📝 Modified":"🆕 New"}: <b>${c.file}</b>
+        </div>`).join("")}
+      </div>
+      <div class="gh-modal-row" style="margin-top:10px;">
+        <button class="gh-btn gh-btn-green" onclick="applyPendingAiChanges()">✓ Apply All</button>
+        <button class="gh-btn gh-btn-ghost" onclick="cancelPendingAiChanges()">✕ Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function applyPendingAiChanges(){
+  let updatedFiles=0;
+  pendingAiChanges.forEach(c=>{
+    if(c.file&&c.code!==undefined){
+      if(files[c.file]!==undefined && typeof sendToBin==="function") sendToBin(c.file, files[c.file]);
+      files[c.file]=c.code;
+      const parts=c.file.split("/");
+      for(let i=1;i<parts.length;i++) openFolders.add(parts.slice(0,i).join("/"));
+      updatedFiles++;
+    }
+  });
+  renderFiles();renderTabs();
+  const firstChanged=pendingAiChanges.find(c=>c.file&&files[c.file]!==undefined);
+  if(firstChanged) openFile(firstChanged.file);
+  saveToStorage();
+  showToast(`✅ ${updatedFiles} file(s) updated`,"success");
+  document.querySelector(".gh-modal-overlay")?.remove();
+  pendingAiChanges = [];
+}
+
+function cancelPendingAiChanges(){
+  document.querySelector(".gh-modal-overlay")?.remove();
+  pendingAiChanges = [];
+  showToast("Changes discarded","info");
+}
 
 /* ========== STORAGE ========== */
 function saveToStorage(){
@@ -696,23 +788,7 @@ document.getElementById("aiSend").onclick=async()=>{
     thinking.remove();
 
     if(data.changes&&data.changes.length>0){
-      let updatedFiles=0;
-      data.changes.forEach(c=>{
-        if(c.file&&c.code!==undefined){
-          if(files[c.file]!==undefined && typeof sendToBin==="function") sendToBin(c.file, files[c.file]);
-          files[c.file]=c.code;
-          // auto-open parent folders
-          const parts=c.file.split("/");
-          for(let i=1;i<parts.length;i++) openFolders.add(parts.slice(0,i).join("/"));
-          updatedFiles++;
-        }
-      });
-      renderFiles();renderTabs();
-      // open the first changed file
-      const firstChanged=data.changes.find(c=>c.file&&files[c.file]!==undefined);
-      if(firstChanged) openFile(firstChanged.file);
-      else openFile(currentFile);
-      showToast(`✅ ${updatedFiles} file(s) updated`,"success");
+      showAiDiffModal(data.changes);
     }
 
     const reply=data.reply||"Done ✓";

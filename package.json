@@ -6,6 +6,7 @@
   "scripts": {
     "start":      "node app.js",
     "dev":        "node app.js",
+    "build":      "npm rebuild node-pty",
     "cap:sync":   "npx cap sync",
     "cap:android":"npx cap open android",
     "cap:build":  "npx cap sync && npx cap open android"

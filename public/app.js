@@ -444,15 +444,20 @@ const shared={
     noSemanticValidation: false,
     noSyntaxValidation: false
   });
+  let previewDebounceTimer=null;
+  function debouncedUpdatePreview(page){
+    clearTimeout(previewDebounceTimer);
+    previewDebounceTimer=setTimeout(()=>updatePreview(page),400);
+  }
   editor1.onDidChangeModelContent(()=>{
     if(isSyncing)return;files[currentFile]=editor1.getValue();
     if(!splitActive){isSyncing=true;editor2.setValue(editor1.getValue());isSyncing=false;}
-    if(currentFile.endsWith(".html"))updatePreview(currentFile);
+    if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);
   });
   editor2.onDidChangeModelContent(()=>{
     if(isSyncing)return;
-    if(splitActive){files[splitFile]=editor2.getValue();if(splitFile.endsWith(".html"))updatePreview(splitFile);}
-    else{files[currentFile]=editor2.getValue();isSyncing=true;editor1.setValue(editor2.getValue());isSyncing=false;if(currentFile.endsWith(".html"))updatePreview(currentFile);}
+    if(splitActive){files[splitFile]=editor2.getValue();if(splitFile.endsWith(".html"))debouncedUpdatePreview(splitFile);}
+    else{files[currentFile]=editor2.getValue();isSyncing=true;editor1.setValue(editor2.getValue());isSyncing=false;if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);}
   });
   renderFiles();renderTabs();updatePreview(currentFile);updateSplitHeader();
   setTimeout(()=>Object.keys(files).filter(f=>!f.endsWith("/.gitkeep")).forEach(f=>addRecent(f)),300);

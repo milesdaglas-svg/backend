@@ -851,7 +851,80 @@ app.get("/api/vm/status/:name", async (req, res) => {
     res.json({ state: cs.state, web_url: cs.web_url });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
+/* ══════════════════════
+   EXPORT AS APK
+══════════════════════ */
+app.post("/api/export-app/build", async (req, res) => {
+  const token = req.headers["x-github-token"];
+  const { files } = req.body;
+  if (!token || !files) return res.status(400).json({ error: "Missing token or files" });
+  try {
+    const user = await githubAPI("GET", "/user", token);
+    try { await githubAPI("GET", `/repos/${user.login}/${SANDBOX_REPO}`, token); }
+    catch { await githubAPI("POST", "/user/repos", token, { name: SANDBOX_REPO, private:true, auto_init:true }); }
 
+    let existingShas = {};
+    try {
+      const tree = await githubAPI("GET", `/repos/${user.login}/${SANDBOX_REPO}/git/trees/main?recursive=1`, token);
+      if (tree.tree) tree.tree.forEach(item=>{ if(item.type==="blob") existingShas[item.path]=item.sha; });
+    } catch {}
+
+    for (const [filePath, content] of Object.entries(files)) {
+      if (!filePath || filePath.endsWith("/.gitkeep")) continue;
+      if (/\.(png|jpg|jpeg|gif|webp|ico|mp3|mp4|wav|webm)$/i.test(filePath)) continue;
+      const dest = `www/${filePath}`;
+      const encoded = Buffer.from(String(content||""), "utf8").toString("base64");
+      const body = { message:"Export app files", content: encoded, branch:"main" };
+      if (existingShas[dest]) body.sha = existingShas[dest];
+      await githubAPI("PUT", `/repos/${user.login}/${SANDBOX_REPO}/contents/${dest}`, token, body);
+      await new Promise(r=>setTimeout(r,80));
+    }
+
+    const workflowYml = `name: Build APK
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - run: npm init -y
+      - run: npm install @capacitor/core @capacitor/cli @capacitor/android
+      - run: npx cap init godmode-app com.godmode.app --web-dir=www
+      - run: npx cap add android
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+`;
+    const wfPath = ".github/workflows/build-apk.yml";
+    const wfBody = { message:"Add APK build workflow", content: Buffer.from(workflowYml,"utf8").toString("base64"), branch:"main" };
+    if (existingShas[wfPath]) wfBody.sha = existingShas[wfPath];
+    await githubAPI("PUT", `/repos/${user.login}/${SANDBOX_REPO}/contents/${wfPath}`, token, wfBody);
+
+    await githubAPI("POST", `/repos/${user.login}/${SANDBOX_REPO}/actions/workflows/build-apk.yml/dispatches`, token, { ref:"main" });
+    res.json({ success:true, repo: `${user.login}/${SANDBOX_REPO}` });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get("/api/export-app/status", async (req, res) => {
+  const token = req.headers["x-github-token"];
+  if (!token) return res.status(401).json({ error:"No token" });
+  try {
+    const user = await githubAPI("GET", "/user", token);
+    const runs = await githubAPI("GET", `/repos/${user.login}/${SANDBOX_REPO}/actions/runs?per_page=1`, token);
+    const run = runs.workflow_runs?.[0];
+    if (!run) return res.json({ status:"none" });
+    res.json({ status: run.status, conclusion: run.conclusion, html_url: run.html_url });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 /* ══════════════════════
    REAL PTY TERMINAL
    WebSocket + node-pty

@@ -210,6 +210,8 @@ function renderGithubPanel() {
       </div>
       <div class="gh-progress" id="gh-progress" style="display:none;"><div class="gh-progress-bar" id="gh-progress-bar" style="width:0%"></div></div>
       <div id="gh-status" class="gh-status-msg"></div>
+      <button class="gh-btn gh-btn-blue" onclick="exportAppBuild()" style="margin-top:6px;">📦 Export as App</button>
+      <div id="gh-export-status" class="gh-status-msg"></div>
     </div>
 
     <!-- TABS -->
@@ -666,3 +668,38 @@ window.addEventListener("load", () => {
     }
   }, 2000);
 });
+async function exportAppBuild(){
+  const token = ghGetToken();
+  if(!token) return showToast("Login with GitHub first","error");
+  const statusEl = document.getElementById("gh-export-status");
+  if(statusEl) statusEl.innerText = "⟳ Starting build...";
+  try{
+    const r = await fetch(SERVER_BASE + "/api/export-app/build", {
+      method:"POST", headers:{"Content-Type":"application/json","x-github-token":token},
+      body: JSON.stringify({ files: window.files || {} })
+    });
+    const d = await r.json();
+    if(d.error){ if(statusEl) statusEl.innerText = "✗ "+d.error; return; }
+    if(statusEl) statusEl.innerText = "⟳ Build started — checking status...";
+    pollExportStatus();
+  }catch(e){ if(statusEl) statusEl.innerText = "✗ "+e.message; }
+}
+
+async function pollExportStatus(){
+  const token = ghGetToken();
+  const statusEl = document.getElementById("gh-export-status");
+  try{
+    const r = await fetch(SERVER_BASE + "/api/export-app/status", { headers:{"x-github-token":token} });
+    const d = await r.json();
+    if(d.status === "completed"){
+      if(d.conclusion === "success"){
+        statusEl.innerHTML = `✓ Build done — <a href="${d.html_url}" target="_blank" style="color:#58a6ff;">download APK from GitHub →</a>`;
+      } else {
+        statusEl.innerHTML = `✗ Build failed — <a href="${d.html_url}" target="_blank" style="color:#f85149;">view logs →</a>`;
+      }
+      return;
+    }
+    if(statusEl) statusEl.innerText = "⟳ Still building... (checking again in 15s)";
+    setTimeout(pollExportStatus, 15000);
+  }catch(e){ if(statusEl) statusEl.innerText = "✗ "+e.message; }
+}

@@ -271,8 +271,16 @@
         <div id="outline-list"><div class="outline-empty">// Open a file to see outline</div></div>
       </div>
     </div>
-    <script src="extensions-cloud.js"></script>
-<script src="myapps.js"></script>
+
+    <div class="sidebar-panel" data-panel="myapps">
+      <div class="sidebar-header">
+        <span>🚀 My Apps</span>
+        <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
+      </div>
+      <div class="myapps-panel-body" id="myapps-list"><div class="myapps-empty">// Loading...</div></div>
+    </div>
+
+    <div class="sidebar-panel" data-panel="extensions">
       <div class="sidebar-header">
         <span>Extensions</span>
         <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
@@ -476,6 +484,7 @@
 <script src="source-control.js"></script>
 <script src="github-panel.js"></script>
 <script src="extensions-cloud.js"></script>
+<script src="myapps.js"></script>
 <script src="extensions-pack1.js"></script>
 <script src="extensions-pack2.js"></script>
 <script src="extensions-pack3.js"></script>

@@ -575,8 +575,14 @@ function initPtyTerminal() {
   if (!container) return;
 
   if (ptyTerm) {
-    try { ptyFit?.fit(); } catch {}
-    return;
+    if (ptyWs && ptyWs.readyState === WebSocket.OPEN) {
+      try { ptyFit?.fit(); } catch {}
+      return;
+    }
+    // stale/disconnected session — tear down and reconnect
+    try { ptyTerm.dispose(); } catch {}
+    ptyTerm = null;
+    ptyWs = null;
   }
 
   container.innerHTML = "";

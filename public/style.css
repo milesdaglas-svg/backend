@@ -173,6 +173,10 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 @media(max-width:768px){
   .mobile-only{display:flex!important;}
   .desktop-only{display:flex!important;} /* show ALL buttons on mobile too */
+  #downloadAllBtn, #imageSearchBtn, #mediaBtn, #binBtn, #modelBrowserBtn,
+  #themeBtn, #consoleToggleBtn, #settingsBtn, #updatesBtn, #adminBtn {
+    display: none !important;
+  }
   .mobile-nav{display:flex;}
   #terminalPanel{margin-left:0!important;width:100%!important;left:0!important;}
 

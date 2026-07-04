@@ -28,7 +28,7 @@ function loadFromStorage(){
   }catch{}return false;
 }
 setInterval(saveToStorage,3000);
-
+setInterval(()=>{ if(typeof currentAiUser!=="undefined" && currentAiUser && typeof saveWorkspaceToCloud==="function") saveWorkspaceToCloud(); }, 300000);
 /* ========== TOAST ========== */
 function showToast(msg,type="info"){
   const t=document.getElementById("toast");t.innerText=msg;t.className="toast show "+type;
@@ -699,6 +699,7 @@ document.getElementById("aiSend").onclick=async()=>{
       let updatedFiles=0;
       data.changes.forEach(c=>{
         if(c.file&&c.code!==undefined){
+          if(files[c.file]!==undefined && typeof sendToBin==="function") sendToBin(c.file, files[c.file]);
           files[c.file]=c.code;
           // auto-open parent folders
           const parts=c.file.split("/");

@@ -1285,6 +1285,16 @@ function buildTerminal() {
         }
       }
       if (e.key==="l" && e.ctrlKey) { e.preventDefault(); clearTab(t.id); }
+      if (e.key==="r" && e.ctrlKey) {
+        e.preventDefault();
+        const q = input.value.trim();
+        if (!q) return;
+        const h = state?.history || [];
+        for (let i = h.length - 1; i >= 0; i--) {
+          if (h[i].includes(q) && h[i] !== q) { input.value = h[i]; return; }
+        }
+        printLine(`<span class="t-muted">(no match for '${escTerm(q)}')</span>`, t.id);
+      }
       if (e.key==="c" && e.ctrlKey) { input.value=""; printLine(`<span class="t-muted">^C</span>`, t.id); }
     });
   });

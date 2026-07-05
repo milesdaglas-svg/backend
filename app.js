@@ -926,8 +926,6 @@ app.get("/api/export-app/status", async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 /* ══════════════════════
-   REAL PTY TERMINAL
-   /* ══════════════════════
    PUSH NOTIFICATIONS
 ══════════════════════ */
 const webpush = require("web-push");
@@ -936,9 +934,6 @@ webpush.setVapidDetails("mailto:admin@vscodegodmode.app", process.env.VAPID_PUBL
 app.post("/api/push/send", async (req, res) => {
   const { title, message } = req.body;
   if (!title || !message) return res.status(400).json({ error: "Missing title/message" });
-  try {
-    const fbCfg = require("../public/firebase-config.js");
-  } catch {}
   try {
     const projectId = req.body.projectId || "vsc-clone";
     const apiKey = req.body.apiKey;
@@ -959,6 +954,8 @@ app.post("/api/push/send", async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ══════════════════════
+   REAL PTY TERMINAL
    WebSocket + node-pty
    Full interactive shell
 ══════════════════════ */

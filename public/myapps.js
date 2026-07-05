@@ -29,7 +29,7 @@ async function renderMyAppsPanel(){
   if(!apps.length){ container.innerHTML = `<div class="myapps-empty">No apps added yet</div>`; return; }
   container.innerHTML = apps.map(a=>`
     <div class="myapps-card" onclick="window.open('${a.url.replace(/'/g,"\\'")}','_blank')">
-      <div class="myapps-card-icon">${a.icon||"🚀"}</div>
+      <div class="myapps-card-icon">${a.image?`<img src="${a.image}" style="width:24px;height:24px;object-fit:cover;border-radius:${a.shape==='circle'?'50%':a.shape==='rounded'?'6px':'0'};">`:(a.icon||"🚀")}</div>
       <div class="myapps-card-body">
         <div class="myapps-card-name">${escapeHtml(a.name)}</div>
         <div class="myapps-card-desc">${escapeHtml(a.description||"")}</div>
@@ -49,7 +49,7 @@ async function loadAdminMyAppsTab(){
     <div class="myapps-adm-list" id="myapps-adm-list">
       ${apps.length ? apps.map((a,i)=>`
         <div class="myapps-adm-item">
-          <div class="myapps-adm-item-icon">${a.icon||"🚀"}</div>
+          <div class="myapps-adm-item-icon">${a.image?`<img src="${a.image}" style="width:20px;height:20px;object-fit:cover;border-radius:${a.shape==='circle'?'50%':a.shape==='rounded'?'6px':'0'};">`:(a.icon||"🚀")}</div>
           <div class="myapps-adm-item-info">
             <div class="myapps-adm-item-name">${escapeHtml(a.name)}</div>
             <div class="myapps-adm-item-url">${escapeHtml(a.url)}</div>
@@ -64,7 +64,15 @@ async function loadAdminMyAppsTab(){
     <div class="adm-form">
       <div class="adm-field"><label>App Name *</label><input id="myapp-name" class="adm-input" placeholder="e.g. My Portfolio Site"></div>
       <div class="adm-field"><label>URL *</label><input id="myapp-url" class="adm-input" placeholder="https://..."></div>
-      <div class="adm-field"><label>Icon (emoji)</label><input id="myapp-icon" class="adm-input" placeholder="🚀" maxlength="4"></div>
+      <div class="adm-field"><label>Image URL (optional — leave empty to use emoji instead)</label><input id="myapp-image" class="adm-input" placeholder="https://example.com/logo.png"></div>
+      <div class="adm-field"><label>Image Shape</label>
+        <select id="myapp-shape" class="adm-input">
+          <option value="circle">⚪ Circle</option>
+          <option value="rounded">▢ Rounded Square</option>
+          <option value="square">⬛ Square (no rounding)</option>
+        </select>
+      </div>
+      <div class="adm-field"><label>Icon (emoji — used only if no image URL given)</label><input id="myapp-icon" class="adm-input" placeholder="🚀" maxlength="4"></div>
       <div class="adm-field"><label>Description</label><textarea id="myapp-desc" class="adm-textarea" rows="2" placeholder="Short description users will see"></textarea></div>
       <div class="adm-form-actions">
         <button class="adm-btn adm-btn-primary" onclick="addMyApp()">➕ Add App</button>
@@ -76,12 +84,14 @@ async function loadAdminMyAppsTab(){
 async function addMyApp(){
   const name = document.getElementById("myapp-name")?.value.trim();
   const url = document.getElementById("myapp-url")?.value.trim();
+  const image = document.getElementById("myapp-image")?.value.trim();
+  const shape = document.getElementById("myapp-shape")?.value || "circle";
   const icon = document.getElementById("myapp-icon")?.value.trim();
   const description = document.getElementById("myapp-desc")?.value.trim();
   const statusEl = document.getElementById("myapp-status");
   if(!name || !url){ if(statusEl) statusEl.innerText = "Name and URL are required"; return; }
   const apps = await getMyApps();
-  apps.push({ name, url, icon: icon||"🚀", description });
+  apps.push({ name, url, image, shape, icon: icon||"🚀", description });
   const ok = await saveMyApps(apps);
   if(statusEl) statusEl.innerText = ok ? "✓ Added" : "✗ Failed to save";
   loadAdminMyAppsTab();

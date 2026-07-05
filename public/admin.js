@@ -199,6 +199,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('myapps',this);loadAdminMyAppsTab();">
             <span class="adm-nav-icon">🚀</span><span>My Apps</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('replies',this);loadAdminRepliesTab();">
+            <span class="adm-nav-icon">💬</span><span>Replies</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -318,6 +321,9 @@ async function showAdminPanel() {
           </div>
           <div class="adm-tab" id="adm-tab-myapps">
             <div id="adm-myapps-content"><div class="adm-feed-loading">// Loading...</div></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-replies">
+            <div id="adm-replies-content"><div class="adm-feed-loading">// Loading...</div></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
@@ -1209,4 +1215,44 @@ async function applyGlobalSettings() {
       const ai = document.getElementById("toggleAiBtn"); if(ai) ai.style.display = "none";
     }
   } catch {}
+}
+async function loadAdminRepliesTab(){
+  const el = document.getElementById("adm-replies-content");
+  if(!el) return;
+  el.innerHTML = `<div class="adm-feed-loading">// Loading...</div>`;
+  const db = await initAnnounceDB();
+  if(!db){ el.innerHTML = `<div class="adm-feed-empty">Firebase not connected</div>`; return; }
+  try{
+    const{collection,getDocs,query,orderBy}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const anns = await fetchAllAnnouncements();
+    if(!anns.length){ el.innerHTML = `<div class="adm-feed-empty">No broadcasts yet</div>`; return; }
+
+    let html = `<div class="adm-section-title">// USER REPLIES TO BROADCASTS</div>`;
+    let totalReplies = 0;
+
+    for(const ann of anns){
+      const snap = await getDocs(query(collection(db,"replies"), orderBy("timestamp","asc")));
+      const replies = snap.docs.map(d=>d.data()).filter(r=>r.announcementId===ann.id);
+      if(!replies.length) continue;
+      totalReplies += replies.length;
+      html += `
+        <div class="adm-hist-card" style="margin-bottom:14px;">
+          <div class="adm-hist-top">
+            <span class="adm-hist-title">${escapeHtml(ann.title||"")}</span>
+            <span class="adm-hist-status">${replies.length} repl${replies.length!==1?"ies":"y"}</span>
+          </div>
+          <div class="adm-hist-msg" style="margin-bottom:8px;">${escapeHtml((ann.message||"").slice(0,80))}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${replies.map(r=>`
+              <div style="background:#010a08;border:1px solid rgba(0,255,136,0.08);border-radius:6px;padding:8px 10px;">
+                <div style="font-size:11px;color:#58a6ff;font-weight:700;">${escapeHtml(r.username||"anon")}</div>
+                <div style="font-size:12px;color:#c0f0d0;margin-top:2px;">${escapeHtml(r.message||"")}</div>
+                <div style="font-size:10px;color:#3a5a4a;margin-top:3px;">${new Date(r.timestamp||Date.now()).toLocaleString()}</div>
+              </div>`).join("")}
+          </div>
+        </div>`;
+    }
+
+    el.innerHTML = totalReplies ? html : `<div class="adm-feed-empty">No replies yet</div>`;
+  }catch(e){ el.innerHTML = `<div class="adm-feed-empty">Error: ${e.message}</div>`; }
 }

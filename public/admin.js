@@ -519,7 +519,7 @@ function renderVaultOpen(data, pin) {
   const el = document.getElementById("vault-open-content");
   if (!el) return;
 
-  const categories = { github: "🐙 GitHub", ai: "🤖 AI Keys", custom: "📝 Custom" };
+  const categories = { github: "GitHub", ai: "🤖 AI Keys", custom: "📝 Custom" };
   const grouped = {};
   (data.entries || []).forEach(e => {
     const cat = e.category || "custom";

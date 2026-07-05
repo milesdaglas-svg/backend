@@ -120,6 +120,77 @@ function loadFromStorage(){
   }catch{}return false;
 }
 setInterval(saveToStorage,3000);
+let lastActivityTime = Date.now();
+["mousemove","keydown","click"].forEach(evt=>document.addEventListener(evt,()=>lastActivityTime=Date.now()));
+setInterval(()=>{
+  if(Date.now()-lastActivityTime > 600000 && currentAiUser && !document.getElementById("session-lock-overlay")){
+    const overlay=document.createElement("div");
+    overlay.id="session-lock-overlay";
+    overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);";
+    overlay.innerHTML=`<div style="text-align:center;color:#ccc;">
+      <div style="font-size:40px;margin-bottom:10px;">🔒</div>
+      <div style="margin-bottom:14px;">Session locked due to inactivity</div>
+      <input type="password" id="unlock-pass" placeholder="Enter password" style="padding:8px;border-radius:6px;background:#0d1117;border:1px solid #333;color:#ccc;">
+      <button onclick="unlockSession()" style="margin-left:6px;padding:8px 14px;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;">Unlock</button>
+    </div>`;
+    document.body.appendChild(overlay);
+  }
+}, 30000);
+
+async function unlockSession(){
+  const pass = document.getElementById("unlock-pass")?.value;
+  if(!pass || !currentAiUser) return;
+  const hash = await hashPassword(pass);
+  if(hash === currentAiUser.passwordHash){
+    document.getElementById("session-lock-overlay")?.remove();
+    lastActivityTime = Date.now();
+  } else showToast("Wrong password","error");
+}
+setInterval(()=>{
+  try{
+    const versions = JSON.parse(localStorage.getItem("file_versions")||"{}");
+    if(currentFile && files[currentFile]!==undefined){
+      versions[currentFile]=versions[currentFile]||[];
+      const last=versions[currentFile][versions[currentFile].length-1];
+      if(!last||last.content!==files[currentFile]){
+        versions[currentFile].push({content:files[currentFile],ts:Date.now()});
+        if(versions[currentFile].length>10) versions[currentFile].shift();
+      }
+    }
+    localStorage.setItem("file_versions",JSON.stringify(versions));
+  }catch{}
+}, 60000);
+
+function openFileHistory(){
+  if(!currentFile){ showToast("Open a file first","error"); return; }
+  const versions = JSON.parse(localStorage.getItem("file_versions")||"{}")[currentFile]||[];
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  const overlay=document.createElement("div");
+  overlay.className="snippet-overlay";
+  overlay.onclick=()=>{overlay.remove();menu.remove();};
+  const menu=document.createElement("div");
+  menu.className="snippet-menu";
+  menu.innerHTML=`<div class="snippet-menu-header"><span>🕐 History: ${currentFile}</span></div>
+    <div class="snippet-menu-list">${versions.length?versions.slice().reverse().map(v=>`
+      <div class="snippet-item" onclick="restoreFileVersion(${v.ts})">
+        <div class="snippet-item-name">${new Date(v.ts).toLocaleString()}</div>
+      </div>`).join(""):`<div class="snippet-menu-empty">No history yet — wait a minute after editing</div>`}</div>`;
+  document.body.append(overlay,menu);
+}
+
+function restoreFileVersion(ts){
+  const versions = JSON.parse(localStorage.getItem("file_versions")||"{}")[currentFile]||[];
+  const v = versions.find(x=>x.ts===ts);
+  if(!v) return;
+  if(!confirm("Restore this version? Current content will be replaced.")) return;
+  files[currentFile]=v.content; window.files=files;
+  if(window.editor1) window.editor1.setValue(v.content);
+  saveToStorage();
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  showToast("✓ Restored version","success");
+}
 setInterval(()=>{ if(typeof currentAiUser!=="undefined" && currentAiUser && typeof saveWorkspaceToCloud==="function") saveWorkspaceToCloud(); }, 300000);
 /* ========== TOAST ========== */
 function showToast(msg,type="info"){

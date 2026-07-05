@@ -265,6 +265,24 @@ function activateModel(provId, modelId, provName, modelName) {
    Robust implementation
    with multiple fallbacks
 ══════════════════════ */
+async function importProjectZip(file){
+  if(!file) return;
+  if(!window.JSZip) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+  if(!confirm("Import ZIP? This adds to your current project (may overwrite same-named files).")) return;
+  try{
+    const zip = await window.JSZip.loadAsync(file);
+    let count=0;
+    for(const [path,entry] of Object.entries(zip.files)){
+      if(entry.dir) continue;
+      const isBinary = /\.(png|jpg|jpeg|gif|webp|ico|mp3|mp4|wav|webm)$/i.test(path);
+      files[path] = isBinary ? "data:;base64,"+(await entry.async("base64")) : await entry.async("string");
+      count++;
+    }
+    window.files=files;
+    saveToStorage(); renderFiles(); renderTabs();
+    showToast(`✓ Imported ${count} files`,"success");
+  }catch(e){ showToast("Import failed: "+e.message,"error"); }
+}
 async function downloadProjectZip() {
   const fileKeys = Object.keys(files || {}).filter(f => !f.endsWith("/.gitkeep"));
   if (!fileKeys.length) { showToast("No files to download!", "error"); return; }

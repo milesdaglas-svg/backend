@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><title>Shared Preview</title>
+<script src="firebase-config.js"></script></head>
+<body style="margin:0;">
+<iframe id="f" style="width:100vw;height:100vh;border:none;"></iframe>
+<script type="module">
+const id = new URLSearchParams(location.search).get("id");
+const {initializeApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+const {getFirestore,doc,getDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+const app = initializeApp(window.GLOBAL_FIREBASE_CONFIG);
+const db = getFirestore(app);
+const snap = await getDoc(doc(db,"shares",id));
+if(snap.exists()){
+  const files = snap.data().files;
+  const html = files["index.html"] || "<h1>No index.html found</h1>";
+  document.getElementById("f").srcdoc = html;
+}
+</script></body></html>

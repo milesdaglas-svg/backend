@@ -98,7 +98,7 @@ async function aiLogin(username, password){
   const userData = snap.docs[0].data();
   const hashed = await hashPassword(password);
   if(userData.password !== hashed) return showToast("Wrong password","error");
-  const user = { username: username.toLowerCase(), displayName: userData.displayName };
+  const user = { username: username.toLowerCase(), displayName: userData.displayName, passwordHash: hashed };
   saveAiUser(user);
   currentAiUser = user;
   showToast(`✓ Welcome back, ${userData.displayName}!`, "success");
@@ -233,6 +233,13 @@ CRITICAL RULES:
 
 /* ===== MAIN CALL ===== */
 async function callAI({provider,model,prompt,currentFile,currentCode,files,history}){
+  try{
+    const db = await initAnnounceDB();
+    if(db && currentAiUser){
+      const{doc,setDoc,increment}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      await setDoc(doc(db,"ai_usage",currentAiUser.username),{count:increment(1),lastUsed:Date.now()},{merge:true});
+    }
+  }catch{}
   // if user is logged in — use backend with your API keys (free for user)
   if(currentAiUser){
     try{

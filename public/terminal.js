@@ -1305,6 +1305,15 @@ function buildTerminal() {
 /* ══════════════════════
    HELPERS
 ══════════════════════ */
+async function generateShareLink(){
+  const db = await initAnnounceDB(); if(!db){ showToast("Firebase not connected","error"); return; }
+  const{doc,setDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const id = "share_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+  await setDoc(doc(db,"shares",id),{ files: window.files||{}, createdAt: Date.now() });
+  const link = location.origin + "/share.html?id=" + id;
+  navigator.clipboard.writeText(link);
+  showToast("✓ Link copied: "+link,"success");
+}
 function openServerPreview(url) {
   const iframe = document.getElementById("previewFrame");
   if (iframe) {

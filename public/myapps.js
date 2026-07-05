@@ -94,3 +94,42 @@ async function deleteMyApp(index){
   await saveMyApps(apps);
   loadAdminMyAppsTab();
 }
+document.addEventListener("keydown", e=>{
+  if(e.ctrlKey && e.shiftKey && e.key==="P"){ e.preventDefault(); openCommandPalette(); }
+});
+
+const COMMAND_LIST = [
+  { name:"New File", fn:()=>document.getElementById("newFileBtn").click() },
+  { name:"New Folder", fn:()=>document.getElementById("newFolderBtn").click() },
+  { name:"Save", fn:()=>document.getElementById("saveBtn").click() },
+  { name:"Run", fn:smartRun },
+  { name:"Toggle Terminal", fn:toggleTerminal },
+  { name:"Toggle AI Panel", fn:()=>document.getElementById("toggleAiBtn").click() },
+  { name:"Download ZIP", fn:downloadProjectZip },
+  { name:"Open Template Menu", fn:openTemplateMenu },
+  { name:"Toggle Theme", fn:()=>document.getElementById("themeBtn").click() },
+  { name:"Open Admin Panel", fn:openAdminPanel },
+];
+
+function openCommandPalette(){
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  const overlay=document.createElement("div");
+  overlay.className="snippet-overlay";
+  overlay.onclick=()=>{overlay.remove();menu.remove();};
+  const menu=document.createElement("div");
+  menu.className="snippet-menu";
+  menu.innerHTML=`
+    <div class="snippet-menu-header"><span>⌘ Command Palette</span></div>
+    <div style="padding:8px;"><input id="cmdPaletteInput" placeholder="Type a command..." style="width:100%;background:#0d1117;border:1px solid #333;color:#ccc;padding:8px;border-radius:6px;" autofocus></div>
+    <div class="snippet-menu-list" id="cmdPaletteList"></div>`;
+  document.body.append(overlay,menu);
+  const renderList=(q="")=>{
+    const list=document.getElementById("cmdPaletteList");
+    const filtered=COMMAND_LIST.filter(c=>c.name.toLowerCase().includes(q.toLowerCase()));
+    list.innerHTML=filtered.map((c,i)=>`<div class="snippet-item" onclick="COMMAND_LIST.find(x=>x.name==='${c.name}').fn();document.querySelector('.snippet-menu').remove();document.querySelector('.snippet-overlay').remove();"><div class="snippet-item-name">${c.name}</div></div>`).join("")||`<div class="snippet-menu-empty">No matches</div>`;
+  };
+  renderList();
+  document.getElementById("cmdPaletteInput").addEventListener("input",e=>renderList(e.target.value));
+  setTimeout(()=>document.getElementById("cmdPaletteInput")?.focus(),50);
+}

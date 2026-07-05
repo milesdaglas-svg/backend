@@ -142,6 +142,8 @@
     <button id="togglePreviewBtn" class="desktop-only">🌐</button>
     <button id="saveBtn">💾</button>
     <button id="downloadAllBtn" onclick="downloadProjectZip()">⬇ ZIP</button>
+    <button id="importZipBtn" onclick="document.getElementById('zipImportInput').click()">⬆ Import ZIP</button>
+    <input type="file" id="zipImportInput" accept=".zip" hidden onchange="importProjectZip(this.files[0])">
     <button id="imageSearchBtn">🖼</button>
     <button id="mediaBtn" onclick="openMediaManager()">🎬 Media</button>
     <button id="binBtn" onclick="openRecycleBin()">🗑 Bin</button>
@@ -424,6 +426,7 @@
       <button class="prompt-btn" data-prompt="Add working login and signup pages with localStorage auth">🔐 Login Page</button>
       <button class="prompt-btn" data-prompt="Add a professional dark mode toggle that works across all pages">🌙 Dark mode</button>
       <button class="prompt-btn" data-prompt="Improve the UI design to look modern and beautiful with animations">✨ Improve UI</button>
+      <button class="prompt-btn" data-prompt="Search my whole codebase and tell me exactly which file(s) and line(s) handle: ">🔎 Find in Code</button>
     </div>
     <div id="aiChat"></div>
     <div class="ai-input-area">

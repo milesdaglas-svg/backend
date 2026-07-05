@@ -1121,3 +1121,32 @@ setTimeout(() => {
   const token = localStorage.getItem("gh_token");
   if (btn) btn.style.display = token ? "none" : "flex";
 }, 800);
+const VAPID_PUBLIC_KEY = "BJusQFu72CxhqdH2VCJFNPGkPsKUCIRPCLeV51OZM2_hI9lhHxJuW7C2xSdA6bMQxwetcdE0ndXaKpNqN9VAvwQ";
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g,"+").replace(/_/g,"/");
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function enablePushNotifications(){
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    showToast("Push notifications not supported on this browser","error"); return;
+  }
+  const perm = await Notification.requestPermission();
+  if(perm !== "granted"){ showToast("Notification permission denied","error"); return; }
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    const db = await initAnnounceDB();
+    if(!db){ showToast("Firebase not connected","error"); return; }
+    const{doc,setDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const id = "sub_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+    await setDoc(doc(db,"push_subscriptions",id),{ subscription: JSON.stringify(sub), createdAt: Date.now() });
+    showToast("✓ Notifications enabled","success");
+  }catch(e){ showToast("Failed: "+e.message,"error"); }
+}

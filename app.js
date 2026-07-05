@@ -927,6 +927,38 @@ app.get("/api/export-app/status", async (req, res) => {
 });
 /* ══════════════════════
    REAL PTY TERMINAL
+   /* ══════════════════════
+   PUSH NOTIFICATIONS
+══════════════════════ */
+const webpush = require("web-push");
+webpush.setVapidDetails("mailto:admin@vscodegodmode.app", process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+
+app.post("/api/push/send", async (req, res) => {
+  const { title, message } = req.body;
+  if (!title || !message) return res.status(400).json({ error: "Missing title/message" });
+  try {
+    const fbCfg = require("../public/firebase-config.js");
+  } catch {}
+  try {
+    const projectId = req.body.projectId || "vsc-clone";
+    const apiKey = req.body.apiKey;
+    const listUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/push_subscriptions${apiKey ? "?key="+apiKey : ""}`;
+    const listRes = await fetch(listUrl);
+    const listData = await listRes.json();
+    const docs = listData.documents || [];
+    let sent = 0, failed = 0;
+    for (const doc of docs) {
+      try {
+        const fields = doc.fields;
+        const sub = JSON.parse(fields.subscription.stringValue);
+        await webpush.sendNotification(sub, JSON.stringify({ title, body: message }));
+        sent++;
+      } catch(e) { failed++; }
+    }
+    res.json({ sent, failed, total: docs.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
    WebSocket + node-pty
    Full interactive shell
 ══════════════════════ */

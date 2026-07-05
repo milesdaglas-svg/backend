@@ -51,6 +51,15 @@ self.addEventListener("activate", e => {
 });
 
 // Fetch: serve from cache, fallback to network
+  self.addEventListener("push", e => {
+  const data = e.data ? e.data.json() : { title:"Update", body:"New update available" };
+  e.waitUntil(self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png"
+  }));
+});
+
 self.addEventListener("fetch", e => {
   // Don't cache AI API calls or ad network requests
   if (e.request.url.includes("googleapis.com") ||

@@ -1080,6 +1080,10 @@ async function sendBroadcast() {
   if (status) { status.innerText="// Transmitting..."; status.style.color="#ffaa00"; }
   const id = await postAnnouncement(title, message, type);
   if (id) {
+    fetch("https://backend-forz.onrender.com/api/push/send", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ title, message, projectId:"vsc-clone", apiKey: window.GLOBAL_FIREBASE_CONFIG?.apiKey })
+    }).catch(()=>{});
     if (status) { status.innerText="// ✓ Broadcast live! ID: "+id; status.style.color="#00ff88"; }
     document.getElementById("adminTitle").value="";
     document.getElementById("adminMessage").value="";

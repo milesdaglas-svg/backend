@@ -182,7 +182,7 @@ async function showAdminPanel() {
   <span class="adm-nav-icon">🌍</span><span>Global</span>
 </button>
           <button class="adm-nav-btn" onclick="admTab('extensions',this)">
-            <span class="adm-nav-icon">🧩</span><span>Extensions</span>
+            <span class="adm-nav-icon"><img src="icons/extensions-icon.png" style="width:15px;height:15px;border-radius:50%;vertical-align:-3px;"></span><span>Extensions</span>
           </button>
           <button class="adm-nav-btn" onclick="admTab('stats',this)">
                 <span class="adm-nav-icon">📈</span><span>Stats</span>
@@ -197,7 +197,7 @@ async function showAdminPanel() {
             <span class="adm-nav-icon">🎨</span><span>Theme</span>
           </button>
           <button class="adm-nav-btn" onclick="admTab('myapps',this);loadAdminMyAppsTab();">
-            <span class="adm-nav-icon">🚀</span><span>My Apps</span>
+            <span class="adm-nav-icon"><img src="icons/myapps-icon.png" style="width:15px;height:15px;border-radius:50%;object-fit:cover;vertical-align:-3px;"></span><span>My Apps</span>
           </button>
           <button class="adm-nav-btn" onclick="admTab('replies',this);loadAdminRepliesTab();">
             <span class="adm-nav-icon">💬</span><span>Replies</span>

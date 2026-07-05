@@ -15,8 +15,11 @@ let termActiveTab = "bash";
 
 /* ══════════════════════
    DEVICE FILESYSTEM
-   File System Access API
+   File System Access API (browser) OR
+   Capacitor Filesystem (real APK)
 ══════════════════════ */
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+let nativeCwdPath = "";
 let deviceRootHandle = null;
 let deviceCwd        = null;
 let deviceCwdPath    = "";
@@ -723,6 +726,7 @@ async function initVmTerminal() {
    DEVICE FILESYSTEM
 ══════════════════════ */
 async function mountDeviceFolder() {
+  if (isNativeApp) { mountNativeStorage(); return; }
   if (!window.showDirectoryPicker) {
     printLine(`<span class="t-err">✗ Browser doesn't support File System Access API.</span>`, "bash");
     printLine(`<span class="t-warn">Use Chrome or Edge on Android/PC.</span>`, "bash");
@@ -744,7 +748,64 @@ async function mountDeviceFolder() {
     else printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, "bash");
   }
 }
+async function mountNativeStorage() {
+  try {
+    const Filesystem = window.Capacitor.Plugins.Filesystem;
+    printLine(`<span class="t-info">📂 Requesting storage permission...</span>`, "bash");
+    await Filesystem.requestPermissions();
+    nativeCwdPath = "";
+    deviceMode = true;
+    updateDevicePS1();
+    printLine(`<span class="t-ok">✓ Mounted phone storage</span>`, "bash");
+    printLine(`<span class="t-muted">Device mode active (native). Type <span class="t-cmd">help</span> for commands, <span class="t-cmd">unmount</span> to exit.</span>`, "bash");
+    await nativeLS([]);
+  } catch(e) { printLine(`<span class="t-err">✗ ${escTerm(e.message)}</span>`, "bash"); }
+}
 
+async function nativeLS(args) {
+  try {
+    const Filesystem = window.Capacitor.Plugins.Filesystem;
+    const target = args[0] ? (nativeCwdPath ? nativeCwdPath+"/"+args[0] : args[0]) : nativeCwdPath;
+    const result = await Filesystem.readdir({ path: target, directory: "EXTERNAL_STORAGE" });
+    if (!result.files.length) { printLine(`<span class="t-muted">(empty)</span>`, "bash"); return; }
+    let out = `<span class="t-muted">total ${result.files.length} — /${target}</span>\n`;
+    result.files.forEach(f => {
+      const isDir = f.type === "directory";
+      out += isDir ? `<span class="t-dir">📁 ${escTerm(f.name)}/</span>\n` : `<span class="t-file">📄 ${escTerm(f.name)}</span>\n`;
+    });
+    printLine(out, "bash");
+  } catch(e) { printLine(`<span class="t-err">✗ ls: ${escTerm(e.message)}</span>`, "bash"); }
+}
+
+async function nativeCD(args) {
+  const target = args[0];
+  if (!target || target === "~" || target === "/") { nativeCwdPath = ""; updateDevicePS1(); printLine(`<span class="t-ok">✓ /</span>`, "bash"); return; }
+  if (target === "..") {
+    const parts = nativeCwdPath.split("/").filter(Boolean);
+    parts.pop();
+    nativeCwdPath = parts.join("/");
+    updateDevicePS1(); printLine(`<span class="t-ok">✓ /${escTerm(nativeCwdPath)}</span>`, "bash"); return;
+  }
+  const newPath = nativeCwdPath ? nativeCwdPath+"/"+target : target;
+  try {
+    const Filesystem = window.Capacitor.Plugins.Filesystem;
+    await Filesystem.readdir({ path: newPath, directory: "EXTERNAL_STORAGE" });
+    nativeCwdPath = newPath;
+    updateDevicePS1(); printLine(`<span class="t-ok">✓ /${escTerm(nativeCwdPath)}</span>`, "bash");
+  } catch(e) { printLine(`<span class="t-err">cd: ${escTerm(target)}: No such directory</span>`, "bash"); }
+}
+
+async function nativePWD() { printLine(`<span class="t-path">/${escTerm(nativeCwdPath)}</span>`, "bash"); }
+
+async function nativeCAT(args) {
+  if (!args[0]) { printLine(`<span class="t-err">Usage: cat [file]</span>`, "bash"); return; }
+  try {
+    const Filesystem = window.Capacitor.Plugins.Filesystem;
+    const filePath = nativeCwdPath ? nativeCwdPath+"/"+args[0] : args[0];
+    const result = await Filesystem.readFile({ path: filePath, directory: "EXTERNAL_STORAGE", encoding: "utf8" });
+    printLine(`<span class="t-muted">// ${escTerm(args[0])}</span>\n${escTerm(result.data)}`, "bash");
+  } catch(e) { printLine(`<span class="t-err">cat: ${escTerm(e.message)}</span>`, "bash"); }
+}
 function unmountDevice() {
   deviceRootHandle = null; deviceCwd = null; deviceCwdPath = ""; deviceMode = false;
   updateDevicePS1();
@@ -752,7 +813,7 @@ function unmountDevice() {
 }
 
 function updateDevicePS1() {
-  const shortPath = deviceMode ? `device:/${deviceCwdPath}` : (termCwd ? termCwd.replace("/tmp/vscode_godmode_project","~") : "~");
+  const shortPath = deviceMode ? `device:/${isNativeApp ? nativeCwdPath : deviceCwdPath}` : (termCwd ? termCwd.replace("/tmp/vscode_godmode_project","~") : "~");
   document.querySelectorAll(".term-tab-pane[data-tab='bash'] .t-ps1").forEach(el => {
     el.textContent = `user@godmode:${shortPath}$ `;
   });
@@ -1111,10 +1172,10 @@ function execTermCommand(raw, tab) {
     if (cmd === "unmount") { unmountDevice(); return; }
 
     if (deviceMode) {
-      if (cmd === "ls" || cmd === "dir") { deviceLS(args); return; }
-      if (cmd === "cd")                  { deviceCD(args); return; }
-      if (cmd === "pwd")                 { devicePWD(); return; }
-      if (cmd === "cat")                 { deviceCAT(args); return; }
+      if (cmd === "ls" || cmd === "dir") { isNativeApp ? nativeLS(args) : deviceLS(args); return; }
+      if (cmd === "cd")                  { isNativeApp ? nativeCD(args) : deviceCD(args); return; }
+      if (cmd === "pwd")                 { isNativeApp ? nativePWD() : devicePWD(); return; }
+      if (cmd === "cat")                 { isNativeApp ? nativeCAT(args) : deviceCAT(args); return; }
       if (cmd === "mkdir")               { deviceMKDIR(args); return; }
       if (cmd === "rm")                  { deviceRM(args); return; }
       if (cmd === "cp")                  { deviceCP(args); return; }

@@ -231,6 +231,13 @@ function buildTree(){
 function renderFiles(){
   const list=document.getElementById("fileList");list.innerHTML="";
   renderTreeNode(buildTree(),list,"");
+  updateWelcomeVisibility();
+}
+
+function updateWelcomeVisibility(){
+  const hasFiles = Object.keys(files||{}).some(f=>!f.endsWith("/.gitkeep"));
+  const welcome = document.getElementById("welcomeScreen");
+  if(welcome) welcome.style.display = hasFiles ? "none" : "flex";
 }
 function renderTreeNode(node,container,prefix){
   const keys=Object.keys(node).sort((a,b)=>{const af=node[a]._file!==undefined,bf=node[b]._file!==undefined;if(af&&!bf)return 1;if(!af&&bf)return -1;return a.localeCompare(b);});
@@ -435,17 +442,10 @@ const shared={
 };
   loadFromStorage();
 
-  // safety net — if storage was empty or corrupted, restore defaults
-  if (!files || Object.keys(files).filter(f => !f.endsWith("/.gitkeep")).length === 0) {
-    files = {
-      "index.html": `<!DOCTYPE html>\n<html>\n<head>\n<title>My Project</title>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n<h1>⚡ VS Code God Mode</h1>\n<p>Start coding here!</p>\n<script src="script.js"><\/script>\n</body>\n</html>`,
-      "style.css":  `body {\n  background: #111;\n  color: white;\n  font-family: Arial;\n  padding: 40px;\n}`,
-      "script.js":  `console.log("VS Code God Mode ready!");`
-    };
-    currentFile = "index.html";
-    saveToStorage();
-  }
+  // no auto-seed anymore — empty projects show the Welcome screen instead
+  if (!files) files = {};
 
+  updateWelcomeVisibility();
   // make sure currentFile actually exists
   if (!files[currentFile]) {
     currentFile = Object.keys(files).find(f => !f.endsWith("/.gitkeep")) || "index.html";

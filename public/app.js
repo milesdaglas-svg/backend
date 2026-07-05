@@ -120,6 +120,12 @@ function loadFromStorage(){
   }catch{}return false;
 }
 setInterval(saveToStorage,3000);
+if(!localStorage.getItem("seen_multicursor_tip")){
+  setTimeout(()=>{
+    showToast("💡 Tip: Alt+Click for multi-cursor, Ctrl+D to select next match","info");
+    localStorage.setItem("seen_multicursor_tip","1");
+  }, 3000);
+}
 let lastActivityTime = Date.now();
 ["mousemove","keydown","click"].forEach(evt=>document.addEventListener(evt,()=>lastActivityTime=Date.now()));
 setInterval(()=>{

@@ -1,6 +1,6 @@
 /* ========================= RESET ========================= */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-body{height:100vh;overflow:hidden;background:#0d1117;color:white;}
+body{height:100vh;overflow:hidden;background:#0d1117;color:white;--banner-h:0px;}
 
 /* ========================= TOAST ========================= */
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(60px);background:#1f2937;color:white;padding:9px 18px;border-radius:10px;font-size:13px;z-index:9999;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none;white-space:nowrap;}
@@ -25,7 +25,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .badge{background:#e74c3c;color:white;border-radius:10px;padding:1px 5px;font-size:10px;margin-left:3px;}
 
 /* ========================= MAIN ========================= */
-.main{display:flex;height:calc(100vh - 48px);width:100%;overflow:hidden;}
+.main{display:flex;height:calc(100vh - 48px - var(--banner-h));width:100%;overflow:hidden;}
 
 /* ========================= SIDEBAR ========================= */
 .sidebar{width:220px;min-width:40px;max-width:500px;background:#11161d;display:flex;flex-direction:column;border-right:1px solid #222;overflow:hidden;flex-shrink:0;transition:width .2s;}
@@ -181,7 +181,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
   #terminalPanel{margin-left:0!important;width:100%!important;left:0!important;}
 
   body{height:100vh;}
-  .main{height:calc(100vh - 48px - 56px);}
+  .main{height:calc(100vh - 48px - 56px - var(--banner-h));}
 
   /* topbar scrolls horizontally — all buttons visible */
   .topbar{
@@ -435,7 +435,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
   .mobile-only { display: flex !important; }
   .desktop-only { display: flex !important; }
   .mobile-nav { display: flex; }
-  .main { height: calc(100vh - 48px - 56px); }
+  .main { height: calc(100vh - 48px - 56px - var(--banner-h)); }
   .toast { bottom: 70px; }
 
   .sidebar { position: fixed; left: 0; top: 48px; height: calc(100vh - 48px - 56px); width: 280px !important; z-index: 999; transform: translateX(-100%); transition: transform .25s; }

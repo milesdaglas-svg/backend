@@ -1210,6 +1210,7 @@ async function applyGlobalSettings() {
       let b = document.getElementById("global-banner");
       if (!b) { b = document.createElement("div"); b.id = "global-banner"; b.style.cssText = "background:#1f3a1f;color:#00ff88;text-align:center;padding:6px 12px;font-size:12px;z-index:9999;position:relative;"; document.body.prepend(b); }
       b.innerText = cfg.banner;
+      requestAnimationFrame(()=>document.documentElement.style.setProperty("--banner-h", b.offsetHeight+"px"));
     }
     if (cfg.disableAI) {
       const ai = document.getElementById("toggleAiBtn"); if(ai) ai.style.display = "none";

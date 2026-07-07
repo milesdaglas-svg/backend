@@ -23,7 +23,7 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Install Capacitor deps
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/app @capacitor/browser
+        run: npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/app@6 @capacitor/browser@6
 
       - name: Add Android platform (if not already present)
         run: |

@@ -14,11 +14,12 @@ app.use(express.static(path.join(__dirname, "public")));
    GITHUB OAUTH
 ══════════════════════ */
 app.get("/auth/github", (req, res) => {
+  const isApp = req.query.platform === "app";
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: "https://backend-forz.onrender.com/auth/github/callback",
     scope: "repo user workflow read:org",
-    state: Math.random().toString(36).slice(2)
+    state: (isApp ? "app_" : "web_") + Math.random().toString(36).slice(2)
   });
   res.redirect(`https://github.com/login/oauth/authorize?${params}`);
 });
@@ -54,7 +55,12 @@ app.get("/auth/github/callback", async (req, res) => {
       avatar: user.avatar_url,
       repos: user.public_repos || 0
     });
-    res.redirect(`/?${params}`);
+    const isApp = (req.query.state || "").startsWith("app_");
+    if (isApp) {
+      res.redirect(`com.vscodegodmode.app://auth?${params}`);
+    } else {
+      res.redirect(`/?${params}`);
+    }
   } catch(e) {
     res.redirect("/?auth=error&msg=" + encodeURIComponent(e.message));
   }

@@ -521,6 +521,52 @@ const shared={
     noSemanticValidation: false,
     noSyntaxValidation: false
   });
+  /* ── FILE PATH INTELLISENSE — like VS Code's Path Intellisense ── */
+  function registerFilePathIntelliSense(lang, patterns){
+    monaco.languages.registerCompletionItemProvider(lang, {
+      triggerCharacters: ['"',"'","/"],
+      provideCompletionItems: (model, position) => {
+        const textUntil = model.getValueInRange({
+          startLineNumber: position.lineNumber, startColumn: 1,
+          endLineNumber: position.lineNumber, endColumn: position.column
+        });
+        let match = null, quoteChar = null, typedSoFar = "";
+        for(const re of patterns){
+          const m = textUntil.match(re);
+          if(m){ match = m; quoteChar = m[1]; typedSoFar = m[2]; break; }
+        }
+        if(!match) return { suggestions: [] };
+
+        const candidates = Object.keys(files).filter(f =>
+          !f.endsWith("/.gitkeep") && f !== currentFile &&
+          f.toLowerCase().includes(typedSoFar.toLowerCase())
+        );
+
+        const wordStart = position.column - typedSoFar.length;
+        const suggestions = candidates.map(f => ({
+          label: f,
+          kind: monaco.languages.CompletionItemKind.File,
+          insertText: f,
+          detail: "project file",
+          range: {
+            startLineNumber: position.lineNumber, startColumn: wordStart,
+            endLineNumber: position.lineNumber, endColumn: position.column
+          }
+        }));
+        return { suggestions };
+      }
+    });
+  }
+
+  registerFilePathIntelliSense("html", [
+    /(?:href|src)\s*=\s*("|')([^"']*)$/i
+  ]);
+  registerFilePathIntelliSense("css", [
+    /url\(\s*("|')?([^"')]*)$/i
+  ]);
+  registerFilePathIntelliSense("javascript", [
+    /(?:import\s+.*from\s+|require\s*\(\s*)("|')([^"']*)$/i
+  ]);
   let previewDebounceTimer=null;
   function debouncedUpdatePreview(page){
     clearTimeout(previewDebounceTimer);

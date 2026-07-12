@@ -842,9 +842,16 @@ app.post("/api/vm/create", async (req, res) => {
         name: SANDBOX_REPO, private: true, auto_init: true
       });
     }
-    const codespace = await githubAPI("POST", "/user/codespaces", token, {
-      repository_id: repo.id, machine: "basicLinux32gb"
-    });
+    const existing = await githubAPI("GET", "/user/codespaces", token);
+    let codespace = (existing.codespaces || []).find(cs => cs.repository.full_name === `${user.login}/${SANDBOX_REPO}`);
+
+    if (!codespace) {
+      codespace = await githubAPI("POST", "/user/codespaces", token, {
+        repository_id: repo.id, machine: "basicLinux32gb"
+      });
+    } else if (codespace.state === "Shutdown") {
+      await githubAPI("POST", `/user/codespaces/${codespace.name}/start`, token);
+    }
     res.json({ name: codespace.name, state: codespace.state, web_url: codespace.web_url });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

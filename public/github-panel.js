@@ -186,7 +186,7 @@ function renderGithubPanel() {
           <label style="font-size:10px;color:#555;display:block;margin-bottom:4px;">GitHub Personal Access Token</label>
           <input id="gh-token-input" type="password" class="gh-input" placeholder="ghp_xxxxxxxxxxxx">
           <div style="font-size:10px;color:#555;margin-top:4px;">
-            <a href="https://github.com/settings/tokens/new?scopes=repo,workflow" target="_blank" style="color:#1f6feb;">
+            <a href="https://github.com/settings/tokens/new?scopes=repo,workflow,codespace" target="_blank" style="color:#1f6feb;">
               Get a token here →
             </a> (select repo + workflow scopes)
           </div>

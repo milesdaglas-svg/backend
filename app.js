@@ -18,7 +18,7 @@ app.get("/auth/github", (req, res) => {
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: "https://backend-forz.onrender.com/auth/github/callback",
-    scope: "repo user workflow read:org",
+    scope: "repo user workflow read:org codespace",
     state: (isApp ? "app_" : "web_") + Math.random().toString(36).slice(2)
   });
   res.redirect(`https://github.com/login/oauth/authorize?${params}`);

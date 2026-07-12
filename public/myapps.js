@@ -55,12 +55,13 @@ async function loadAdminMyAppsTab(){
             <div class="myapps-adm-item-url">${escapeHtml(a.url)}</div>
           </div>
           <div class="myapps-adm-item-actions">
+            <button class="adm-btn" onclick="editMyApp(${i})">✎ Edit</button>
             <button class="adm-btn-danger" onclick="deleteMyApp(${i})">✕ Remove</button>
           </div>
         </div>`).join("") : `<div class="adm-feed-empty">No apps added yet</div>`}
     </div>
 
-    <div class="adm-section-title">// ADD NEW APP</div>
+    <div class="adm-section-title" id="myapp-form-title">// ADD NEW APP</div>
     <div class="adm-form">
       <div class="adm-field"><label>App Name *</label><input id="myapp-name" class="adm-input" placeholder="e.g. My Portfolio Site"></div>
       <div class="adm-field"><label>URL *</label><input id="myapp-url" class="adm-input" placeholder="https://..."></div>
@@ -75,10 +76,43 @@ async function loadAdminMyAppsTab(){
       <div class="adm-field"><label>Icon (emoji — used only if no image URL given)</label><input id="myapp-icon" class="adm-input" placeholder="🚀" maxlength="4"></div>
       <div class="adm-field"><label>Description</label><textarea id="myapp-desc" class="adm-textarea" rows="2" placeholder="Short description users will see"></textarea></div>
       <div class="adm-form-actions">
-        <button class="adm-btn adm-btn-primary" onclick="addMyApp()">➕ Add App</button>
+        <button class="adm-btn adm-btn-primary" id="myapp-submit-btn" onclick="addMyApp()">➕ Add App</button>
+        <button class="adm-btn" id="myapp-cancel-btn" style="display:none;" onclick="cancelEditMyApp()">✕ Cancel Edit</button>
       </div>
       <div id="myapp-status" class="adm-form-status"></div>
     </div>`;
+}
+
+let editingMyAppIndex = null;
+
+async function editMyApp(index){
+  const apps = await getMyApps();
+  const a = apps[index];
+  if(!a) return;
+  editingMyAppIndex = index;
+  document.getElementById("myapp-name").value = a.name||"";
+  document.getElementById("myapp-url").value = a.url||"";
+  document.getElementById("myapp-image").value = a.image||"";
+  document.getElementById("myapp-shape").value = a.shape||"circle";
+  document.getElementById("myapp-icon").value = a.icon||"";
+  document.getElementById("myapp-desc").value = a.description||"";
+  document.getElementById("myapp-form-title").innerText = "// EDIT APP";
+  document.getElementById("myapp-submit-btn").innerText = "💾 Save Changes";
+  document.getElementById("myapp-cancel-btn").style.display = "";
+  document.getElementById("myapp-name")?.scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+function cancelEditMyApp(){
+  editingMyAppIndex = null;
+  document.getElementById("myapp-name").value = "";
+  document.getElementById("myapp-url").value = "";
+  document.getElementById("myapp-image").value = "";
+  document.getElementById("myapp-shape").value = "circle";
+  document.getElementById("myapp-icon").value = "";
+  document.getElementById("myapp-desc").value = "";
+  document.getElementById("myapp-form-title").innerText = "// ADD NEW APP";
+  document.getElementById("myapp-submit-btn").innerText = "➕ Add App";
+  document.getElementById("myapp-cancel-btn").style.display = "none";
 }
 
 async function addMyApp(){
@@ -91,9 +125,15 @@ async function addMyApp(){
   const statusEl = document.getElementById("myapp-status");
   if(!name || !url){ if(statusEl) statusEl.innerText = "Name and URL are required"; return; }
   const apps = await getMyApps();
-  apps.push({ name, url, image, shape, icon: icon||"🚀", description });
+  const appData = { name, url, image, shape, icon: icon||"🚀", description };
+  if(editingMyAppIndex !== null){
+    apps[editingMyAppIndex] = appData;
+  } else {
+    apps.push(appData);
+  }
   const ok = await saveMyApps(apps);
-  if(statusEl) statusEl.innerText = ok ? "✓ Added" : "✗ Failed to save";
+  if(statusEl) statusEl.innerText = ok ? (editingMyAppIndex!==null ? "✓ Updated" : "✓ Added") : "✗ Failed to save";
+  cancelEditMyApp();
   loadAdminMyAppsTab();
 }
 

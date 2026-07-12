@@ -984,7 +984,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 });
 
 // WebSocket PTY server
-const wss = new WebSocketServer({ server, path: "/pty" });
+const wss = new WebSocketServer({ noServer: true });
 
 wss.on("connection", (ws) => {
   const sessionId = "pty_" + Date.now();
@@ -1054,46 +1054,56 @@ wss.on("connection", (ws) => {
    VM TERMINAL — gh codespace ssh
 ══════════════════════ */
 const ghPath = path.join(__dirname, "gh_2.62.0_linux_amd64", "bin", "gh");
-const vmWss = new WebSocketServer({ server, path: "/vm-pty" });
-console.log("vm-pty WebSocketServer registered");
-server.on("upgrade", (req) => {
-  if (req.url.startsWith("/vm-pty")) console.log(`upgrade request received for: ${req.url}`);
+const vmWss = new WebSocketServer({ noServer: true });
+
+server.on("upgrade", (req, socket, head) => {
+  const pathname = req.url.split("?")[0];
+  if (pathname === "/pty") {
+    wss.handleUpgrade(req, socket, head, ws => wss.emit("connection", ws, req));
+  } else if (pathname === "/vm-pty") {
+    vmWss.handleUpgrade(req, socket, head, ws => vmWss.emit("connection", ws, req));
+  } else {
+    socket.destroy();
+  }
 });
 
-vmWss.on("connection", (ws, req) => {
-  console.log(`vm-pty connection hit: ${req.url}`);
-  const params = new URLSearchParams(req.url.split("?")[1] || "");
-  const token = params.get("token");
-  const csName = params.get("name");
-  if (!token || !csName) { ws.send(JSON.stringify({type:"output",data:"✗ missing token/codespace name\r\n"})); ws.close(); return; }
-
-  if (!fs.existsSync(ghPath)) {
-    console.error(`✗ gh binary missing at ${ghPath}`);
-    ws.send(JSON.stringify({type:"output",data:`\r\n✗ gh CLI not found on server at ${ghPath}\r\n`}));
-    ws.close();
-    return;
-  }
-
-  let vmPty;
-  try {
-    vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", csName], {
-      name: "xterm-color", cols: 120, rows: 30,
-      env: { ...process.env, GH_TOKEN: token }
-    });
-  } catch (err) {
-    console.error("✗ vm pty spawn failed:", err);
-    ws.send(JSON.stringify({type:"output",data:`\r\n✗ Failed to start VM shell: ${err.message}\r\n`}));
-    ws.close();
-    return;
-  }
-
-  vmPty.onData(data => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({type:"output",data})); });
-  vmPty.onExit(({exitCode, signal}) => {
-    console.log(`VM pty exited: code=${exitCode} signal=${signal}`);
-    if (ws.readyState === ws.OPEN) { ws.send(JSON.stringify({type:"exit"})); ws.close(); }
-  });
+vmWss.on("connection", (ws) => {
+  console.log("vm-pty connection hit");
+  let vmPty = null;
 
   ws.on("message", msg => {
+    if (!vmPty) {
+      let p;
+      try { p = JSON.parse(msg.toString()); } catch { return; }
+      if (p.type !== "auth" || !p.token || !p.name) {
+        ws.send(JSON.stringify({type:"output",data:"✗ missing token/codespace name\r\n"}));
+        ws.close();
+        return;
+      }
+      if (!fs.existsSync(ghPath)) {
+        console.error(`✗ gh binary missing at ${ghPath}`);
+        ws.send(JSON.stringify({type:"output",data:`\r\n✗ gh CLI not found on server at ${ghPath}\r\n`}));
+        ws.close();
+        return;
+      }
+      try {
+        vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", p.name], {
+          name: "xterm-color", cols: 120, rows: 30,
+          env: { ...process.env, GH_TOKEN: p.token }
+        });
+      } catch (err) {
+        console.error("✗ vm pty spawn failed:", err);
+        ws.send(JSON.stringify({type:"output",data:`\r\n✗ Failed to start VM shell: ${err.message}\r\n`}));
+        ws.close();
+        return;
+      }
+      vmPty.onData(data => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({type:"output",data})); });
+      vmPty.onExit(({exitCode, signal}) => {
+        console.log(`VM pty exited: code=${exitCode} signal=${signal}`);
+        if (ws.readyState === ws.OPEN) { ws.send(JSON.stringify({type:"exit"})); ws.close(); }
+      });
+      return;
+    }
     try {
       const p = JSON.parse(msg.toString());
       if (p.type === "input") vmPty.write(p.data);

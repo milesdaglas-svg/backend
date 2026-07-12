@@ -704,11 +704,16 @@ async function initVmTerminal() {
     vmCodespaceName = d.name;
     vmTerm.writeln("\x1b[32m✓ VM ready — connecting...\x1b[0m\r\n");
 
-    const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://")
-      + `/vm-pty?token=${encodeURIComponent(ghToken)}&name=${encodeURIComponent(vmCodespaceName)}`;
+    const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://") + `/vm-pty`;
     vmWs = new WebSocket(wsUrl);
 
-    vmWs.onopen = () => { try { vmFit.fit(); vmWs.send(JSON.stringify({type:"resize",cols:vmTerm.cols,rows:vmTerm.rows})); } catch {} };
+    vmWs.onopen = () => {
+      try {
+        vmWs.send(JSON.stringify({type:"auth", token: ghToken, name: vmCodespaceName}));
+        vmFit.fit();
+        vmWs.send(JSON.stringify({type:"resize",cols:vmTerm.cols,rows:vmTerm.rows}));
+      } catch {}
+    };
     vmWs.onmessage = (e) => {
       try { const msg = JSON.parse(e.data); if (msg.type==="output") vmTerm.write(msg.data); if (msg.type==="exit") vmTerm.writeln("\r\n\x1b[31mVM session ended\x1b[0m"); }
       catch { vmTerm.write(e.data); }

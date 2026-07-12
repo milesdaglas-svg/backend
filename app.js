@@ -1055,8 +1055,13 @@ wss.on("connection", (ws) => {
 ══════════════════════ */
 const ghPath = path.join(__dirname, "gh_2.62.0_linux_amd64", "bin", "gh");
 const vmWss = new WebSocketServer({ server, path: "/vm-pty" });
+console.log("vm-pty WebSocketServer registered");
+server.on("upgrade", (req) => {
+  if (req.url.startsWith("/vm-pty")) console.log(`upgrade request received for: ${req.url}`);
+});
 
 vmWss.on("connection", (ws, req) => {
+  console.log(`vm-pty connection hit: ${req.url}`);
   const params = new URLSearchParams(req.url.split("?")[1] || "");
   const token = params.get("token");
   const csName = params.get("name");

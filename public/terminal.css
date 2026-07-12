@@ -52,6 +52,17 @@
 .term-output::-webkit-scrollbar       { width: 4px; height: 4px; }
 .term-output::-webkit-scrollbar-thumb { background: #1a2332; border-radius: 4px; }
 
+/* xterm.js manages its own row height/line-height internally —
+   the container's line-height must not cascade into it or rows overlap */
+#term-out-pty .xterm,
+#term-out-pty .xterm-rows,
+#term-out-pty .xterm-rows span,
+#term-out-vm .xterm,
+#term-out-vm .xterm-rows,
+#term-out-vm .xterm-rows span {
+  line-height: normal !important;
+}
+
 /* LINES */
 .term-line { white-space: pre-wrap; word-break: break-all; padding: 1px 0; }
 

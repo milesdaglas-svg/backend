@@ -19,7 +19,7 @@ importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
    Caches app for offline use
 ========================= */
 
-const CACHE = "vscode-godmode-v1";
+const CACHE = "vscode-godmode-v2";
 
 const PRECACHE = [
   "/",

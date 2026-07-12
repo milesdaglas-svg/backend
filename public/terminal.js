@@ -1306,11 +1306,13 @@ function buildTerminal() {
             data-tab="${t.id}" style="--tab-color:${t.color}"
             onclick="switchTermTab('${t.id}')">${t.label}</button>`).join("")}
       </div>
+      <button class="term-btn" onclick="toggleTerminal()">✕</button>
+    </div>
+    <div class="term-toolbar">
       <div class="term-actions">
         <button class="term-btn" onclick="mountDeviceFolder()" style="background:#1a3a2a;color:#00ff88;">📁 Mount</button>
         <button class="term-btn" onclick="pasteToTerminal()" style="background:#1a2a3a;color:#58a6ff;">📋 Paste</button>
         <button class="term-btn" onclick="clearTab(termActiveTab)">⌫ Clear</button>
-        <button class="term-btn" onclick="toggleTerminal()">✕</button>
       </div>
     </div>
 

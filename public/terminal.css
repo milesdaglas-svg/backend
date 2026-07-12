@@ -35,6 +35,16 @@
   letter-spacing: 1px; text-align: center;
 }
 .term-actions { display: flex; gap: 5px; }
+.term-toolbar {
+  flex-shrink: 0;
+  background: #0d1117;
+  border-bottom: 1px solid #1a2332;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 4px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.term-toolbar::-webkit-scrollbar { display: none; }
 .term-btn {
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
   color: rgba(255,255,255,0.3); padding: 3px 8px; border-radius: 4px;

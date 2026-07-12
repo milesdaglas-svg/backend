@@ -1055,13 +1055,31 @@ vmWss.on("connection", (ws, req) => {
   const csName = params.get("name");
   if (!token || !csName) { ws.send(JSON.stringify({type:"output",data:"✗ missing token/codespace name\r\n"})); ws.close(); return; }
 
-  const vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", csName], {
-    name: "xterm-color", cols: 120, rows: 30,
-    env: { ...process.env, GH_TOKEN: token }
-  });
+  if (!fs.existsSync(ghPath)) {
+    console.error(`✗ gh binary missing at ${ghPath}`);
+    ws.send(JSON.stringify({type:"output",data:`\r\n✗ gh CLI not found on server at ${ghPath}\r\n`}));
+    ws.close();
+    return;
+  }
+
+  let vmPty;
+  try {
+    vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", csName], {
+      name: "xterm-color", cols: 120, rows: 30,
+      env: { ...process.env, GH_TOKEN: token }
+    });
+  } catch (err) {
+    console.error("✗ vm pty spawn failed:", err);
+    ws.send(JSON.stringify({type:"output",data:`\r\n✗ Failed to start VM shell: ${err.message}\r\n`}));
+    ws.close();
+    return;
+  }
 
   vmPty.onData(data => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({type:"output",data})); });
-  vmPty.onExit(() => { if (ws.readyState === ws.OPEN) { ws.send(JSON.stringify({type:"exit"})); ws.close(); } });
+  vmPty.onExit(({exitCode, signal}) => {
+    console.log(`VM pty exited: code=${exitCode} signal=${signal}`);
+    if (ws.readyState === ws.OPEN) { ws.send(JSON.stringify({type:"exit"})); ws.close(); }
+  });
 
   ws.on("message", msg => {
     try {

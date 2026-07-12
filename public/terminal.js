@@ -1261,6 +1261,63 @@ function switchTermTab(tab) {
 /* ══════════════════════
    PASTE INTO TERMINAL
 ══════════════════════ */
+async function showPastePreview(evt) {
+  document.getElementById("paste-preview-popup")?.remove();
+
+  let text = "";
+  try {
+    text = await navigator.clipboard.readText();
+  } catch (e) {
+    if (typeof showToast === "function") showToast("Clipboard access denied — check browser permissions", "error");
+    return;
+  }
+  if (!text) {
+    if (typeof showToast === "function") showToast("Clipboard is empty", "error");
+    return;
+  }
+
+  const btn = evt.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const popup = document.createElement("div");
+  popup.id = "paste-preview-popup";
+  popup.className = "paste-preview-popup";
+  popup.style.top = `${rect.bottom + 6}px`;
+  popup.style.left = `${Math.max(8, rect.right - 260)}px`;
+  popup.innerHTML = `
+    <div class="paste-preview-label">Last copied:</div>
+    <div class="paste-preview-text">${escTerm(text)}</div>
+    <div class="paste-preview-actions">
+      <button class="term-btn" onclick="closePastePreview()">✕ Cancel</button>
+      <button class="term-btn paste-preview-confirm">✓ Paste this</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+  popup.querySelector(".paste-preview-confirm").onclick = () => confirmPasteFromPreview(text);
+
+  setTimeout(() => document.addEventListener("click", closePastePreviewOnOutsideClick), 0);
+}
+
+function closePastePreviewOnOutsideClick(e) {
+  const popup = document.getElementById("paste-preview-popup");
+  if (popup && !popup.contains(e.target)) closePastePreview();
+}
+
+function closePastePreview() {
+  document.getElementById("paste-preview-popup")?.remove();
+  document.removeEventListener("click", closePastePreviewOnOutsideClick);
+}
+
+function confirmPasteFromPreview(text) {
+  closePastePreview();
+  if (termActiveTab === "pty" && ptyWs?.readyState === WebSocket.OPEN) {
+    ptyWs.send(JSON.stringify({ type:"input", data:text }));
+  } else if (termActiveTab === "vm" && vmWs?.readyState === WebSocket.OPEN) {
+    vmWs.send(JSON.stringify({ type:"input", data:text }));
+  } else {
+    if (typeof showToast === "function") showToast("📋 Paste only works in Shell or My VM tabs", "error");
+  }
+}
+
 async function pasteToTerminal() {
   try {
     const text = await navigator.clipboard.readText();
@@ -1311,7 +1368,7 @@ function buildTerminal() {
     <div class="term-toolbar">
       <div class="term-actions">
         <button class="term-btn" onclick="mountDeviceFolder()" style="background:#1a3a2a;color:#00ff88;">📁 Mount</button>
-        <button class="term-btn" onclick="pasteToTerminal()" style="background:#1a2a3a;color:#58a6ff;">📋 Paste</button>
+        <button class="term-btn" onclick="showPastePreview(event)" style="background:#1a2a3a;color:#58a6ff;">📋 Paste ▾</button>
         <button class="term-btn" onclick="clearTab(termActiveTab)">⌫ Clear</button>
       </div>
     </div>

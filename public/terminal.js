@@ -614,8 +614,8 @@ function initPtyTerminal() {
       selection:"rgba(0,212,255,0.3)", green:"#00ff88", blue:"#58a6ff",
       cyan:"#00d4ff", yellow:"#ffaa00", red:"#ff5050"
     },
-    fontFamily:"'Share Tech Mono','Cascadia Code','Fira Code','Courier New',monospace",
-    fontSize: 13, lineHeight: 1.5, cursorBlink: true, cursorStyle: "block",
+    fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
+    fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
     scrollback: 5000, allowTransparency: true
   });
 
@@ -685,7 +685,8 @@ async function initVmTerminal() {
   container.innerHTML = "";
   vmTerm = new Terminal({
     theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7" },
-    fontFamily:"'Share Tech Mono',monospace", fontSize:13, cursorBlink:true, scrollback:5000
+    fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
+    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000
   });
   vmFit = new FitAddon.FitAddon();
   vmTerm.loadAddon(vmFit);
@@ -1258,6 +1259,25 @@ function switchTermTab(tab) {
 }
 
 /* ══════════════════════
+   PASTE INTO TERMINAL
+══════════════════════ */
+async function pasteToTerminal() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) return;
+    if (termActiveTab === "pty" && ptyWs?.readyState === WebSocket.OPEN) {
+      ptyWs.send(JSON.stringify({ type:"input", data:text }));
+    } else if (termActiveTab === "vm" && vmWs?.readyState === WebSocket.OPEN) {
+      vmWs.send(JSON.stringify({ type:"input", data:text }));
+    } else {
+      if (typeof showToast === "function") showToast("📋 Paste only works in Shell or My VM tabs", "error");
+    }
+  } catch (e) {
+    if (typeof showToast === "function") showToast("Clipboard access denied — check browser permissions", "error");
+  }
+}
+
+/* ══════════════════════
    BUILD TERMINAL UI
 ══════════════════════ */
 function buildTerminal() {
@@ -1288,6 +1308,7 @@ function buildTerminal() {
       </div>
       <div class="term-actions">
         <button class="term-btn" onclick="mountDeviceFolder()" style="background:#1a3a2a;color:#00ff88;">📁 Mount</button>
+        <button class="term-btn" onclick="pasteToTerminal()" style="background:#1a2a3a;color:#58a6ff;">📋 Paste</button>
         <button class="term-btn" onclick="clearTab(termActiveTab)">⌫ Clear</button>
         <button class="term-btn" onclick="toggleTerminal()">✕</button>
       </div>

@@ -1,0 +1,100 @@
+/* ══════════════════════════════════════
+   ONBOARDING TOUR STYLES
+══════════════════════════════════════ */
+
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 100000;
+  pointer-events: none;
+}
+
+.onboarding-highlight {
+  position: fixed;
+  border-radius: 8px;
+  border: 2px solid #1f6feb;
+  box-shadow: 0 0 0 9999px rgba(5, 8, 14, 0.78), 0 0 16px rgba(31, 111, 235, 0.7);
+  transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+  pointer-events: none;
+}
+
+.onboarding-tooltip {
+  position: fixed;
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  background: #0d1117;
+  border: 1px solid #1f6feb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  font-family: 'Poppins', sans-serif;
+  pointer-events: auto;
+  z-index: 100001;
+}
+.onboarding-tooltip.onboarding-centered {
+  width: 320px;
+  text-align: center;
+}
+
+.onboarding-step-count {
+  font-size: 10px; color: #58a6ff; letter-spacing: .5px;
+  margin-bottom: 6px; font-weight: 600;
+}
+.onboarding-title {
+  font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px;
+}
+.onboarding-text {
+  font-size: 12.5px; line-height: 1.5; color: #b8c4d8; margin-bottom: 14px;
+}
+
+.onboarding-actions {
+  display: flex; align-items: center; gap: 8px;
+}
+.onboarding-btn {
+  border: none; border-radius: 6px; padding: 7px 12px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: .15s;
+}
+.onboarding-skip {
+  background: transparent; color: #6a7688;
+}
+.onboarding-skip:hover { color: #b8c4d8; }
+.onboarding-back {
+  background: rgba(255,255,255,0.06); color: #c0d8f0;
+}
+.onboarding-back:hover { background: rgba(255,255,255,0.12); }
+.onboarding-next {
+  background: #1f6feb; color: #fff;
+}
+.onboarding-next:hover { background: #388bfd; }
+
+.onboarding-arrow {
+  position: absolute;
+  width: 0; height: 0;
+}
+.onboarding-arrow-top {
+  top: -8px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #1f6feb;
+}
+.onboarding-arrow-bottom {
+  bottom: -8px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #1f6feb;
+}
+.onboarding-arrow-left {
+  left: -8px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #1f6feb;
+}
+.onboarding-arrow-right {
+  right: -8px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid #1f6feb;
+}
+
+@media (max-width: 600px) {
+  .onboarding-tooltip { width: calc(100vw - 32px); }
+}

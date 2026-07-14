@@ -10,7 +10,7 @@ body{height:100dvh;overflow:hidden;background:#0d1117;color:white;--banner-h:0px
 .toast.info   {background:#1a3a5c;border-left:3px solid #3498db;}
 
 /* ========================= TOPBAR ========================= */
-.topbar{height:48px;background:#161b22;display:flex;align-items:center;justify-content:space-between;padding:0 6px;border-bottom:1px solid #222;box-shadow:0 2px 10px rgba(0,0,0,.5);gap:4px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.topbar{height:52px;background:#161b22;display:flex;align-items:safe center;justify-content:space-between;padding:2px 6px;border-bottom:1px solid #222;box-shadow:0 2px 10px rgba(0,0,0,.5);gap:4px;overflow-x:auto;overflow-y:hidden;flex-shrink:0;scrollbar-width:none;}
 .topbar::-webkit-scrollbar{display:none;}
 .top-left{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .top-center{display:flex;gap:3px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
@@ -25,7 +25,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .badge{background:#e74c3c;color:white;border-radius:10px;padding:1px 5px;font-size:10px;margin-left:3px;}
 
 /* ========================= MAIN ========================= */
-.main{display:flex;height:calc(100dvh - 48px - var(--banner-h));width:100%;overflow:hidden;}
+.main{display:flex;height:calc(100dvh - 52px - var(--banner-h));width:100%;overflow:hidden;}
 
 /* ========================= SIDEBAR ========================= */
 .sidebar{width:220px;min-width:40px;max-width:500px;background:#11161d;display:flex;flex-direction:column;border-right:1px solid #222;overflow:hidden;flex-shrink:0;transition:width .2s;}

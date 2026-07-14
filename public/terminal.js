@@ -9,6 +9,49 @@
 
 const TERM_SERVER = "https://backend-forz.onrender.com";
 
+/* ══════════════════════
+   FONT RACE FIX
+   xterm.js measures cell width the instant it's created. If the
+   webfont (loaded with display=swap in index.html) hasn't actually
+   painted yet, xterm locks in fallback-font metrics, then the real
+   glyphs swap in later at a different width — this is what causes
+   "b a s h" style letter-spacing bugs. Forcing the font to finish
+   loading BEFORE `new Terminal()` runs prevents the mismatch.
+══════════════════════ */
+async function ensureTermFontLoaded() {
+  try {
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load("400 13px 'JetBrains Mono'"),
+        document.fonts.load("700 13px 'JetBrains Mono'")
+      ]);
+      await document.fonts.ready;
+    }
+  } catch {}
+}
+
+/* Full 16-color ANSI palette (Kali/standard terminal style) shared
+   by both the PTY and VM xterm instances so tools like ls --color,
+   git, htop etc. render with real colors instead of xterm defaults. */
+const TERM_ANSI_THEME = {
+  black:         "#0a0a0f",
+  red:           "#ff5555",
+  green:         "#50fa7b",
+  yellow:        "#f1fa8c",
+  blue:          "#58a6ff",
+  magenta:       "#bd93f9",
+  cyan:          "#00d4ff",
+  white:         "#c0c8d8",
+  brightBlack:   "#4a4a5a",
+  brightRed:     "#ff6e6e",
+  brightGreen:   "#69ff94",
+  brightYellow:  "#ffffa5",
+  brightBlue:    "#79c0ff",
+  brightMagenta: "#d6acff",
+  brightCyan:    "#5cf5ff",
+  brightWhite:   "#f0f4ff"
+};
+
 let termOpen      = false;
 let termCwd       = null;
 let termActiveTab = "bash";
@@ -578,7 +621,7 @@ function runNodeREPL(code) {
    REAL PTY TERMINAL
    xterm.js + WebSocket
 ══════════════════════ */
-function initPtyTerminal() {
+async function initPtyTerminal() {
   const container = document.getElementById("term-out-pty");
   if (!container) return;
 
@@ -608,11 +651,12 @@ function initPtyTerminal() {
     return;
   }
 
+  await ensureTermFontLoaded();
+
   ptyTerm = new Terminal({
     theme: {
       background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#00d4ff",
-      selection:"rgba(0,212,255,0.3)", green:"#00ff88", blue:"#58a6ff",
-      cyan:"#00d4ff", yellow:"#ffaa00", red:"#ff5050"
+      selection:"rgba(0,212,255,0.3)", ...TERM_ANSI_THEME
     },
     fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
     fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
@@ -683,8 +727,10 @@ async function initVmTerminal() {
   }
 
   container.innerHTML = "";
+  await ensureTermFontLoaded();
+
   vmTerm = new Terminal({
-    theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7" },
+    theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7", ...TERM_ANSI_THEME },
     fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
     fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000
   });

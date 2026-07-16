@@ -232,6 +232,9 @@ function skipOnboardingTour() { finishOnboardingTour(); }
 function finishOnboardingTour() {
   document.getElementById("onboardingOverlay")?.remove();
   try { localStorage.setItem(ONBOARDING_SEEN_KEY, "1"); } catch {}
+  if (typeof enablePushNotifications === "function" && "Notification" in window && Notification.permission === "default") {
+    setTimeout(enablePushNotifications, 800);
+  }
 }
 
 window.addEventListener("resize", () => {

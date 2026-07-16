@@ -1083,7 +1083,11 @@ async function sendBroadcast() {
     fetch("https://backend-forz.onrender.com/api/push/send", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ title, message, projectId:"vsc-clone", apiKey: window.GLOBAL_FIREBASE_CONFIG?.apiKey })
-    }).catch(()=>{});
+    }).then(r=>r.json()).then(r=>{
+      if (status) status.innerText = `// ✓ Broadcast live! ID: ${id} — push: ${r.sent||0} sent, ${r.failed||0} failed, ${r.total||0} subscribers`;
+    }).catch(e=>{
+      if (status) status.innerText = `// ✓ Broadcast saved, but push failed to send: ${e.message}`;
+    });
     if (status) { status.innerText="// ✓ Broadcast live! ID: "+id; status.style.color="#00ff88"; }
     document.getElementById("adminTitle").value="";
     document.getElementById("adminMessage").value="";

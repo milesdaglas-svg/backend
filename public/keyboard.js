@@ -464,10 +464,10 @@ function doBackspace() {
    CURSOR MOVEMENT
 ══════════════════════ */
 function moveCursor(action) {
-  var ed1 = window.editor1;
-  if (ed1 && typeof ed1.focus === "function") {
-    ed1.focus();
-    ed1.trigger("kb", action, {});
+  var ed = getActiveEditor() || window.editor1;
+  if (ed && typeof ed.focus === "function") {
+    ed.focus();
+    ed.trigger("kb", action, {});
   }
 }
 

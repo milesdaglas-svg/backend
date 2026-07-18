@@ -460,8 +460,12 @@ const shared={
   function attachAutoScroll(ed) {
     if (!ed || ed._autoScrollAttached) return;
     ed._autoScrollAttached = true;
+    ed._lastAutoScrollLine = null;
     ed.onDidChangeCursorPosition(function (e) {
-      ed.revealPositionInCenterIfOutsideViewport(e.position, monaco.editor.ScrollType.Smooth);
+      if (e.position.lineNumber !== ed._lastAutoScrollLine) {
+        ed._lastAutoScrollLine = e.position.lineNumber;
+        ed.revealLineInCenter(e.position.lineNumber, monaco.editor.ScrollType.Smooth);
+      }
     });
   }
   attachAutoScroll(editor1);

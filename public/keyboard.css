@@ -159,23 +159,23 @@
 @media(max-width: 399px){
   #virtualKeyboard { width: 100vw; bottom: 56px; left: 0; transform: none; border-radius: 0; }
   .vkb { border-radius: 0; }
-  .vkb-key  { height: 36px; }
-  .vkb-ch   { font-size: 11px; }
-  .vkb-sh   { font-size: 8px; }
+  .vkb-key  { height: 42px; padding: 0 1px; }
+  .vkb-ch   { font-size: 15px; font-weight: 600; }
+  .vkb-sh   { font-size: 7px; top: 2px; right: 2px; opacity: 0.5; }
   .vkb-sp   { font-size: 10px !important; }
-  .vkb-keys { gap: 3px; padding: 3px 3px 4px; }
-  .vkb-row  { gap: 2px; }
+  .vkb-keys { gap: 2px; padding: 3px 2px 4px; }
+  .vkb-row  { gap: 1px; }
 }
 
 /* Medium phones (400–599px) */
 @media(min-width:400px) and (max-width:599px){
   #virtualKeyboard { width: 100vw; bottom: 56px; left: 0; transform: none; border-radius: 0; }
   .vkb { border-radius: 0; }
-  .vkb-key  { height: 38px; }
-  .vkb-ch   { font-size: 12px; }
-  .vkb-sh   { font-size: 8px; }
-  .vkb-keys { gap: 3px; padding: 4px; }
-  .vkb-row  { gap: 2px; }
+  .vkb-key  { height: 44px; padding: 0 1px; }
+  .vkb-ch   { font-size: 16px; font-weight: 600; }
+  .vkb-sh   { font-size: 7px; top: 2px; right: 2px; opacity: 0.5; }
+  .vkb-keys { gap: 2px; padding: 4px 3px; }
+  .vkb-row  { gap: 1px; }
 }
 
 /* Large phones / small tablets (600–768px) */

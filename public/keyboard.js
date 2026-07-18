@@ -431,15 +431,25 @@ function typeChar(char) {
    BACKSPACE
 ══════════════════════ */
 function doBackspace() {
-  var ed1 = window.editor1;
-  var ed2 = window.editor2;
+  var ed = getActiveEditor();
 
-  if (ed1 && typeof ed1.hasTextFocus === "function" && ed1.hasTextFocus()) {
-    ed1.trigger("kb", "deleteLeft", {});
-    return;
+  if (!ed) {
+    var e1 = window.editor1, e2 = window.editor2;
+    if (e1 && typeof e1.getSelection === "function" && typeof e1.executeEdits === "function") ed = e1;
+    else if (e2 && typeof e2.getSelection === "function" && typeof e2.executeEdits === "function") ed = e2;
   }
-  if (ed2 && typeof ed2.hasTextFocus === "function" && ed2.hasTextFocus()) {
-    ed2.trigger("kb", "deleteLeft", {});
+  if (!ed && window.monaco && monaco.editor && typeof monaco.editor.getEditors === "function") {
+    var all = monaco.editor.getEditors();
+    if (all && all.length) ed = all[0];
+  }
+
+  if (ed) {
+    try {
+      ed.focus();
+      ed.trigger("kb", "deleteLeft", {});
+    } catch(err) {
+      if (typeof showToast === "function") showToast("KB error: " + err.message, "error");
+    }
     return;
   }
 
@@ -454,10 +464,7 @@ function doBackspace() {
     return;
   }
 
-  if (ed1 && typeof ed1.focus === "function") {
-    ed1.focus();
-    ed1.trigger("kb", "deleteLeft", {});
-  }
+  if (typeof showToast === "function") showToast("KB: no target found", "error");
 }
 
 /* ══════════════════════

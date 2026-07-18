@@ -90,6 +90,8 @@ function applyDragToItems() {
 
     // Touch
     el.addEventListener("touchstart", e => startTouchDrag(e, path, "folder", el), {passive:true});
+    el.addEventListener("touchmove",  onTouchMove, {passive:false});
+    el.addEventListener("touchend",   onTouchEnd);
   });
 }
 

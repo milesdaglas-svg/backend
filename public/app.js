@@ -9,12 +9,7 @@ let splitActive = false;
 let aiChatHistory = [];
 let currentSessionId = "session_"+Date.now();
 
-let files = {
-  "index.html":`<!DOCTYPE html>\n<html>\n<head>\n<title>VS Code GOD MODE</title>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n<h1>⚡ VS Code Ultra Pro Max</h1>\n<a href="about.html">About</a>\n<script src="script.js"><\/script>\n</body>\n</html>`,
-  "about.html":`<!DOCTYPE html>\n<html>\n<head><title>About</title></head>\n<body>\n<h1>ABOUT PAGE</h1>\n<a href="index.html">Home</a>\n</body>\n</html>`,
-  "style.css":`body{\nbackground:#111;\ncolor:white;\nfont-family:Arial;\npadding:40px;\n}`,
-  "script.js":`console.log("VS Code God Mode");`
-};
+let files = {};
 let openFolders=new Set();
 const PROJECT_TEMPLATES = {
   blank: { "index.html":`<!DOCTYPE html>\n<html><head><title>New Project</title></head><body><h1>Hello</h1></body></html>` },

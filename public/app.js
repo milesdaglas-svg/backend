@@ -446,6 +446,14 @@ const shared={
     currentFile = Object.keys(files).find(f => !f.endsWith("/.gitkeep")) || "index.html";
   }
 
+  // ── Emmet: type "!" + Tab in HTML for the boilerplate skeleton, ── 
+  // ── plus CSS/JSX abbreviation expansion, just like VS Code ──
+  if (window.emmetMonaco) {
+    emmetMonaco.emmetHTML(monaco, ["html"]);
+    emmetMonaco.emmetCSS(monaco, ["css"]);
+    emmetMonaco.emmetJSX(monaco, ["javascript"]);
+  }
+
   editor1 = monaco.editor.create(document.getElementById("editor1"), {...shared, language: getLang(currentFile), value: files[currentFile] || ""});
   editor2 = monaco.editor.create(document.getElementById("editor2"), {...shared, language: getLang(currentFile), value: files[currentFile] || ""});
   // ── Enable language validation/diagnostics (error squiggles) ──

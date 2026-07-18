@@ -47,8 +47,29 @@
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+<link rel="icon" type="image/png" href="icons/favicon-32-circle.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  #bootSplash{
+    position:fixed; inset:0; z-index:300000;
+    background:#000 url('splash/boot-poster.jpg') center center / cover no-repeat;
+    display:flex; align-items:flex-end; justify-content:center;
+    transition:opacity .4s ease;
+  }
+  #bootSplash.boot-hide{ opacity:0; pointer-events:none; }
+</style>
 </head>
 <body>
+
+<div id="bootSplash"></div>
+<script>
+  window.addEventListener("load", function(){
+    setTimeout(function(){
+      var b = document.getElementById("bootSplash");
+      if (b) { b.classList.add("boot-hide"); setTimeout(function(){ b.remove(); }, 450); }
+    }, 900);
+  });
+</script>
 
 <div id="toast" class="toast"></div>
 <div id="sidebarOverlay" class="sidebar-overlay"></div>

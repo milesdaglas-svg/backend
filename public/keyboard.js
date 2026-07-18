@@ -556,6 +556,10 @@ function toggleKeyboard() {
 
   var btn = document.getElementById("kbToggleBtn");
   if (btn) btn.classList.toggle("vkb-on", kbVisible);
+
+  if (typeof window.updateEditorSafeArea === "function") {
+    setTimeout(window.updateEditorSafeArea, 50);
+  }
 }
 
 /* ══════════════════════
@@ -600,7 +604,10 @@ function setupKbDrag() {
     e.preventDefault();
   }
 
-  function onEnd() { dragging = false; }
+  function onEnd() {
+    dragging = false;
+    if (typeof window.updateEditorSafeArea === "function") window.updateEditorSafeArea();
+  }
 
   handle.addEventListener("mousedown",  onStart);
   handle.addEventListener("touchstart", onStart, {passive: false});

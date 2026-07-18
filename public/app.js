@@ -456,6 +456,46 @@ const shared={
 
   editor1 = monaco.editor.create(document.getElementById("editor1"), {...shared, language: getLang(currentFile), value: files[currentFile] || ""});
   editor2 = monaco.editor.create(document.getElementById("editor2"), {...shared, language: getLang(currentFile), value: files[currentFile] || ""});
+
+  function attachAutoScroll(ed) {
+    if (!ed || ed._autoScrollAttached) return;
+    ed._autoScrollAttached = true;
+    ed.onDidChangeCursorPosition(function (e) {
+      ed.revealPositionInCenterIfOutsideViewport(e.position, monaco.editor.ScrollType.Smooth);
+    });
+  }
+  attachAutoScroll(editor1);
+  attachAutoScroll(editor2);
+
+  window.updateEditorSafeArea = function () {
+    var kb = document.getElementById("virtualKeyboard");
+    var kbHeight = 0;
+    if (kb && kb.style.display !== "none") {
+      var kbRect = kb.getBoundingClientRect();
+      if (kbRect.height > 0 && kbRect.bottom >= window.innerHeight - 40) {
+        kbHeight = kbRect.height;
+      }
+    }
+    [window.editor1, window.editor2].forEach(function (ed) {
+      if (!ed) return;
+      var node = ed.getDomNode();
+      var parent = node && node.parentElement;
+      if (!parent) return;
+      var rect = parent.getBoundingClientRect();
+      var h = Math.max(80, rect.height - kbHeight);
+      ed.layout({ width: rect.width, height: h });
+      var pos = ed.getPosition();
+      if (pos) ed.revealPositionInCenterIfOutsideViewport(pos, monaco.editor.ScrollType.Smooth);
+    });
+  };
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function () {
+      window.updateEditorSafeArea();
+    });
+  }
+  window.addEventListener("resize", function () { window.updateEditorSafeArea(); });
+
   // ── Enable language validation/diagnostics (error squiggles) ──
   monaco.languages.css.cssDefaults.setOptions({
     validate: true,

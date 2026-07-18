@@ -1034,7 +1034,7 @@ async function smartRun(){
 document.getElementById("newFileBtn").onclick=()=>{
   const name=prompt("File name (e.g. src/app.js):");if(!name?.trim())return;
   const n=name.trim();if(files[n]!==undefined){showToast("Already exists!","error");return;}
-  if(n.endsWith(".html"))files[n]=`<!DOCTYPE html>\n<html>\n<head>\n<title>${n.split("/").pop()}</title>\n</head>\n<body>\n\n</body>\n</html>`;
+  if(n.endsWith(".html"))files[n]=`<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>${n.split("/").pop()}</title>\n</head>\n<body>\n\n</body>\n</html>`;
   else if(n.endsWith(".css"))files[n]=`/* ${n.split("/").pop()} */\n`;
   else if(n.endsWith(".js"))files[n]=`// ${n.split("/").pop()}\n`;
   else files[n]="";

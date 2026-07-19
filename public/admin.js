@@ -106,7 +106,7 @@ async function initVisitorTracking() {
    FETCH STATS FOR ADMIN
 ══════════════════════════════ */
 async function fetchAdminStats() {
-  const db = await initAnnounceDB(); if (!db) return null;
+  const db = await initAnnounceDB(); if (!db) return { error: "No Firebase config found (window.GLOBAL_FIREBASE_CONFIG missing)" };
   try {
     const { collection, getDocs, query, orderBy, limit, where } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
@@ -138,7 +138,7 @@ async function fetchAdminStats() {
       mobile, desktop,
       recentSessions: sessions.sort((a,b) => (b.lastSeen||0)-(a.lastSeen||0)).slice(0,20)
     };
-  } catch(e) { console.warn("Stats:", e.message); return null; }
+  } catch(e) { console.warn("Stats:", e.message); return { error: e.message || String(e) }; }
 }
 
 /* ══════════════════════════════
@@ -930,8 +930,9 @@ async function loadAdminDashboard() {
   const grid  = document.getElementById("adm-stats-grid");
   const feed  = document.getElementById("adm-live-feed");
   const badge = document.getElementById("adm-online-badge");
-  if (!stats) {
-    if (grid) grid.innerHTML = `<div class="adm-stat-card"><div class="adm-stat-icon">⚠</div><div class="adm-stat-val">—</div><div class="adm-stat-label">Firebase not configured</div></div>`;
+  if (!stats || stats.error) {
+    const msg = stats?.error || "Firebase not configured";
+    if (grid) grid.innerHTML = `<div class="adm-stat-card"><div class="adm-stat-icon">⚠</div><div class="adm-stat-val">—</div><div class="adm-stat-label">${msg}</div></div>`;
     return;
   }
   if (badge) badge.innerText = stats.onlineCount;

@@ -106,7 +106,7 @@ async function initVisitorTracking() {
    FETCH STATS FOR ADMIN
 ══════════════════════════════ */
 async function fetchAdminStats() {
-  const db = await initAnnounceDB(); if (!db) return { error: "No Firebase config found (window.GLOBAL_FIREBASE_CONFIG missing)" };
+  const db = await initAnnounceDB(); if (!db) return null;
   try {
     const { collection, getDocs, query, orderBy, limit, where } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
@@ -138,7 +138,7 @@ async function fetchAdminStats() {
       mobile, desktop,
       recentSessions: sessions.sort((a,b) => (b.lastSeen||0)-(a.lastSeen||0)).slice(0,20)
     };
-  } catch(e) { console.warn("Stats:", e.message); return { error: e.message || String(e) }; }
+  } catch(e) { console.warn("Stats:", e.message); return null; }
 }
 
 /* ══════════════════════════════
@@ -201,6 +201,9 @@ async function showAdminPanel() {
           </button>
           <button class="adm-nav-btn" onclick="admTab('replies',this);loadAdminRepliesTab();">
             <span class="adm-nav-icon">💬</span><span>Replies</span>
+          </button>
+          <button class="adm-nav-btn" onclick="admTab('update',this);loadAdminUpdateTab();">
+            <span class="adm-nav-icon">⬆️</span><span>Push Update</span>
           </button>
         </nav>
 
@@ -324,6 +327,9 @@ async function showAdminPanel() {
           </div>
           <div class="adm-tab" id="adm-tab-replies">
             <div id="adm-replies-content"><div class="adm-feed-loading">// Loading...</div></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-update">
+            <div id="adm-update-content"></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
@@ -922,6 +928,7 @@ function admTab(name, btn) {
   }
   if (name === "ads") { const el=document.getElementById('adm-ads-content'); if(el&&typeof buildAdControlPanel==="function") el.innerHTML=buildAdControlPanel(); }
   if (name === "visitors") loadVisitorsList();
+  if (name === "update") loadAdminUpdateTab();
 }
 
 /* ── DASHBOARD ── */
@@ -930,9 +937,8 @@ async function loadAdminDashboard() {
   const grid  = document.getElementById("adm-stats-grid");
   const feed  = document.getElementById("adm-live-feed");
   const badge = document.getElementById("adm-online-badge");
-  if (!stats || stats.error) {
-    const msg = stats?.error || "Firebase not configured";
-    if (grid) grid.innerHTML = `<div class="adm-stat-card"><div class="adm-stat-icon">⚠</div><div class="adm-stat-val">—</div><div class="adm-stat-label">${msg}</div></div>`;
+  if (!stats) {
+    if (grid) grid.innerHTML = `<div class="adm-stat-card"><div class="adm-stat-icon">⚠</div><div class="adm-stat-val">—</div><div class="adm-stat-label">Firebase not configured</div></div>`;
     return;
   }
   if (badge) badge.innerText = stats.onlineCount;
@@ -1084,11 +1090,7 @@ async function sendBroadcast() {
     fetch("https://backend-forz.onrender.com/api/push/send", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ title, message, projectId:"vsc-clone", apiKey: window.GLOBAL_FIREBASE_CONFIG?.apiKey })
-    }).then(r=>r.json()).then(r=>{
-      if (status) status.innerText = `// ✓ Broadcast live! ID: ${id} — push: ${r.sent||0} sent, ${r.failed||0} failed, ${r.total||0} subscribers`;
-    }).catch(e=>{
-      if (status) status.innerText = `// ✓ Broadcast saved, but push failed to send: ${e.message}`;
-    });
+    }).catch(()=>{});
     if (status) { status.innerText="// ✓ Broadcast live! ID: "+id; status.style.color="#00ff88"; }
     document.getElementById("adminTitle").value="";
     document.getElementById("adminMessage").value="";
@@ -1200,7 +1202,7 @@ async function saveGlobalSettings() {
       disableAI: document.getElementById("g-disableai").value === "1",
       updatedAt: Date.now()
     };
-    await setDoc(doc(db, "global_settings", "config"), cfg, { merge: true });
+    await setDoc(doc(db, "global_settings", "config"), cfg);
     if(st) st.innerText = "✅ Applied to all users!";
     setTimeout(() => { if(st) st.innerText = ""; }, 3000);
   } catch(e) { if(st) st.innerText = "❌ Error: " + e.message; }
@@ -1265,4 +1267,134 @@ async function loadAdminRepliesTab(){
 
     el.innerHTML = totalReplies ? html : `<div class="adm-feed-empty">No replies yet</div>`;
   }catch(e){ el.innerHTML = `<div class="adm-feed-empty">Error: ${e.message}</div>`; }
+}
+/* ══════════════════════════════
+   PUSH APK UPDATE
+   Uploads a new APK to a GitHub Release, then writes the
+   version/url/message to Firestore so every open app can check
+   "is a newer build available than the one installed?"
+══════════════════════════════ */
+async function loadAdminUpdateTab() {
+  const el = document.getElementById("adm-update-content");
+  if (!el) return;
+
+  let current = {};
+  try {
+    const db = await initAnnounceDB();
+    if (db) {
+      const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const snap = await getDoc(doc(db, "global_settings", "app_update"));
+      if (snap.exists()) current = snap.data();
+    }
+  } catch {}
+
+  el.innerHTML = `
+    <div class="adm-section-title">// PUSH APP UPDATE</div>
+    <div style="color:#8b949e;font-size:12px;margin-bottom:14px;">
+      Upload a new .apk when a change needs a fresh install (not just a web update).
+      Every user gets a popup next time they open the app, with a one-tap Update button.
+    </div>
+
+    ${current.version ? `
+      <div style="background:#0d1520;border:1px solid rgba(88,166,255,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#c9d1d9;">
+        Currently live: <strong style="color:#58a6ff;">${escapeHtml(current.version)}</strong>
+        ${current.publishedAt ? `<span style="color:#6a7480;"> — ${new Date(current.publishedAt).toLocaleString()}</span>` : ""}
+      </div>` : ""}
+
+    <div class="adm-field">
+      <label>APK file</label>
+      <input type="file" id="upd-apk-file" accept=".apk" class="adm-input">
+      <div id="upd-file-info" style="font-size:11px;color:#6a7480;margin-top:4px;"></div>
+    </div>
+
+    <div class="adm-field">
+      <label>Version (e.g. 1.2.0)</label>
+      <input type="text" id="upd-version" class="adm-input" placeholder="1.2.0">
+    </div>
+
+    <div class="adm-field">
+      <label>Message shown to users</label>
+      <textarea id="upd-message" class="adm-input" rows="3">A new version of MLD VSC Clone is out — install for new and powerful features!</textarea>
+    </div>
+
+    <div class="adm-form-actions">
+      <button class="adm-btn adm-btn-primary" id="upd-publish-btn" onclick="publishAppUpdate()">⬆️ Publish Update</button>
+    </div>
+    <div id="upd-status" class="adm-form-status"></div>
+  `;
+
+  const fileInput = document.getElementById("upd-apk-file");
+  fileInput?.addEventListener("change", () => {
+    const f = fileInput.files?.[0];
+    const info = document.getElementById("upd-file-info");
+    if (f && info) info.innerText = `${f.name} — ${(f.size / (1024*1024)).toFixed(1)} MB`;
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(",")[1]);
+    r.onerror = () => reject(new Error("Could not read file"));
+    r.readAsDataURL(file);
+  });
+}
+
+async function publishAppUpdate() {
+  const fileInput = document.getElementById("upd-apk-file");
+  const versionEl = document.getElementById("upd-version");
+  const msgEl     = document.getElementById("upd-message");
+  const status    = document.getElementById("upd-status");
+  const btn       = document.getElementById("upd-publish-btn");
+
+  const file    = fileInput?.files?.[0];
+  const version = versionEl?.value.trim();
+  const message = msgEl?.value.trim();
+
+  if (!file)    { if (status) { status.innerText = "// Pick an .apk file first"; status.style.color = "#ff4444"; } return; }
+  if (!version) { if (status) { status.innerText = "// Enter a version number"; status.style.color = "#ff4444"; } return; }
+
+  const ghToken = typeof ghGetToken === "function" ? ghGetToken() : localStorage.getItem("gh_token");
+  if (!ghToken) { if (status) { status.innerText = "// Connect GitHub first (Source Control panel)"; status.style.color = "#ff4444"; } return; }
+
+  if (btn) btn.disabled = true;
+  if (status) { status.innerText = "// Reading APK..."; status.style.color = "#8b949e"; }
+
+  try {
+    const apkBase64 = await fileToBase64(file);
+
+    if (status) status.innerText = "// Uploading to GitHub Release (this can take a bit)...";
+    const res = await fetch("https://backend-forz.onrender.com/api/admin/push-apk-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: ghToken,
+        version,
+        message,
+        fileName: file.name,
+        apkBase64
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+
+    if (status) status.innerText = "// Saving to Firestore...";
+    const db = await initAnnounceDB();
+    if (!db) throw new Error("Firebase not configured");
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", "app_update"), {
+      version,
+      apkUrl: data.apkUrl,
+      message,
+      publishedAt: Date.now()
+    });
+
+    if (status) { status.innerText = `// ✓ Update ${version} is live — users will see it next open`; status.style.color = "#00ff88"; }
+    if (typeof showToast === "function") showToast("⬆️ Update published!", "success");
+    loadAdminUpdateTab();
+  } catch (e) {
+    if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }

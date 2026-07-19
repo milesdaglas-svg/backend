@@ -8,7 +8,7 @@ const path = require("path");
 const app = express();
 
 app.use(cors());
-app.use(bodyParser.json({ limit: "100mb" }));
+app.use(bodyParser.json({ limit: "200mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 /* ══════════════════════
    GITHUB OAUTH
@@ -637,6 +637,65 @@ app.post("/api/github/create-issue", async (req, res) => {
     });
     res.json({ number: issue.number, html_url: issue.html_url, title: issue.title });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ── POST /api/admin/push-apk-update ──
+   Creates a GitHub Release + uploads the APK as its asset.
+   Returns the public download URL for Firestore to store. */
+function uploadGithubReleaseAsset(uploadUrlTemplate, token, buffer, fileName) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(uploadUrlTemplate.replace("{?name,label}", `?name=${encodeURIComponent(fileName)}`));
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname + url.search,
+      method: "POST",
+      headers: {
+        "Authorization": `token ${token}`,
+        "User-Agent": "VSCodeGodMode/1.0",
+        "Content-Type": "application/vnd.android.package-archive",
+        "Content-Length": buffer.length
+      }
+    };
+    const req = https.request(options, res => {
+      let raw = "";
+      res.on("data", chunk => raw += chunk);
+      res.on("end", () => {
+        try {
+          const parsed = JSON.parse(raw);
+          if (res.statusCode >= 400) reject(new Error(parsed.message || `Upload failed (${res.statusCode})`));
+          else resolve(parsed);
+        } catch(e) { reject(new Error("Bad response from GitHub upload")); }
+      });
+    });
+    req.on("error", reject);
+    req.write(buffer);
+    req.end();
+  });
+}
+
+app.post("/api/admin/push-apk-update", async (req, res) => {
+  try {
+    const { token, version, message, fileName, apkBase64 } = req.body;
+    if (!token || !version || !apkBase64) return res.status(400).json({ error: "Missing token, version, or apk file" });
+
+    const owner = "milesdaglas-svg";
+    const repo  = "backend";
+    const tag   = "v" + version.replace(/^v/i, "");
+
+    const release = await githubAPI("POST", `/repos/${owner}/${repo}/releases`, token, {
+      tag_name: tag,
+      name: tag,
+      body: message || `Update ${tag}`
+    });
+    if (!release.upload_url) return res.status(500).json({ error: "Could not create GitHub release (check repo name/token permissions)" });
+
+    const buffer = Buffer.from(apkBase64, "base64");
+    const asset = await uploadGithubReleaseAsset(release.upload_url, token, buffer, fileName || `app-${tag}.apk`);
+
+    res.json({ success: true, apkUrl: asset.browser_download_url, version: tag });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 /* ── GET /api/github/actions ──

@@ -1199,7 +1199,7 @@ async function saveGlobalSettings() {
       disableAI: document.getElementById("g-disableai").value === "1",
       updatedAt: Date.now()
     };
-    await setDoc(doc(db, "global_settings", "config"), cfg);
+    await setDoc(doc(db, "global_settings", "config"), cfg, { merge: true });
     if(st) st.innerText = "✅ Applied to all users!";
     setTimeout(() => { if(st) st.innerText = ""; }, 3000);
   } catch(e) { if(st) st.innerText = "❌ Error: " + e.message; }

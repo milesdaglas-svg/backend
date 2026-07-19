@@ -660,7 +660,7 @@ async function initPtyTerminal() {
     },
     fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
     fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
-    scrollback: 5000, allowTransparency: true
+    scrollback: 5000, allowTransparency: true, rescaleOverlappingGlyphs: true
   });
 
   ptyFit = new FitAddon.FitAddon();
@@ -668,6 +668,7 @@ async function initPtyTerminal() {
   ptyTerm.open(container);
   ptyTerm.focus();
   setTimeout(() => { try { ptyFit.fit(); } catch {} }, 100);
+  requestAnimationFrame(() => requestAnimationFrame(() => { try { ptyFit.fit(); } catch {} }));
 
   const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://") + "/pty";
   ptyTerm.writeln("\x1b[90mConnecting to real Linux shell...\x1b[0m");
@@ -732,13 +733,14 @@ async function initVmTerminal() {
   vmTerm = new Terminal({
     theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7", ...TERM_ANSI_THEME },
     fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
-    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000
+    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000, rescaleOverlappingGlyphs: true
   });
   vmFit = new FitAddon.FitAddon();
   vmTerm.loadAddon(vmFit);
   vmTerm.open(container);
   vmTerm.focus();
   setTimeout(() => { try { vmFit.fit(); } catch {} }, 100);
+  requestAnimationFrame(() => requestAnimationFrame(() => { try { vmFit.fit(); } catch {} }));
 
   vmTerm.writeln("\x1b[90mCreating your VM (first time takes ~60s)...\x1b[0m");
 

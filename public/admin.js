@@ -1202,7 +1202,7 @@ async function saveGlobalSettings() {
       disableAI: document.getElementById("g-disableai").value === "1",
       updatedAt: Date.now()
     };
-    await setDoc(doc(db, "global_settings", "config"), cfg);
+    await setDoc(doc(db, "global_settings", "config"), cfg, { merge: true });
     if(st) st.innerText = "✅ Applied to all users!";
     setTimeout(() => { if(st) st.innerText = ""; }, 3000);
   } catch(e) { if(st) st.innerText = "❌ Error: " + e.message; }
@@ -1217,11 +1217,13 @@ async function applyGlobalSettings() {
     const cfg = snap.data();
     if (cfg.theme && window.monaco) monaco.editor.setTheme(cfg.theme);
     if (cfg.accent) document.documentElement.style.setProperty("--accent", cfg.accent);
-    if (cfg.banner) {
+    if (cfg.banner && cfg.banner.length < 200 && !cfg.banner.includes("emmetMonaco") && !cfg.banner.includes("function")) {
       let b = document.getElementById("global-banner");
       if (!b) { b = document.createElement("div"); b.id = "global-banner"; b.style.cssText = "background:#1f3a1f;color:#00ff88;text-align:center;padding:6px 12px;font-size:12px;z-index:9999;position:relative;"; document.body.prepend(b); }
       b.innerText = cfg.banner;
       requestAnimationFrame(()=>document.documentElement.style.setProperty("--banner-h", b.offsetHeight+"px"));
+    } else {
+      document.getElementById("global-banner")?.remove();
     }
     if (cfg.disableAI) {
       const ai = document.getElementById("toggleAiBtn"); if(ai) ai.style.display = "none";

@@ -159,7 +159,7 @@ async function checkAndShowPopup(force = false) {
 
 /* ── BEAUTIFUL ROBOT POPUP ── */
 function showAnnouncementPopup(ann) {
-  if (!ann?.message || ann.message.includes("emmetMonaco") || ann.message.length > 400) return;
+  if (!ann?.message || ann.message.includes("emmetMonaco") || ann.message.includes("function") || ann.message.length > 300) return;
   document.getElementById("announcePopup")?.remove();
 
   const typeColors = { info:"#00d4ff", update:"#00ff88", warning:"#ffaa00", urgent:"#ff4444" };

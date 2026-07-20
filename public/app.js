@@ -495,7 +495,7 @@ const shared={
       }
     }
     [window.editor1, window.editor2].forEach(function (ed) {
-      if (!ed) return;
+      if (!ed || typeof ed.getDomNode !== "function") return;
       var node = ed.getDomNode();
       var parent = node && node.parentElement;
       if (!parent) return;
@@ -1049,6 +1049,7 @@ document.getElementById("collapseAiBtn").onclick=()=>{document.getElementById("a
 /* ========== TOPBAR ========== */
 document.getElementById("runBtn").onclick=smartRun;
 
+window.smartRun = smartRun;
 async function smartRun(){
   const pkgFile = Object.keys(files).find(f => f === "package.json" || f.endsWith("/package.json"));
   if(!pkgFile){

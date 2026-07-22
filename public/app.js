@@ -909,7 +909,7 @@ async function loadCloudConversation(){
     if(!data||!data.messages?.length)return;
     const resume=confirm(`☁ Found your last AI conversation (${data.messages.length} messages from ${new Date(data.timestamp).toLocaleDateString()}). Resume it?`);
     if(!resume)return;
-    aiChatHistory=data.messages;
+    aiChatHistory = Array.isArray(data.messages) ? data.messages : [];
     currentSessionId=data.sessionId||currentSessionId;
     // re-render chat
     const chat=document.getElementById("aiChat");chat.innerHTML="";

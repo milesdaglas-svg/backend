@@ -187,7 +187,7 @@ async function loadUserChat(){
     const snap = await getDoc(doc(firebaseDB,"ai_chats",currentAiUser.username));
     if(snap.exists()){
       const data = snap.data();
-      history = data.messages || [];
+      history = Array.isArray(data.messages) ? data.messages : [];
       // render loaded messages
       const chat = document.getElementById("aiChat");
       if(chat){

@@ -31,6 +31,11 @@ jobs:
             npx cap add android
           fi
 
+      - name: Apply custom app icon
+        run: |
+          npm install @capacitor/assets --save-dev
+          npx capacitor-assets generate --android
+
       - name: Add deep link intent filter for GitHub OAuth
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"

@@ -55,13 +55,38 @@ function showUpdatePopup(info) {
   document.body.appendChild(overlay);
 
   document.getElementById("appUpdateLaterBtn").onclick = () => overlay.remove();
-  document.getElementById("appUpdateNowBtn").onclick = () => {
-    if (window.Capacitor?.Plugins?.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: info.apkUrl });
-    } else {
-      window.open(info.apkUrl, "_blank");
-    }
-  };
+  document.getElementById("appUpdateNowBtn").onclick = () => installUpdate(info);
+}
+
+function installUpdate(info) {
+  if (window.Capacitor?.Plugins?.Browser) {
+    window.Capacitor.Plugins.Browser.open({ url: info.apkUrl });
+  } else {
+    window.open(info.apkUrl, "_blank");
+  }
+}
+
+function showUpdateSideTab(info) {
+  if (document.getElementById("appUpdateSideTab")) return;
+
+  const tab = document.createElement("div");
+  tab.id = "appUpdateSideTab";
+  tab.style.cssText = `
+    position:fixed; right:0; top:50%; transform:translateY(-50%);
+    z-index:249999;
+    background:#1f6feb; color:#fff;
+    padding:10px 8px;
+    border-radius:10px 0 0 10px;
+    box-shadow:-2px 0 10px rgba(0,0,0,0.35);
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    cursor:pointer;
+    font-family:inherit; font-size:11px; font-weight:700;
+    writing-mode:vertical-rl; text-orientation:mixed;
+    letter-spacing:0.5px;
+  `;
+  tab.innerHTML = `<span style="font-size:14px;">⬆️</span><span>INSTALL</span>`;
+  tab.onclick = () => showUpdatePopup(info);
+  document.body.appendChild(tab);
 }
 
 async function checkForAppUpdate() {
@@ -84,6 +109,7 @@ async function checkForAppUpdate() {
 
     if (versionIsNewer(info.version, localVersion)) {
       setTimeout(() => showUpdatePopup(info), 1500);
+      showUpdateSideTab(info);
     }
   } catch {}
 }

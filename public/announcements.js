@@ -157,165 +157,85 @@ async function checkAndShowPopup(force = false) {
   showAnnouncementPopup(ann);
 }
 
-/* ── BEAUTIFUL ROBOT POPUP ── */
+/* ── GLASS CARD BROADCAST POPUP ── */
+const ADMIN_NAME = "MLD Codes";
+const ADMIN_AVATAR = "images/admin-avatar.png"; // put admin-avatar.png in your public/images folder
+const ADMIN_WHATSAPP = "256751971461"; // no + no leading 0
+
 function showAnnouncementPopup(ann) {
   if (!ann?.message || ann.message.includes("emmetMonaco") || ann.message.includes("function") || ann.message.length > 300) return;
   document.getElementById("announcePopup")?.remove();
 
-  const typeColors = { info:"#00d4ff", update:"#00ff88", warning:"#ffaa00", urgent:"#ff4444" };
+  const typeColors = { info:"rgba(255,255,255,0.15)", update:"rgba(37,211,102,0.25)", warning:"rgba(255,170,0,0.25)", urgent:"rgba(255,68,68,0.3)" };
   const typeIcons  = { info:"ℹ️", update:"🚀", warning:"⚠️", urgent:"🚨" };
-  const color = typeColors[ann.type] || "#00d4ff";
+  const badgeBg = typeColors[ann.type] || typeColors.info;
   const icon  = typeIcons[ann.type]  || "ℹ️";
-
-  // generate floating bits
-  const bits = Array.from({length:18}, (_,i) => {
-    const left = Math.random()*100, dur = 4+Math.random()*8, delay = Math.random()*6;
-    return `<span class="ap-float-bit" style="left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s">${Math.random()>.5?"1":"0"}</span>`;
-  }).join("");
+  const waMsg = encodeURIComponent(`Hi, I saw your broadcast: "${ann.title || ""}"`);
 
   const popup = document.createElement("div");
   popup.id = "announcePopup";
   popup.innerHTML = `
-    <div class="ap-overlay"></div>
-    <div class="ap-binary-bg">${bits}</div>
+    <div class="gc-overlay" onclick="closeAnnouncementPopup()"></div>
 
-    <div class="ap-terminal">
+    <div class="gc-card">
+      <div class="gc-close" onclick="closeAnnouncementPopup()">✕</div>
 
-      <!-- TITLEBAR -->
-      <div class="ap-titlebar">
-        <div class="ap-dot red"></div>
-        <div class="ap-dot yellow"></div>
-        <div class="ap-dot green"></div>
-        <span class="ap-titlebar-text">vscodegodmode — system.broadcast</span>
+      <div class="gc-name-top">${ADMIN_NAME}</div>
+
+      <div class="gc-head2">
+        <div class="gc-avatar-ring2"><img src="${ADMIN_AVATAR}" onerror="this.style.display='none'"></div>
+        <div class="gc-stats-row">
+          <div class="gc-stat">
+            <div class="gc-stat-label">${icon} ${(ann.type||"info").toUpperCase()}</div>
+            <div class="gc-stat-value">Broadcast</div>
+          </div>
+          ${ann.version ? `<div class="gc-stat"><div class="gc-stat-label">version</div><div class="gc-stat-value">v${escHtml(ann.version)}</div></div>` : ""}
+          <div class="gc-stat">
+            <div class="gc-stat-label">date</div>
+            <div class="gc-stat-value" style="font-size:13px;">${ann.date || ""}</div>
+          </div>
+        </div>
       </div>
 
-      <!-- TWO-COLUMN BODY -->
-      <div class="ap-body-wrap">
+      <div class="gc-bio">
+        <div class="gc-bio-line"><strong>${escHtml(ann.title)}</strong></div>
+        <div class="gc-bio-line" id="ap-typewriter"></div>
+      </div>
 
-        <!-- LEFT: ROBOT -->
-        <div class="ap-robot-side">
-          <div class="ap-robot-glow"></div>
-          <div class="ap-robot-glow2"></div>
-          <div class="ap-float-bits">${bits}</div>
+      <div class="gc-btn-row2">
+        <button class="gc-btn2 gc-btn-follow" onclick="closeAnnouncementPopup()">Acknowledge</button>
+        <button class="gc-btn2 gc-btn-msg2" onclick="document.getElementById('gc-reply-panel').classList.toggle('gc-open')">Message</button>
+        <button class="gc-btn2 gc-btn-wa2" onclick="window.open('https://wa.me/${ADMIN_WHATSAPP}?text=${waMsg}','_blank')">WhatsApp</button>
+        <div class="gc-wa-circle" onclick="window.open('https://wa.me/${ADMIN_WHATSAPP}?text=${waMsg}','_blank')">💬</div>
+      </div>
 
-          <!-- ROBOT ART -->
-          <div class="ap-robot-art">
-            <div class="ap-robot-full">
-              <div class="ap-ant">
-                <div class="ap-ant-ball"></div>
-                <div class="ap-ant-pole"></div>
-              </div>
-              <div class="ap-head">
-                <div class="ap-visor">
-                  <div class="ap-eye"></div>
-                  <div class="ap-eye"></div>
-                  <div class="ap-smile"></div>
-                </div>
-              </div>
-              <div class="ap-neck"></div>
-              <div style="display:flex;align-items:flex-start;gap:4px;">
-                <div class="ap-arm left"><div class="ap-hand"></div></div>
-                <div class="ap-body-r">
-                  <div class="ap-chest-icon">⚛</div>
-                </div>
-                <div class="ap-arm right"><div class="ap-hand"></div></div>
-              </div>
-              <div class="ap-legs">
-                <div class="ap-leg"></div>
-                <div class="ap-leg"></div>
-              </div>
-              <div class="ap-feet">
-                <div class="ap-foot"></div>
-                <div class="ap-foot"></div>
-              </div>
-            </div>
-            <div class="ap-platform"></div>
-          </div>
-
-          <!-- CODE ICONS -->
-          <div class="ap-code-icons">
-            <div class="ap-code-icon"><span>&lt;/&gt;</span> broadcast.exe</div>
-            <div class="ap-code-icon"><span>⚡</span> system.active</div>
-            <div class="ap-code-icon"><span>📡</span> uplink.ok</div>
-          </div>
-          ${ann.version ? `<div class="ap-version">v${ann.version}</div>` : ""}
+      <div class="gc-reply-panel2" id="gc-reply-panel">
+        <div class="gc-reply-title">Send a reply</div>
+        <input id="ap-username" class="gc-input" placeholder="your_username" maxlength="30">
+        <textarea id="ap-message" class="gc-textarea" placeholder="Type your message..." rows="3"></textarea>
+        <div class="gc-send-row">
+          <button class="gc-send-btn" onclick="submitReply('${ann.id}')">Send</button>
+          <span id="ap-reply-status" class="gc-reply-status"></span>
         </div>
-
-        <!-- RIGHT: MESSAGE -->
-        <div class="ap-msg-side">
-
-          <!-- TYPE BADGE -->
-          <div class="ap-type-row">
-            <div class="ap-pulse-dot" style="color:${color}"></div>
-            <div class="ap-type-chip" style="color:${color};border-color:${color}30;background:${color}10">
-              ${icon} ${(ann.type||"info").toUpperCase()}
-            </div>
-          </div>
-
-          <!-- TITLE -->
-          <div class="ap-ann-title">${escHtml(ann.title)}</div>
-
-          <!-- META -->
-          <div class="ap-ann-meta">
-            <span>📅 ${ann.date || ""}</span>
-            ${ann.version ? `<span>🏷 v${escHtml(ann.version)}</span>` : ""}
-          </div>
-
-          <!-- MESSAGE BOX -->
-          <div class="ap-msg-box">
-            <div class="ap-prompt-line">
-              <span class="ap-prompt">root@vscodegodmode:~$</span>
-              <span class="ap-cmd"> cat broadcast.txt</span>
-            </div>
-            <div class="ap-message-text" id="ap-typewriter"></div>
-          </div>
-
-         <!-- REPLY -->
-          <div class="ap-reply-box">
-            <div class="ap-reply-title">// SEND REPLY / RAISE CONCERN</div>
-            <input id="ap-username" class="ap-input" placeholder="your_username" maxlength="30">
-            <textarea id="ap-message" class="ap-textarea" placeholder="// Type your message..." rows="3"></textarea>
-            <div class="ap-reply-row">
-              <button class="ap-send-btn" onclick="submitReply('${ann.id}')">▶ SEND</button>
-              <span id="ap-reply-status" class="ap-reply-status"></span>
-            </div>
-          </div>
-          <!-- LIVE REPLIES -->
-          <div class="ap-reply-title" style="margin-top:10px;">// LIVE RESPONSES</div>
-          <div id="ap-replies-live" style="max-height:120px;overflow-y:auto;padding:6px 0;">
-            <div style="color:rgba(0,255,136,0.2);font-size:11px;">No replies yet.</div>
-          </div>
-
-          <!-- FOOTER -->
-          <div class="ap-footer">
-            <button class="ap-btn ap-btn-ghost" onclick="openUpdatesPage()">📋 All Updates</button>
-            <button class="ap-btn ap-btn-primary" style="--ac:${color}" onclick="closeAnnouncementPopup()">
-              ✓ ACKNOWLEDGED
-            </button>
-          </div>
-
-          <div class="ap-timer">
-            <span class="ap-timer-dot"></span>
-            Next check in <span id="ap-countdown">40:00</span>
-          </div>
-
+        <div class="gc-reply-title" style="margin-top:10px;">Live responses</div>
+        <div id="ap-replies-live" class="gc-replies-live">
+          <div style="opacity:0.4;">No replies yet.</div>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(popup);
-  requestAnimationFrame(() => popup.querySelector(".ap-terminal").classList.add("ap-in"));
+  requestAnimationFrame(() => popup.querySelector(".gc-card").classList.add("gc-in"));
 
   // typewriter
   const msg = ann.message || "";
   const tw = document.getElementById("ap-typewriter");
   let i = 0;
   const timer = setInterval(() => {
-    if (i < msg.length) { tw.innerHTML = escHtml(msg.slice(0, ++i)) + '<span class="ap-cursor-blink">▋</span>'; }
+    if (i < msg.length) { tw.innerHTML = escHtml(msg.slice(0, ++i)) + '<span class="gc-cursor-blink">▋</span>'; }
     else { tw.innerHTML = escHtml(msg); clearInterval(timer); }
   }, 16);
 
-  startCountdown();
   lastSeenAnnouncementId = ann.id;
   localStorage.setItem("last_seen_announce", ann.id);
 }

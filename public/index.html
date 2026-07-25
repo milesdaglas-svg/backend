@@ -544,7 +544,7 @@
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
 document.getElementById("settingsBtn").onclick = () => openSettings();
-document.getElementById("updatesBtn").onclick  = () => openUpdatesPage();
+document.getElementById("updatesBtn").onclick  = () => { openUpdatesPage(); checkForAppUpdate(); };
 document.getElementById("adminBtn").onclick    = () => openAdminPanel();
 
 function fillExample(type) {

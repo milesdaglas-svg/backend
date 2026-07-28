@@ -95,8 +95,8 @@ async function checkForAppUpdate() {
     if (!window.Capacitor.Plugins?.App?.getInfo) return;
 
     const appInfo = await window.Capacitor.Plugins.App.getInfo();
-    const localVersion = appInfo?.version;
-    if (!localVersion) return;
+    const localBuild = parseInt(appInfo?.build, 10);
+    if (!localBuild) return;
 
     const db = typeof initAnnounceDB === "function" ? await initAnnounceDB() : null;
     if (!db) return;
@@ -105,9 +105,9 @@ async function checkForAppUpdate() {
     if (!snap.exists()) return;
 
     const info = snap.data();
-    if (!info?.version || !info?.apkUrl) return;
+    if (!info?.buildNumber || !info?.apkUrl) return;
 
-    if (versionIsNewer(info.version, localVersion)) {
+    if (Number(info.buildNumber) > localBuild) {
       setTimeout(() => showUpdatePopup(info), 1500);
       showUpdateSideTab(info);
     }

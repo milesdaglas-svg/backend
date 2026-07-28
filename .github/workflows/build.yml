@@ -31,6 +31,11 @@ jobs:
             npx cap add android
           fi
 
+      - name: Set app version
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "1.0.${{ github.run_number }}"/' android/app/build.gradle
+
       - name: Apply custom app icon
         run: |
           npm install @capacitor/assets --save-dev

@@ -1365,6 +1365,22 @@ async function publishAppUpdate() {
   try {
     const apkBase64 = await fileToBase64(file);
 
+    if (status) status.innerText = "// Checking latest build number...";
+    let buildNumber = null;
+    try {
+      const actionsRes = await fetch(`https://backend-forz.onrender.com/api/github/actions?owner=milesdaglas-svg&repo=backend`, {
+        headers: { "x-github-token": ghToken }
+      });
+      const runs = await actionsRes.json();
+      const lastGood = (runs || []).find(r => r.name === "Build APK" && r.conclusion === "success");
+      if (!lastGood) throw new Error("No successful 'Build APK' run found — build it first");
+      buildNumber = lastGood.run_number;
+    } catch (e) {
+      if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+      if (btn) btn.disabled = false;
+      return;
+    }
+
     if (status) status.innerText = "// Uploading to GitHub Release (this can take a bit)...";
     const res = await fetch("https://backend-forz.onrender.com/api/admin/push-apk-update", {
       method: "POST",
@@ -1386,6 +1402,7 @@ async function publishAppUpdate() {
     const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
     await setDoc(doc(db, "global_settings", "app_update"), {
       version,
+      buildNumber,
       apkUrl: data.apkUrl,
       message,
       publishedAt: Date.now()

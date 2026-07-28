@@ -710,7 +710,8 @@ app.get("/api/github/actions", async (req, res) => {
       id: r.id, name: r.name, status: r.status,
       conclusion: r.conclusion, created_at: r.created_at,
       html_url: r.html_url, head_branch: r.head_branch,
-      head_commit: r.head_commit?.message
+      head_commit: r.head_commit?.message,
+      run_number: r.run_number
     })));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

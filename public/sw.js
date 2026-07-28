@@ -19,7 +19,7 @@ importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
    Caches app for offline use
 ========================= */
 
-const CACHE = "vscode-godmode-v2";
+const CACHE = "vscode-godmode-v3";
 
 const PRECACHE = [
   "/",
@@ -84,7 +84,15 @@ const PRECACHE = [
 // Install: cache all core files
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(PRECACHE).catch(() => {}))
+    caches.open(CACHE).then(cache =>
+      Promise.allSettled(
+        PRECACHE.map(url =>
+          fetch(url, { cache: "no-cache" })
+            .then(res => { if (res && res.ok) return cache.put(url, res); })
+            .catch(() => {})
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

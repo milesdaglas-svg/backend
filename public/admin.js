@@ -205,6 +205,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('update',this);loadAdminUpdateTab();">
             <span class="adm-nav-icon">⬆️</span><span>Push Update</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('intro',this);loadAdminIntroTab();">
+            <span class="adm-nav-icon">🖼️</span><span>App Intro</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -330,6 +333,9 @@ async function showAdminPanel() {
           </div>
           <div class="adm-tab" id="adm-tab-update">
             <div id="adm-update-content"></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-intro">
+            <div id="adm-intro-content"></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">

@@ -478,13 +478,13 @@ app.get("/api/github/contents", async (req, res) => {
    Push ONE file to GitHub */
 app.post("/api/github/push", async (req, res) => {
   const token = req.headers["x-github-token"];
-  const { owner, repo, branch, path: filePath, content, message, sha } = req.body;
+  const { owner, repo, branch, path: filePath, content, message, sha, encoding } = req.body;
   if (!token || !owner || !repo || !filePath || content === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
   }
   try {
-    // base64 encode content
-    const encoded = Buffer.from(content, "utf8").toString("base64");
+    // base64 encode content (skip re-encoding if caller already sent base64, e.g. images)
+    const encoded = encoding === "base64" ? content : Buffer.from(content, "utf8").toString("base64");
     const body = {
       message: message || `Update ${filePath}`,
       content: encoded,

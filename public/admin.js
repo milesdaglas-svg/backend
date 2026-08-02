@@ -172,7 +172,7 @@ async function showAdminPanel() {
             <span class="adm-nav-icon">👥</span><span>Visitors</span>
             <span id="adm-online-badge" class="adm-badge">0</span>
           </button>
-          <button class="adm-nav-btn" onclick="admTab('broadcast',this)">
+          <button class="adm-nav-btn" onclick="admTab('broadcast',this);loadAdminAvatarPreview();">
             <span class="adm-nav-icon">📡</span><span>Broadcast</span>
           </button>
           <button class="adm-nav-btn" onclick="admTab('history',this)">
@@ -265,6 +265,14 @@ async function showAdminPanel() {
           <div class="adm-tab" id="adm-tab-broadcast">
             <div class="adm-section-title">// SEND BROADCAST</div>
             <div class="adm-form">
+              <div class="adm-field">
+                <label>Profile Picture (shown on broadcast popup)</label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <img id="adm-avatar-preview" src="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid rgba(0,255,136,0.2);background:conic-gradient(from 0deg,#ff7a5c,#ffd479,#ff7a5c);" onerror="this.style.opacity=0">
+                  <input type="file" accept="image/*" class="adm-input" style="flex:1;" onchange="admUploadAvatar(this.files[0])">
+                </div>
+                <div id="adm-avatar-status" style="font-size:11px;color:#6a7480;margin-top:4px;"></div>
+              </div>
               <div class="adm-field"><label>Title *</label><input id="adminTitle" class="adm-input" placeholder="e.g. 🚀 New Update Coming Soon"></div>
               <div class="adm-field"><label>Version</label><input id="announceVersion" class="adm-input" placeholder="e.g. v2.1.0"></div>
               <div class="adm-field">
@@ -1421,5 +1429,238 @@ async function publishAppUpdate() {
     if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+/* =========================
+   APP INTRO SLIDES
+   Manage the swipe-through splash shown when the app opens.
+   Add/remove/reorder slides, each with an image + caption.
+   Publishing bumps updatedAt so every user sees the new set
+   next time they open the app (even if they saw intro before).
+========================= */
+let admIntroSlides = []; // [{url, caption}]
+
+async function loadAdminIntroTab() {
+  const el = document.getElementById("adm-intro-content");
+  if (!el) return;
+
+  el.innerHTML = `<div class="adm-feed-loading">// Loading...</div>`;
+
+  try {
+    const db = await initAnnounceDB();
+    if (db) {
+      const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const snap = await getDoc(doc(db, "global_settings", "app_intro"));
+      admIntroSlides = (snap.exists() && Array.isArray(snap.data().slides)) ? snap.data().slides : [];
+    }
+  } catch { admIntroSlides = []; }
+
+  renderAdminIntroTab();
+}
+
+function renderAdminIntroTab() {
+  const el = document.getElementById("adm-intro-content");
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="adm-section-title">// APP INTRO SLIDES</div>
+    <div style="color:#8b949e;font-size:12px;margin-bottom:14px;">
+      Shown when the app opens. Add as many slides as you want, each with its own caption.
+      Publishing changes here shows the new slides to every user, next time they open the app.
+    </div>
+
+    <div id="adm-intro-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
+
+    <div class="adm-form-actions">
+      <button class="adm-btn adm-btn-ghost" onclick="admIntroAddSlide()">+ Add Slide</button>
+      <button class="adm-btn adm-btn-primary" id="intro-publish-btn" onclick="publishAppIntro()">🖼️ Publish Slides</button>
+    </div>
+    <div id="intro-status" class="adm-form-status"></div>
+  `;
+
+  const list = document.getElementById("adm-intro-list");
+  if (!admIntroSlides.length) {
+    list.innerHTML = `<div class="adm-feed-empty">// No slides yet — click "+ Add Slide" to start</div>`;
+    return;
+  }
+
+  list.innerHTML = admIntroSlides.map((s, i) => `
+    <div class="adm-visitor-card" style="display:flex;gap:12px;align-items:flex-start;">
+      <img src="${s.url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,255,136,0.15);flex-shrink:0;" onerror="this.style.opacity=0.2">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+        <input type="text" class="adm-input" placeholder="Caption (optional)" value="${(s.caption||"").replace(/"/g,'&quot;')}"
+               oninput="admIntroSlides[${i}].caption=this.value" style="font-size:11px;padding:7px 10px;">
+        <input type="file" accept="image/*" class="adm-input" style="font-size:11px;padding:7px 10px;"
+               onchange="admIntroReplaceImage(${i}, this.files[0])">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+        <button class="adm-btn adm-btn-ghost" style="padding:5px 8px;font-size:10px;" onclick="admIntroMove(${i},-1)" ${i===0?"disabled":""}>↑</button>
+        <button class="adm-btn adm-btn-ghost" style="padding:5px 8px;font-size:10px;" onclick="admIntroMove(${i},1)" ${i===admIntroSlides.length-1?"disabled":""}>↓</button>
+        <button class="adm-btn adm-btn-danger" style="padding:5px 8px;font-size:10px;" onclick="admIntroRemove(${i})">✕</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function admIntroMove(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= admIntroSlides.length) return;
+  [admIntroSlides[i], admIntroSlides[j]] = [admIntroSlides[j], admIntroSlides[i]];
+  renderAdminIntroTab();
+}
+
+function admIntroRemove(i) {
+  admIntroSlides.splice(i, 1);
+  renderAdminIntroTab();
+}
+
+async function admIntroUploadImage(file) {
+  const ghToken = typeof ghGetToken === "function" ? ghGetToken() : localStorage.getItem("gh_token");
+  if (!ghToken) throw new Error("Connect GitHub first (Source Control panel)");
+
+  const base64 = await fileToBase64(file);
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const filePath = `public/app-intro/uploads/${Date.now()}-${safeName}`;
+
+  const res = await fetch("https://backend-forz.onrender.com/api/github/push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      owner: "milesdaglas-svg",
+      repo: "backend",
+      branch: "main",
+      path: filePath,
+      content: base64,
+      encoding: "base64",
+      message: `Add app intro slide image: ${safeName}`
+    })
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+
+  return `https://raw.githubusercontent.com/milesdaglas-svg/backend/main/${filePath}`;
+}
+
+async function admIntroAddSlide() {
+  const status = document.getElementById("intro-status");
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = "image/*";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (status) { status.innerText = "// Uploading image..."; status.style.color = "#8b949e"; }
+    try {
+      const url = await admIntroUploadImage(file);
+      admIntroSlides.push({ url, caption: "" });
+      renderAdminIntroTab();
+      if (status) { status.innerText = ""; }
+    } catch (e) {
+      if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+    }
+  };
+  input.click();
+}
+
+async function admIntroReplaceImage(i, file) {
+  if (!file) return;
+  const status = document.getElementById("intro-status");
+  if (status) { status.innerText = "// Uploading image..."; status.style.color = "#8b949e"; }
+  try {
+    const url = await admIntroUploadImage(file);
+    admIntroSlides[i].url = url;
+    renderAdminIntroTab();
+    if (status) { status.innerText = ""; }
+  } catch (e) {
+    if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+  }
+}
+
+async function publishAppIntro() {
+  const status = document.getElementById("intro-status");
+  const btn = document.getElementById("intro-publish-btn");
+
+  if (!admIntroSlides.length) {
+    if (status) { status.innerText = "// Add at least one slide first"; status.style.color = "#ff4444"; }
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (status) { status.innerText = "// Publishing..."; status.style.color = "#8b949e"; }
+
+  try {
+    const db = await initAnnounceDB();
+    if (!db) throw new Error("Firebase not configured");
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", "app_intro"), {
+      slides: admIntroSlides,
+      updatedAt: Date.now()
+    });
+    if (status) { status.innerText = "// ✓ Published — users will see it next open"; status.style.color = "#00ff88"; }
+    if (typeof showToast === "function") showToast("🖼️ App intro published!", "success");
+  } catch (e) {
+    if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+/* =========================
+   ADMIN PROFILE PICTURE
+   Uploaded image becomes the avatar shown on the broadcast popup.
+   Stored in global_settings/config as adminAvatarUrl.
+========================= */
+async function loadAdminAvatarPreview() {
+  const img = document.getElementById("adm-avatar-preview");
+  if (!img) return;
+  try {
+    const db = await initAnnounceDB(); if (!db) return;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "config"));
+    const url = snap.exists() ? snap.data().adminAvatarUrl : null;
+    if (url) img.src = url;
+  } catch {}
+}
+
+async function admUploadAvatar(file) {
+  if (!file) return;
+  const status = document.getElementById("adm-avatar-status");
+  const img = document.getElementById("adm-avatar-preview");
+  if (status) { status.innerText = "// Uploading..."; status.style.color = "#8b949e"; }
+
+  try {
+    const ghToken = typeof ghGetToken === "function" ? ghGetToken() : localStorage.getItem("gh_token");
+    if (!ghToken) throw new Error("Connect GitHub first (Source Control panel)");
+
+    const base64 = await fileToBase64(file);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `public/images/admin-avatar-${Date.now()}-${safeName}`;
+
+    const res = await fetch("https://backend-forz.onrender.com/api/github/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        owner: "milesdaglas-svg",
+        repo: "backend",
+        branch: "main",
+        path: filePath,
+        content: base64,
+        encoding: "base64",
+        message: `Update admin avatar: ${safeName}`
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+
+    const url = `https://raw.githubusercontent.com/milesdaglas-svg/backend/main/${filePath}`;
+
+    const db = await initAnnounceDB();
+    if (!db) throw new Error("Firebase not configured");
+    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db, "global_settings", "config"), { adminAvatarUrl: url }, { merge: true });
+
+    if (img) img.src = url;
+    if (status) { status.innerText = "// ✓ Saved"; status.style.color = "#00ff88"; }
+    if (typeof showToast === "function") showToast("🖼️ Profile picture updated!", "success");
+  } catch (e) {
+    if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
   }
 }

@@ -159,13 +159,27 @@ async function checkAndShowPopup(force = false) {
 
 /* ── GLASS CARD BROADCAST POPUP ── */
 const ADMIN_NAME = "MLD Codes";
-const ADMIN_AVATAR = "images/admin-avatar.png"; // put admin-avatar.png in your public/images folder
+const ADMIN_AVATAR_DEFAULT = "images/admin-avatar.png"; // fallback if none uploaded yet
 const ADMIN_WHATSAPP = "256751971461"; // no + no leading 0
 
-function showAnnouncementPopup(ann) {
+let _cachedAdminAvatar = null;
+async function getAdminAvatarUrl() {
+  if (_cachedAdminAvatar) return _cachedAdminAvatar;
+  try {
+    const db = await initAnnounceDB(); if (!db) return ADMIN_AVATAR_DEFAULT;
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(doc(db, "global_settings", "config"));
+    const url = snap.exists() ? snap.data().adminAvatarUrl : null;
+    _cachedAdminAvatar = url || ADMIN_AVATAR_DEFAULT;
+    return _cachedAdminAvatar;
+  } catch { return ADMIN_AVATAR_DEFAULT; }
+}
+
+async function showAnnouncementPopup(ann) {
   if (!ann?.message || ann.message.includes("emmetMonaco") || ann.message.includes("function") || ann.message.length > 300) return;
   document.getElementById("announcePopup")?.remove();
 
+  const avatarUrl = await getAdminAvatarUrl();
   const typeColors = { info:"rgba(255,255,255,0.15)", update:"rgba(37,211,102,0.25)", warning:"rgba(255,170,0,0.25)", urgent:"rgba(255,68,68,0.3)" };
   const typeIcons  = { info:"ℹ️", update:"🚀", warning:"⚠️", urgent:"🚨" };
   const badgeBg = typeColors[ann.type] || typeColors.info;
@@ -183,7 +197,7 @@ function showAnnouncementPopup(ann) {
       <div class="gc-name-top">${ADMIN_NAME}</div>
 
       <div class="gc-head2">
-        <div class="gc-avatar-ring2"><img src="${ADMIN_AVATAR}" onerror="this.style.display='none'"></div>
+        <div class="gc-avatar-ring2"><img src="${avatarUrl}" onerror="this.style.display='none'"></div>
         <div class="gc-stats-row">
           <div class="gc-stat">
             <div class="gc-stat-label">${icon} ${(ann.type||"info").toUpperCase()}</div>
@@ -225,6 +239,13 @@ function showAnnouncementPopup(ann) {
     </div>`;
 
   document.body.appendChild(popup);
+  popup.querySelectorAll(".gc-stat-value").forEach(el => {
+    let size = 16;
+    while (el.scrollWidth > el.clientWidth + 1 && size > 10) {
+      size -= 1;
+      el.style.fontSize = size + "px";
+    }
+  });
   requestAnimationFrame(() => popup.querySelector(".gc-card").classList.add("gc-in"));
 
   // typewriter

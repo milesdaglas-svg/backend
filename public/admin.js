@@ -208,6 +208,9 @@ async function showAdminPanel() {
           <button class="adm-nav-btn" onclick="admTab('intro',this);loadAdminIntroTab();">
             <span class="adm-nav-icon">🖼️</span><span>App Intro</span>
           </button>
+          <button class="adm-nav-btn" onclick="admTab('users',this);loadAdminUsersTab();">
+            <span class="adm-nav-icon">👥</span><span>Users</span>
+          </button>
         </nav>
 
         <div class="adm-sidebar-footer">
@@ -344,6 +347,9 @@ async function showAdminPanel() {
           </div>
           <div class="adm-tab" id="adm-tab-intro">
             <div id="adm-intro-content"></div>
+          </div>
+          <div class="adm-tab" id="adm-tab-users">
+            <div id="adm-users-content"></div>
           </div>
             <div class="adm-section-title">// BROADCAST HISTORY</div>
             <div id="adminHistory" class="adm-history-list">
@@ -1662,5 +1668,101 @@ async function admUploadAvatar(file) {
     if (typeof showToast === "function") showToast("🖼️ Profile picture updated!", "success");
   } catch (e) {
     if (status) { status.innerText = `// ✗ ${e.message}`; status.style.color = "#ff4444"; }
+  }
+}
+/* =========================
+   AI CHAT USERS
+   View everyone registered for AI chat.
+   Passwords are one-way hashed (can't be shown) —
+   "forgot password" is solved by issuing a new temp password instead.
+========================= */
+let admUsersList = []; // [{id, username, displayName, createdAt}]
+
+async function loadAdminUsersTab() {
+  const el = document.getElementById("adm-users-content");
+  if (!el) return;
+  el.innerHTML = `<div class="adm-feed-loading">// Loading...</div>`;
+
+  try {
+    const db = await initAnnounceDB();
+    if (!db) { el.innerHTML = `<div class="adm-feed-empty">Firebase not connected</div>`; return; }
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDocs(collection(db, "ai_users"));
+    admUsersList = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } catch (e) {
+    el.innerHTML = `<div class="adm-feed-empty">// ✗ ${e.message}</div>`;
+    return;
+  }
+
+  renderAdminUsersTab();
+}
+
+function renderAdminUsersTab() {
+  const el = document.getElementById("adm-users-content");
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="adm-section-title">// AI CHAT USERS (${admUsersList.length})</div>
+    <div style="color:#8b949e;font-size:12px;margin-bottom:14px;">
+      Passwords are one-way hashed and can't be viewed by anyone, including you.
+      If someone forgets theirs, hit "Reset" to issue a new temporary password — it's shown once, right here, so you can pass it on to them.
+    </div>
+    <div id="adm-users-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  `;
+
+  const list = document.getElementById("adm-users-list");
+  if (!admUsersList.length) {
+    list.innerHTML = `<div class="adm-feed-empty">// No registered users yet</div>`;
+    return;
+  }
+
+  list.innerHTML = admUsersList.map((u, i) => `
+    <div class="adm-visitor-card" style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,255,136,0.12);display:flex;align-items:center;justify-content:center;font-size:15px;color:#00ff88;flex-shrink:0;">
+        ${(u.displayName || u.username || "?")[0].toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:#c9d1d9;">${escapeHtml(u.displayName || u.username)}</div>
+        <div style="font-size:11px;color:#6a7480;">@${escapeHtml(u.username)} ${u.createdAt ? "— joined " + new Date(u.createdAt).toLocaleDateString() : ""}</div>
+        <div id="adm-user-reset-${i}" style="font-size:11px;margin-top:4px;"></div>
+      </div>
+      <button class="adm-btn adm-btn-ghost" style="padding:6px 12px;font-size:10px;flex-shrink:0;" onclick="admResetUserPassword(${i})">Reset Password</button>
+    </div>
+  `).join("");
+}
+
+function admGenerateTempPassword() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  let out = "";
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+async function admResetUserPassword(i) {
+  const u = admUsersList[i];
+  if (!u) return;
+  const statusEl = document.getElementById(`adm-user-reset-${i}`);
+  if (!confirm(`Reset password for @${u.username}? Their old password will stop working immediately.`)) return;
+
+  if (statusEl) { statusEl.style.color = "#8b949e"; statusEl.innerText = "// Resetting..."; }
+
+  try {
+    const tempPassword = admGenerateTempPassword();
+    const hashed = await hashPassword(tempPassword);
+
+    const db = await initAnnounceDB();
+    if (!db) throw new Error("Firebase not configured");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await updateDoc(doc(db, "ai_users", u.id), { password: hashed });
+
+    if (statusEl) {
+      statusEl.style.color = "#00ff88";
+      statusEl.innerHTML = `✓ New temp password: <strong style="user-select:all;">${tempPassword}</strong> (tell them to change it after logging in)`;
+    }
+    if (typeof showToast === "function") showToast(`Password reset for @${u.username}`, "success");
+  } catch (e) {
+    if (statusEl) { statusEl.style.color = "#ff4444"; statusEl.innerText = `// ✗ ${e.message}`; }
   }
 }

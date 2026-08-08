@@ -22,6 +22,7 @@ async function ensureTermFontLoaded() {
   try {
     if (document.fonts && document.fonts.load) {
       await Promise.all([
+        document.fonts.load("400 13px 'Share Tech Mono'"),
         document.fonts.load("400 13px 'JetBrains Mono'"),
         document.fonts.load("700 13px 'JetBrains Mono'")
       ]);
@@ -658,7 +659,7 @@ async function initPtyTerminal() {
       background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#00d4ff",
       selection:"rgba(0,212,255,0.3)", ...TERM_ANSI_THEME
     },
-    fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
+    fontFamily:"'Share Tech Mono','JetBrains Mono','Cascadia Code','Courier New',monospace",
     fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
     scrollback: 5000, allowTransparency: true, rescaleOverlappingGlyphs: true
   });
@@ -669,6 +670,9 @@ async function initPtyTerminal() {
   ptyTerm.focus();
   setTimeout(() => { try { ptyFit.fit(); } catch {} }, 100);
   requestAnimationFrame(() => requestAnimationFrame(() => { try { ptyFit.fit(); } catch {} }));
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { try { ptyFit.fit(); } catch {} });
+  }
 
   const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://") + "/pty";
   ptyTerm.writeln("\x1b[90mConnecting to real Linux shell...\x1b[0m");
@@ -732,7 +736,7 @@ async function initVmTerminal() {
 
   vmTerm = new Terminal({
     theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7", ...TERM_ANSI_THEME },
-    fontFamily:"'JetBrains Mono','Cascadia Code','Fira Code','Courier New',monospace",
+    fontFamily:"'Share Tech Mono','JetBrains Mono','Cascadia Code','Courier New',monospace",
     fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000, rescaleOverlappingGlyphs: true
   });
   vmFit = new FitAddon.FitAddon();
@@ -741,6 +745,9 @@ async function initVmTerminal() {
   vmTerm.focus();
   setTimeout(() => { try { vmFit.fit(); } catch {} }, 100);
   requestAnimationFrame(() => requestAnimationFrame(() => { try { vmFit.fit(); } catch {} }));
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { try { vmFit.fit(); } catch {} });
+  }
 
   vmTerm.writeln("\x1b[90mCreating your VM (first time takes ~60s)...\x1b[0m");
 

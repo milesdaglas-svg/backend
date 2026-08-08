@@ -8,8 +8,10 @@
 #terminalPanel {
   height: 0;
   overflow: hidden;
-  background: #0a0a0f;
+  background: #0a0f0c;
   border-top: 0px solid #1f6feb;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -2px 24px rgba(0,255,136,0.06);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -20,8 +22,9 @@
 /* TITLE BAR */
 .term-titlebar {
   height: 30px; flex-shrink: 0;
-  background: #0d1117;
-  border-bottom: 1px solid #1a2332;
+  background: #0d1310;
+  border-bottom: 1px solid rgba(0,255,136,0.1);
+  border-radius: 10px 10px 0 0;
   display: flex; align-items: center;
   padding: 0 10px; gap: 10px;
 }
@@ -66,7 +69,7 @@
   background: rgba(255,255,255,0.04);
   border-radius: 5px; padding: 8px;
   max-height: 120px; overflow-y: auto;
-  word-break: break-all; white-space: pre-wrap;
+  overflow-wrap: break-word; white-space: pre-wrap;
   margin-bottom: 8px;
 }
 .paste-preview-actions { display: flex; justify-content: flex-end; gap: 6px; }
@@ -99,7 +102,7 @@
 }
 
 /* LINES */
-.term-line { white-space: pre-wrap; word-break: break-all; padding: 1px 0; }
+.term-line { white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; padding: 1px 0; }
 
 /* INPUT ROW */
 .term-input-row {

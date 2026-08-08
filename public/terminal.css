@@ -99,8 +99,6 @@
 #term-out-vm .xterm-rows,
 #term-out-vm .xterm-rows span {
   line-height: normal !important;
-  -webkit-text-size-adjust: 100% !important;
-  text-size-adjust: 100% !important;
 }
 
 /* LINES */

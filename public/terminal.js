@@ -661,7 +661,7 @@ async function initPtyTerminal() {
     },
     fontFamily:"'Share Tech Mono','JetBrains Mono','Cascadia Code','Courier New',monospace",
     fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
-    scrollback: 5000, allowTransparency: true, rescaleOverlappingGlyphs: true
+    scrollback: 5000, allowTransparency: true, rescaleOverlappingGlyphs: false
   });
 
   ptyFit = new FitAddon.FitAddon();
@@ -737,7 +737,7 @@ async function initVmTerminal() {
   vmTerm = new Terminal({
     theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7", ...TERM_ANSI_THEME },
     fontFamily:"'Share Tech Mono','JetBrains Mono','Cascadia Code','Courier New',monospace",
-    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000, rescaleOverlappingGlyphs: true
+    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000, rescaleOverlappingGlyphs: false
   });
   vmFit = new FitAddon.FitAddon();
   vmTerm.loadAddon(vmFit);

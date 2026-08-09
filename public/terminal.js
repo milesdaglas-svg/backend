@@ -668,13 +668,17 @@ async function initPtyTerminal() {
   ptyTerm.loadAddon(ptyFit);
   ptyTerm.open(container);
   ptyTerm.focus();
+  try { ptyFit.fit(); } catch {}
   setTimeout(() => { try { ptyFit.fit(); } catch {} }, 100);
   requestAnimationFrame(() => requestAnimationFrame(() => { try { ptyFit.fit(); } catch {} }));
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => { try { ptyFit.fit(); } catch {} });
   }
 
-  const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://") + "/pty";
+  const initCols = ptyTerm.cols || 80;
+  const initRows = ptyTerm.rows || 24;
+  const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://")
+    + `/pty?cols=${initCols}&rows=${initRows}`;
   ptyTerm.writeln("\x1b[90mConnecting to real Linux shell...\x1b[0m");
 
   try {
@@ -743,6 +747,7 @@ async function initVmTerminal() {
   vmTerm.loadAddon(vmFit);
   vmTerm.open(container);
   vmTerm.focus();
+  try { vmFit.fit(); } catch {}
   setTimeout(() => { try { vmFit.fit(); } catch {} }, 100);
   requestAnimationFrame(() => requestAnimationFrame(() => { try { vmFit.fit(); } catch {} }));
   if (document.fonts && document.fonts.ready) {
@@ -765,7 +770,7 @@ async function initVmTerminal() {
 
     vmWs.onopen = () => {
       try {
-        vmWs.send(JSON.stringify({type:"auth", token: ghToken, name: vmCodespaceName}));
+        vmWs.send(JSON.stringify({type:"auth", token: ghToken, name: vmCodespaceName, cols: vmTerm.cols||80, rows: vmTerm.rows||24}));
         vmFit.fit();
         vmWs.send(JSON.stringify({type:"resize",cols:vmTerm.cols,rows:vmTerm.rows}));
       } catch {}

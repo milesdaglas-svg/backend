@@ -1046,16 +1046,20 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 // WebSocket PTY server
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
   const sessionId = "pty_" + Date.now();
   console.log(`PTY session started: ${sessionId}`);
+
+  const urlParams = new URLSearchParams((req.url.split("?")[1]) || "");
+  const initCols = Math.max(20, parseInt(urlParams.get("cols")) || 80);
+  const initRows = Math.max(5, parseInt(urlParams.get("rows")) || 24);
 
   let ptyProcess;
   try {
     ptyProcess = pty.spawn("bash", [], {
       name: "xterm-color",
-      cols: 120,
-      rows: 30,
+      cols: initCols,
+      rows: initRows,
       cwd: PROJECT_DIR,
       env: {
         ...process.env,
@@ -1147,8 +1151,10 @@ vmWss.on("connection", (ws) => {
         return;
       }
       try {
+        const initCols = Math.max(20, parseInt(p.cols) || 80);
+        const initRows = Math.max(5, parseInt(p.rows) || 24);
         vmPty = pty.spawn(ghPath, ["codespace", "ssh", "-c", p.name], {
-          name: "xterm-color", cols: 120, rows: 30,
+          name: "xterm-color", cols: initCols, rows: initRows,
           env: { ...process.env, GH_TOKEN: p.token }
         });
       } catch (err) {

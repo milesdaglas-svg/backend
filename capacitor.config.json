@@ -3,7 +3,6 @@
   "appName": "VS Code God Mode",
   "webDir": "public",
   "server": {
-    "url": "https://backend-forz.onrender.com",
     "androidScheme": "https",
     "cleartext": true
   },

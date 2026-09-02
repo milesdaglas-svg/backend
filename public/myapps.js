@@ -27,15 +27,24 @@ async function renderMyAppsPanel(){
   container.innerHTML = `<div class="myapps-empty">// Loading...</div>`;
   const apps = await getMyApps();
   if(!apps.length){ container.innerHTML = `<div class="myapps-empty">No apps added yet</div>`; return; }
-  container.innerHTML = apps.map(a=>`
+  container.innerHTML = apps.map((a,i)=>`
     <div class="myapps-card" onclick="window.open('${a.url.replace(/'/g,"\\'")}','_blank')">
       <div class="myapps-card-icon">${a.image?`<img src="${a.image}" style="width:24px;height:24px;object-fit:cover;border-radius:${a.shape==='circle'?'50%':a.shape==='rounded'?'6px':'0'};">`:(a.icon||"🚀")}</div>
       <div class="myapps-card-body">
         <div class="myapps-card-name">${escapeHtml(a.name)}</div>
-        <div class="myapps-card-desc">${escapeHtml(a.description||"")}</div>
+        <div class="myapps-card-desc" id="myapps-desc-${i}">${escapeHtml(a.description||"")}</div>
+        ${(a.description||"").length>80?`<div class="myapps-card-more" onclick="event.stopPropagation();toggleMyAppDesc(${i})" id="myapps-more-${i}">Show more</div>`:""}
       </div>
       <div class="myapps-card-arrow">→</div>
     </div>`).join("");
+}
+
+function toggleMyAppDesc(i){
+  const desc = document.getElementById(`myapps-desc-${i}`);
+  const more = document.getElementById(`myapps-more-${i}`);
+  if(!desc||!more) return;
+  const expanded = desc.classList.toggle("myapps-desc-expanded");
+  more.textContent = expanded ? "Show less" : "Show more";
 }
 
 /* ── ADMIN TAB (add/edit/delete) ── */

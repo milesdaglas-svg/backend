@@ -43,8 +43,20 @@ function toggleMyAppDesc(i){
   const desc = document.getElementById(`myapps-desc-${i}`);
   const more = document.getElementById(`myapps-more-${i}`);
   if(!desc||!more) return;
-  const expanded = desc.classList.toggle("myapps-desc-expanded");
-  more.textContent = expanded ? "Show less" : "Show more";
+  const expanded = desc.dataset.expanded === "1";
+  if(expanded){
+    desc.style.webkitLineClamp = "2";
+    desc.style.display = "-webkit-box";
+    desc.style.overflow = "hidden";
+    desc.dataset.expanded = "0";
+    more.textContent = "Show more";
+  }else{
+    desc.style.webkitLineClamp = "unset";
+    desc.style.display = "block";
+    desc.style.overflow = "visible";
+    desc.dataset.expanded = "1";
+    more.textContent = "Show less";
+  }
 }
 
 /* ── ADMIN TAB (add/edit/delete) ── */

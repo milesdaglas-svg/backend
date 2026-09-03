@@ -13,6 +13,7 @@ let lsBroadcasting  = false;
 let lsUnsub         = null;
 let lsBroadcastTimer= null;
 let lsStaleTimer    = null;
+let lsHeartbeatTimer= null;
 let lsLastList      = [];
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
@@ -60,13 +61,19 @@ function renderLiveSessionPanel(){
     body.innerHTML = `
       <div class="ls-box">
         <div class="ls-hint" style="margin:0 0 10px;">Create a room and share the code, or join one someone gave you. Whoever flips "Broadcast" on, everyone in the room watches their editor live.</div>
-        <div class="ls-row" style="margin-bottom:10px;">
+        <div class="ls-row" style="margin-bottom:8px;">
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
         </div>
-        <button class="ls-btn" style="width:100%;margin-bottom:10px;" onclick="lsCreateRoom()">➕ Create Room</button>
-        <div class="ls-row">
+        <div class="ls-row" style="margin-bottom:10px;">
+          <input type="text" id="lsPinInput" placeholder="Optional PIN to lock room" maxlength="8">
+        </div>
+        <button class="ls-btn" style="width:100%;margin-bottom:14px;" onclick="lsCreateRoom()">➕ Create Room</button>
+        <div class="ls-row" style="margin-bottom:8px;">
           <input type="text" id="lsJoinInput" placeholder="Enter room code" maxlength="6" style="text-transform:uppercase;">
           <button class="ls-btn secondary" onclick="lsJoinRoom()">Join</button>
+        </div>
+        <div class="ls-row">
+          <input type="text" id="lsJoinPinInput" placeholder="PIN (if room has one)" maxlength="8">
         </div>
       </div>`;
     return;
@@ -88,11 +95,21 @@ function renderLiveSessionPanel(){
       </div>
       <div class="ls-hint">When on, everyone in this room sees your current file live.</div>
     </div>
+    <div class="ls-box">
+      <div class="ls-presence-title">In this room</div>
+      <div class="ls-presence-list" id="lsPresenceList"><div class="ls-empty">Loading…</div></div>
+    </div>
     <div class="ls-participants" id="lsParticipants">
       <div class="ls-empty">Waiting for updates…</div>
+    </div>
+    <div class="ls-box ls-chat-box">
+      <div class="ls-presence-title">💬 Chat</div>
+      <div class="ls-chat-log" id="lsChatLog"></div>
+      <div class="ls-row" style="margin-top:8px;">
+        <input type="text" id="lsChatInput" placeholder="Message the room…" onkeydown="if(event.key==='Enter')lsSendChat()">
+        <button class="ls-btn secondary" onclick="lsSendChat()">Send</button>
+      </div>
     </div>`;
-  document.getElementById("lsRoomCode")?.addEventListener?.(()=>{});
-  document.getElementById("lsCode")?.addEventListener?.(()=>{});
   const codeEl = body.querySelector(".ls-code");
   if(codeEl) codeEl.onclick = lsCopyCode;
 }
@@ -102,16 +119,19 @@ async function lsCreateRoom(){
   const nameInput = document.getElementById("lsNameInput");
   lsMyName = (nameInput?.value || "").trim() || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
+  const pin = (document.getElementById("lsPinInput")?.value || "").trim();
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,setDoc} = await lsFirestoreFns();
   const code = lsGenCode();
-  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now() });
+  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pin || null });
   lsRoomCode = code;
   await lsJoinAsParticipant();
-  showToast("✓ Room created: "+code,"success");
+  showToast(pin ? "✓ Room created (PIN-locked): "+code : "✓ Room created: "+code,"success");
   renderLiveSessionPanel();
   lsSubscribe();
+  lsSubscribeChat();
+  lsMaybeCleanupOldRooms();
 }
 
 async function lsJoinRoom(){
@@ -121,24 +141,41 @@ async function lsJoinRoom(){
   const nameInput = document.getElementById("lsNameInput");
   lsMyName = (nameInput?.value || "").trim() || lsMyName || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
+  const pinEntered = (document.getElementById("lsJoinPinInput")?.value || "").trim();
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
-  const {doc,getDoc} = await lsFirestoreFns();
+  const {doc,getDoc,setDoc} = await lsFirestoreFns();
   const snap = await getDoc(doc(db,"liveRooms",code));
   if(!snap.exists()){ showToast("Room not found","error"); return; }
+  const roomData = snap.data();
+  if(roomData.pin && roomData.pin !== pinEntered){ showToast("Incorrect PIN","error"); return; }
   lsRoomCode = code;
   await lsJoinAsParticipant();
+  await setDoc(doc(db,"liveRooms",code),{ lastActivityAt: Date.now() }, { merge:true });
   showToast("✓ Joined room "+code,"success");
   renderLiveSessionPanel();
   lsSubscribe();
+  lsSubscribeChat();
+  lsMaybeCleanupOldRooms();
 }
 
 async function lsJoinAsParticipant(){
   const db = await lsInitDb(); if(!db) return;
   const {doc,setDoc} = await lsFirestoreFns();
   await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{
-    name: lsMyName, broadcasting:false, currentFile:"", code:"", updatedAt: Date.now()
+    name: lsMyName, broadcasting:false, currentFile:"", code:"", updatedAt: Date.now(), joinedAt: Date.now()
   }, { merge:true });
+  if(lsHeartbeatTimer) clearInterval(lsHeartbeatTimer);
+  lsHeartbeatTimer = setInterval(lsHeartbeat, 8000);
+}
+
+/* keeps `updatedAt` fresh even when not broadcasting, so the presence
+   list can tell "online" apart from "broadcasting" apart from "gone" */
+async function lsHeartbeat(){
+  if(!lsRoomCode || lsBroadcasting) return; // broadcast tick already refreshes updatedAt
+  const db = await lsInitDb(); if(!db) return;
+  const {doc,setDoc} = await lsFirestoreFns();
+  try{ await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{ updatedAt: Date.now() }, { merge:true }); }catch{}
 }
 
 async function lsLeaveRoom(){
@@ -151,8 +188,10 @@ async function lsLeaveRoom(){
     }
   }catch{}
   if(lsUnsub){ lsUnsub(); lsUnsub=null; }
+  if(lsChatUnsub){ lsChatUnsub(); lsChatUnsub=null; }
   if(lsStaleTimer){ clearInterval(lsStaleTimer); lsStaleTimer=null; }
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
+  if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false;
   renderLiveSessionPanel();
 }
@@ -193,6 +232,7 @@ async function lsPushMyEditor(){
     await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{
       name: lsMyName, broadcasting:true, currentFile: cf, code: src, cursorLine, updatedAt: Date.now()
     }, { merge:true });
+    await setDoc(doc(db,"liveRooms",lsRoomCode),{ lastActivityAt: Date.now() }, { merge:true });
   }catch{}
 }
 
@@ -206,11 +246,29 @@ async function lsSubscribe(){
     snap.forEach(d => list.push({ id:d.id, ...d.data() }));
     lsLastList = list;
     lsRenderParticipants(list);
+    lsRenderPresence(list);
   });
   if(lsStaleTimer) clearInterval(lsStaleTimer);
   // re-render on a timer too (not just on new data) so a frozen/disconnected
   // broadcaster's card visibly goes stale even though no new snapshot arrives
-  lsStaleTimer = setInterval(()=>lsRenderParticipants(lsLastList), 2000);
+  lsStaleTimer = setInterval(()=>{ lsRenderParticipants(lsLastList); lsRenderPresence(lsLastList); }, 2000);
+}
+
+/* everyone currently in the room, online/broadcasting/away, not just broadcasters */
+function lsRenderPresence(list){
+  const el = document.getElementById("lsPresenceList");
+  if(!el) return;
+  const now = Date.now();
+  if(!list.length){ el.innerHTML = `<div class="ls-empty">Just you so far</div>`; return; }
+  el.innerHTML = list.map(p => {
+    const age = now - (p.updatedAt||0);
+    const status = p.broadcasting && age <= LS_STALE_MS ? "broadcasting" : age <= LS_STALE_MS*2 ? "online" : "away";
+    return `<div class="ls-presence-item">
+      <span class="ls-presence-dot ls-presence-${status}"></span>
+      ${p.id===lsMyId ? '<span class="ls-you">You</span>' : lsEsc(p.name||"Someone")}
+      <span class="ls-presence-status">${status}</span>
+    </div>`;
+  }).join("");
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
@@ -261,4 +319,72 @@ async function lsRenderParticipants(list){
     </div>`;
   }));
   el.innerHTML = cards.join("");
+}
+
+/* ── CHAT ── */
+let lsChatUnsub = null;
+
+async function lsSubscribeChat(){
+  if(lsChatUnsub){ lsChatUnsub(); lsChatUnsub=null; }
+  const db = await lsInitDb(); if(!db) return;
+  const {collection,query,orderBy,limit,onSnapshot} = await lsFirestoreFns();
+  const q = query(collection(db,"liveRooms",lsRoomCode,"messages"), orderBy("createdAt","asc"), limit(100));
+  lsChatUnsub = onSnapshot(q, snap => {
+    const msgs = [];
+    snap.forEach(d => msgs.push(d.data()));
+    lsRenderChat(msgs);
+  });
+}
+
+function lsRenderChat(msgs){
+  const log = document.getElementById("lsChatLog");
+  if(!log) return;
+  const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+  log.innerHTML = msgs.map(m => `
+    <div class="ls-chat-msg${m.senderId===lsMyId?' mine':''}">
+      <span class="ls-chat-name">${m.senderId===lsMyId?'You':lsEsc(m.name||"Someone")}</span>
+      <span class="ls-chat-text">${lsEsc(m.text||"")}</span>
+    </div>`).join("");
+  if(nearBottom) log.scrollTop = log.scrollHeight;
+}
+
+async function lsSendChat(){
+  const input = document.getElementById("lsChatInput");
+  const text = (input?.value || "").trim();
+  if(!text || !lsRoomCode) return;
+  const db = await lsInitDb(); if(!db) return;
+  const {collection,addDoc,doc,setDoc} = await lsFirestoreFns();
+  input.value = "";
+  try{
+    await addDoc(collection(db,"liveRooms",lsRoomCode,"messages"),{
+      senderId: lsMyId, name: lsMyName, text, createdAt: Date.now()
+    });
+    await setDoc(doc(db,"liveRooms",lsRoomCode),{ lastActivityAt: Date.now() }, { merge:true });
+  }catch{ showToast("Message failed to send","error"); }
+}
+
+/* ── LAZY CLEANUP OF DEAD ROOMS ──
+   No cron/scheduler on the backend, so instead: every time someone opens
+   a room, there's a small chance we sweep a few rooms that have had no
+   activity in 24h+ and delete them (plus their participant docs). Rooms
+   with only a handful of docs, so this stays cheap. Not exhaustive, but
+   keeps Firestore from accumulating dead rooms forever. */
+async function lsMaybeCleanupOldRooms(){
+  if(Math.random() > 0.15) return; // ~15% of room-joins trigger a sweep
+  try{
+    const db = await lsInitDb(); if(!db) return;
+    const {collection,query,where,limit,getDocs,collectionGroup,deleteDoc,doc} = await lsFirestoreFns();
+    const cutoff = Date.now() - 24*60*60*1000;
+    const q = query(collection(db,"liveRooms"), where("lastActivityAt","<",cutoff), limit(10));
+    const snap = await getDocs(q);
+    for(const roomDoc of snap.docs){
+      try{
+        const participants = await getDocs(collection(db,"liveRooms",roomDoc.id,"participants"));
+        for(const p of participants.docs) await deleteDoc(p.ref);
+        const msgs = await getDocs(collection(db,"liveRooms",roomDoc.id,"messages"));
+        for(const m of msgs.docs) await deleteDoc(m.ref);
+        await deleteDoc(roomDoc.ref);
+      }catch{}
+    }
+  }catch{ /* missing index or offline — skip silently, not user-facing */ }
 }

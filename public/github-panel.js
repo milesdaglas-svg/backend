@@ -294,6 +294,13 @@ async function ghPushAll() {
   const msg = document.getElementById("gh-commit-msg")?.value.trim() || "Update from VS Code God Mode";
   const [owner, repo] = ghRepo.full_name.split("/");
 
+  // window.files can go stale if some part of the app only updated the
+  // local `files` variable — read the live one directly so push always
+  // sends what's actually in the editor right now.
+  const liveFiles = (typeof files !== "undefined" && files && Object.keys(files).length) ? files : (window.files || {});
+  if (!Object.keys(liveFiles).length) { showToast("No files to push", "error"); return; }
+  window.files = liveFiles;
+
   const pushBtn = document.getElementById("gh-push-btn");
   if (pushBtn) pushBtn.disabled = true;
   ghSetStatus("Pushing files...", "loading");
@@ -302,14 +309,20 @@ async function ghPushAll() {
   try {
     const result = await ghAPI("POST", "/push-all", {
       owner, repo, branch: ghBranch,
-      files: window.files || {},
+      files: liveFiles,
       message: msg
     });
 
     ghSetProgress(100);
-    ghSetStatus(`✓ Pushed ${result.pushed} file${result.pushed!==1?"s":""}${result.failed>0?" ("+result.failed+" failed)":""}`, "success");
+    if (result.failed > 0) {
+      const reasons = (result.details?.failed || []).slice(0,3).map(f => `${f.file}: ${f.error}`).join(" | ");
+      ghSetStatus(`Pushed ${result.pushed}, ${result.failed} failed — ${reasons}`, "error");
+      showToast(`⚠ ${result.failed} file(s) failed to push`, "error");
+    } else {
+      ghSetStatus(`✓ Pushed ${result.pushed} file${result.pushed!==1?"s":""}`, "success");
+      showToast(`✓ Pushed ${result.pushed} file(s) to ${ghRepo.full_name}`, "success");
+    }
     if (document.getElementById("gh-commit-msg")) document.getElementById("gh-commit-msg").value = "";
-    showToast(`✓ Pushed to ${ghRepo.full_name}`, "success");
 
     // refresh commits
     setTimeout(() => ghLoadCommits(), 1000);

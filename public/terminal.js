@@ -1517,11 +1517,12 @@ async function generateShareLink(){
   const liveFiles = (typeof files !== "undefined" && files && Object.keys(files).length) ? files : (window.files||{});
   if(!Object.keys(liveFiles).length){ showToast("No files in this project to share","error"); return; }
   window.files = liveFiles;
-  const id = "share_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-  await setDoc(doc(db,"shares",id),{ files: liveFiles, createdAt: Date.now() });
+  const id = (typeof activeShareId !== "undefined" && activeShareId) ? activeShareId : "share_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+  await setDoc(doc(db,"shares",id),{ files: liveFiles, createdAt: Date.now(), updatedAt: Date.now() }, { merge:true });
+  if(typeof activeShareId !== "undefined"){ activeShareId = id; try{ localStorage.setItem("vscode_shareId", id); }catch{} }
   const link = location.origin + "/share.html?id=" + id;
   navigator.clipboard.writeText(link);
-  showToast("✓ Link copied: "+link,"success");
+  showToast("✓ Link copied (updates live as you edit): "+link,"success");
 }
 function openServerPreview(url) {
   const iframe = document.getElementById("previewFrame");

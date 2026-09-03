@@ -11,6 +11,7 @@ let currentSessionId = "session_"+Date.now();
 
 let files = {};
 let openFolders=new Set();
+let activeShareId = localStorage.getItem("vscode_shareId") || null;
 const PROJECT_TEMPLATES = {
   blank: { "index.html":`<!DOCTYPE html>\n<html><head><title>New Project</title></head><body><h1>Hello</h1></body></html>` },
   "react-cdn": {
@@ -107,6 +108,17 @@ function cancelPendingAiChanges(){
 /* ========== STORAGE ========== */
 function saveToStorage(){
   try{localStorage.setItem("vscode_files",JSON.stringify(files));localStorage.setItem("vscode_currentFile",currentFile);localStorage.setItem("vscode_openFolders",JSON.stringify([...openFolders]));}catch{}
+  syncActiveShare();
+}
+let _shareSyncing=false;
+async function syncActiveShare(){
+  if(!activeShareId || _shareSyncing) return;
+  _shareSyncing=true;
+  try{
+    const db = await initAnnounceDB(); if(!db) return;
+    const {doc,setDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await setDoc(doc(db,"shares",activeShareId), { files, updatedAt: Date.now() }, { merge:true });
+  }catch{} finally{ _shareSyncing=false; }
 }
 function loadFromStorage(){
   try{

@@ -21,6 +21,11 @@
 .ls-participants{display:flex;flex-direction:column;gap:12px;}
 .ls-participant{background:#1e1e1e;border:1px solid #333;border-radius:8px;overflow:hidden;}
 .ls-participant.live{border-color:#238636;}
+.ls-participant.live.stale{border-color:#6e5600;opacity:.7;}
+.ls-stale-badge{color:#d29922;font-size:10px;border:1px solid #6e5600;border-radius:10px;padding:1px 7px;margin-left:8px;}
+.ls-cursor-line{display:inline-block;width:100%;background:rgba(88,166,255,.14);border-left:2px solid #58a6ff;padding-left:4px;margin-left:-6px;}
+.ls-caret{display:inline-block;width:2px;height:13px;background:#58a6ff;vertical-align:middle;margin-left:1px;animation:ls-blink 1s step-start infinite;}
+@keyframes ls-blink{50%{opacity:0;}}
 .ls-participant-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#181818;font-size:12px;color:#ccc;}
 .ls-participant-head .ls-you{color:#58a6ff;}
 .ls-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3fb950;margin-right:6px;box-shadow:0 0 0 0 rgba(63,185,80,.6);animation:ls-pulse 1.5s infinite;}

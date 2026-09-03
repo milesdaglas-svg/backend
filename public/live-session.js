@@ -12,13 +12,26 @@ let lsMyName        = localStorage.getItem("ls_myName") || (typeof currentAiUser
 let lsBroadcasting  = false;
 let lsUnsub         = null;
 let lsBroadcastTimer= null;
+let lsStaleTimer    = null;
+let lsLastList      = [];
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
+const LS_STALE_MS   = 5000; // no update in 5s while marked broadcasting = treat as disconnected
 
 if(!lsMyId){
   lsMyId = "p_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
   localStorage.setItem("ls_myId", lsMyId);
 }
+
+/* best-effort cleanup if the tab is closed mid-broadcast */
+window.addEventListener("beforeunload", ()=>{
+  if(!lsRoomCode) return;
+  try{
+    if(lsDb && lsFns){
+      lsFns.deleteDoc(lsFns.doc(lsDb,"liveRooms",lsRoomCode,"participants",lsMyId)).catch(()=>{});
+    }
+  }catch{}
+});
 
 function lsPanelBody(){ return document.getElementById("ls-panel-body"); }
 
@@ -138,6 +151,7 @@ async function lsLeaveRoom(){
     }
   }catch{}
   if(lsUnsub){ lsUnsub(); lsUnsub=null; }
+  if(lsStaleTimer){ clearInterval(lsStaleTimer); lsStaleTimer=null; }
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   lsRoomCode = null; lsBroadcasting = false;
   renderLiveSessionPanel();
@@ -173,9 +187,11 @@ async function lsPushMyEditor(){
   const {doc,setDoc} = await lsFirestoreFns();
   const cf = typeof currentFile !== "undefined" ? currentFile : "";
   const src = (typeof files !== "undefined" && files && files[cf] !== undefined) ? files[cf] : "";
+  let cursorLine = null;
+  try{ cursorLine = window.editor1?.getPosition?.()?.lineNumber ?? null; }catch{}
   try{
     await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{
-      name: lsMyName, broadcasting:true, currentFile: cf, code: src, updatedAt: Date.now()
+      name: lsMyName, broadcasting:true, currentFile: cf, code: src, cursorLine, updatedAt: Date.now()
     }, { merge:true });
   }catch{}
 }
@@ -188,26 +204,61 @@ async function lsSubscribe(){
   lsUnsub = onSnapshot(collection(db,"liveRooms",lsRoomCode,"participants"), snap => {
     const list = [];
     snap.forEach(d => list.push({ id:d.id, ...d.data() }));
+    lsLastList = list;
     lsRenderParticipants(list);
   });
+  if(lsStaleTimer) clearInterval(lsStaleTimer);
+  // re-render on a timer too (not just on new data) so a frozen/disconnected
+  // broadcaster's card visibly goes stale even though no new snapshot arrives
+  lsStaleTimer = setInterval(()=>lsRenderParticipants(lsLastList), 2000);
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 
-function lsRenderParticipants(list){
+/* Syntax-highlight using Monaco's own colorizer (already loaded for the
+   main editor, so this stays visually consistent with it and needs no
+   extra library). Falls back to plain escaped text if Monaco isn't ready. */
+async function lsHighlight(code, filename, cursorLine){
+  if(!code) return "";
+  const lang = (typeof getLang === "function") ? getLang(filename||"") : "plaintext";
+  if(window.monaco?.editor?.colorize){
+    try{
+      let html = await monaco.editor.colorize(code, lang, { tabSize:2 });
+      if(cursorLine){
+        const lines = html.split(/<br\s*\/?>/i);
+        const idx = cursorLine - 1;
+        if(lines[idx] !== undefined){
+          lines[idx] = `<span class="ls-cursor-line">${lines[idx]}<span class="ls-caret"></span></span>`;
+        }
+        html = lines.join("<br/>");
+      }
+      return html;
+    }catch{ /* fall through to plain escape */ }
+  }
+  return lsEsc(code);
+}
+
+async function lsRenderParticipants(list){
   const el = document.getElementById("lsParticipants");
   if(!el) return;
+  const now = Date.now();
   const live = list.filter(p => p.broadcasting && p.code);
   if(!live.length){
     el.innerHTML = `<div class="ls-empty">No one is broadcasting yet. Flip the switch above to show your editor.</div>`;
     return;
   }
-  el.innerHTML = live.map(p => `
-    <div class="ls-participant live">
+  const cards = await Promise.all(live.map(async p => {
+    const stale = (now - (p.updatedAt||0)) > LS_STALE_MS;
+    const html = await lsHighlight(p.code, p.currentFile, p.cursorLine);
+    return `
+    <div class="ls-participant live${stale?' stale':''}">
       <div class="ls-participant-head">
-        <span>${p.id===lsMyId ? '<span class="ls-you">You</span>' : `<span class="ls-live-dot"></span>${lsEsc(p.name||"Someone")}`}</span>
-        <span class="ls-participant-file">${lsEsc(p.currentFile||"")}</span>
+        <span>${p.id===lsMyId ? '<span class="ls-you">You</span>' : `<span class="ls-live-dot"></span>${lsEsc(p.name||"Someone")}`}
+          ${stale?'<span class="ls-stale-badge">connection lost</span>':''}</span>
+        <span class="ls-participant-file">${lsEsc(p.currentFile||"")}${p.cursorLine?` · Ln ${p.cursorLine}`:''}</span>
       </div>
-      <pre class="ls-participant-code">${lsEsc(p.code||"")}</pre>
-    </div>`).join("");
+      <pre class="ls-participant-code">${html}</pre>
+    </div>`;
+  }));
+  el.innerHTML = cards.join("");
 }

@@ -10,8 +10,32 @@ const app = initializeApp(window.GLOBAL_FIREBASE_CONFIG);
 const db = getFirestore(app);
 const snap = await getDoc(doc(db,"shares",id));
 if(snap.exists()){
-  const files = snap.data().files;
-  const html = files["index.html"] || "<h1>No index.html found</h1>";
-  document.getElementById("f").srcdoc = html;
+  const files = snap.data().files || {};
+  const keys = Object.keys(files);
+
+  // 1. exact root index.html
+  let key = keys.find(k => k === "index.html");
+  // 2. case-insensitive root match (Index.html, INDEX.HTML, etc.)
+  if(!key) key = keys.find(k => k.toLowerCase() === "index.html");
+  // 3. any index.html at any depth (src/index.html, public/index.html, ...)
+  if(!key) key = keys.find(k => k.toLowerCase().endsWith("/index.html"));
+  // 4. fall back to the first .html file in the project
+  if(!key) key = keys.find(k => k.toLowerCase().endsWith(".html"));
+
+  if(key){
+    document.getElementById("f").srcdoc = files[key];
+  } else if(keys.length){
+    // no HTML file at all — let the viewer pick from what's there
+    const list = keys.map(k => `<li><code>${k}</code></li>`).join("");
+    document.body.innerHTML = `<div style="font-family:sans-serif;padding:24px;">
+      <h2>No HTML file found in this share</h2>
+      <p>This project doesn't contain an index.html. Files included:</p>
+      <ul>${list}</ul>
+    </div>`;
+  } else {
+    document.body.innerHTML = `<h2 style="font-family:sans-serif;padding:24px;">This share is empty.</h2>`;
+  }
+}else{
+  document.body.innerHTML = `<h2 style="font-family:sans-serif;padding:24px;">Share not found or expired.</h2>`;
 }
 </script></body></html>

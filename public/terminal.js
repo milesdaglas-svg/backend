@@ -1514,8 +1514,11 @@ function buildTerminal() {
 async function generateShareLink(){
   const db = await initAnnounceDB(); if(!db){ showToast("Firebase not connected","error"); return; }
   const{doc,setDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  const liveFiles = (typeof files !== "undefined" && files && Object.keys(files).length) ? files : (window.files||{});
+  if(!Object.keys(liveFiles).length){ showToast("No files in this project to share","error"); return; }
+  window.files = liveFiles;
   const id = "share_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
-  await setDoc(doc(db,"shares",id),{ files: window.files||{}, createdAt: Date.now() });
+  await setDoc(doc(db,"shares",id),{ files: liveFiles, createdAt: Date.now() });
   const link = location.origin + "/share.html?id=" + id;
   navigator.clipboard.writeText(link);
   showToast("✓ Link copied: "+link,"success");

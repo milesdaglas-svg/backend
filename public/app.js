@@ -111,7 +111,7 @@ function saveToStorage(){
 function loadFromStorage(){
   try{
     const s=localStorage.getItem("vscode_files");
-    if(s){const p=JSON.parse(s);if(Object.keys(p).length>0){files=p;const c=localStorage.getItem("vscode_currentFile");currentFile=(c&&files[c])?c:Object.keys(files)[0];const of=localStorage.getItem("vscode_openFolders");if(of)openFolders=new Set(JSON.parse(of));return true;}}
+    if(s){const p=JSON.parse(s);if(Object.keys(p).length>0){files=p;window.files=files;const c=localStorage.getItem("vscode_currentFile");currentFile=(c&&files[c])?c:Object.keys(files)[0];const of=localStorage.getItem("vscode_openFolders");if(of)openFolders=new Set(JSON.parse(of));return true;}}
   }catch{}return false;
 }
 setInterval(saveToStorage,3000);

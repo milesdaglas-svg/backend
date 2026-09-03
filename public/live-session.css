@@ -1,0 +1,30 @@
+/* =========================================
+   LIVE SESSION — pair-coding / teaching view
+========================================= */
+.ls-body{padding:12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;height:100%;box-sizing:border-box;}
+.ls-box{background:#1e1e1e;border:1px solid #333;border-radius:8px;padding:14px;}
+.ls-row{display:flex;gap:8px;}
+.ls-row input[type="text"]{flex:1;background:#0d1117;border:1px solid #333;color:#ddd;border-radius:6px;padding:8px 10px;font-family:monospace;letter-spacing:1px;}
+.ls-btn{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap;}
+.ls-btn:hover{background:#2ea043;}
+.ls-btn.secondary{background:#30363d;}
+.ls-btn.secondary:hover{background:#3d444d;}
+.ls-btn.danger{background:#da3633;}
+.ls-btn.danger:hover{background:#f85149;}
+.ls-hint{color:#888;font-size:12px;margin-top:6px;}
+.ls-code{font-family:monospace;font-size:20px;letter-spacing:3px;color:#58a6ff;text-align:center;padding:8px 0;user-select:all;}
+.ls-toggle-row{display:flex;align-items:center;justify-content:space-between;}
+.ls-switch{position:relative;width:42px;height:22px;background:#30363d;border-radius:11px;cursor:pointer;transition:background .15s;flex-shrink:0;}
+.ls-switch.on{background:#238636;}
+.ls-switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .15s;}
+.ls-switch.on::after{left:22px;}
+.ls-participants{display:flex;flex-direction:column;gap:12px;}
+.ls-participant{background:#1e1e1e;border:1px solid #333;border-radius:8px;overflow:hidden;}
+.ls-participant.live{border-color:#238636;}
+.ls-participant-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#181818;font-size:12px;color:#ccc;}
+.ls-participant-head .ls-you{color:#58a6ff;}
+.ls-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3fb950;margin-right:6px;box-shadow:0 0 0 0 rgba(63,185,80,.6);animation:ls-pulse 1.5s infinite;}
+@keyframes ls-pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.5);}70%{box-shadow:0 0 0 6px rgba(63,185,80,0);}100%{box-shadow:0 0 0 0 rgba(63,185,80,0);}}
+.ls-participant-file{color:#888;font-size:11px;}
+.ls-participant-code{margin:0;padding:10px;max-height:260px;overflow:auto;font-family:monospace;font-size:12px;line-height:1.5;color:#ddd;white-space:pre;background:#0d1117;}
+.ls-empty{color:#777;font-size:12px;text-align:center;padding:16px 0;}

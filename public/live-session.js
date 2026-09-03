@@ -15,6 +15,7 @@ let lsBroadcastTimer= null;
 let lsStaleTimer    = null;
 let lsHeartbeatTimer= null;
 let lsLastList      = [];
+let lsMyPinProof    = null;
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
 const LS_STALE_MS   = 5000; // no update in 5s while marked broadcasting = treat as disconnected
@@ -52,6 +53,12 @@ function lsGenCode(){
   let c = "";
   for(let i=0;i<6;i++) c += chars[Math.floor(Math.random()*chars.length)];
   return c;
+}
+
+async function lsHashPin(pin){
+  if(!pin) return null;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
 /* ── RENDER ENTRY (called by activitySwitch) ── */
@@ -120,12 +127,14 @@ async function lsCreateRoom(){
   lsMyName = (nameInput?.value || "").trim() || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
   const pin = (document.getElementById("lsPinInput")?.value || "").trim();
+  const pinHash = await lsHashPin(pin);
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,setDoc} = await lsFirestoreFns();
   const code = lsGenCode();
-  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pin || null });
+  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash });
   lsRoomCode = code;
+  lsMyPinProof = pinHash;
   await lsJoinAsParticipant();
   showToast(pin ? "✓ Room created (PIN-locked): "+code : "✓ Room created: "+code,"success");
   renderLiveSessionPanel();
@@ -142,14 +151,16 @@ async function lsJoinRoom(){
   lsMyName = (nameInput?.value || "").trim() || lsMyName || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
   const pinEntered = (document.getElementById("lsJoinPinInput")?.value || "").trim();
+  const pinHashEntered = await lsHashPin(pinEntered);
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,getDoc,setDoc} = await lsFirestoreFns();
   const snap = await getDoc(doc(db,"liveRooms",code));
   if(!snap.exists()){ showToast("Room not found","error"); return; }
   const roomData = snap.data();
-  if(roomData.pin && roomData.pin !== pinEntered){ showToast("Incorrect PIN","error"); return; }
+  if(roomData.pin && roomData.pin !== pinHashEntered){ showToast("Incorrect PIN","error"); return; }
   lsRoomCode = code;
+  lsMyPinProof = roomData.pin || null;
   await lsJoinAsParticipant();
   await setDoc(doc(db,"liveRooms",code),{ lastActivityAt: Date.now() }, { merge:true });
   showToast("✓ Joined room "+code,"success");
@@ -163,7 +174,8 @@ async function lsJoinAsParticipant(){
   const db = await lsInitDb(); if(!db) return;
   const {doc,setDoc} = await lsFirestoreFns();
   await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{
-    name: lsMyName, broadcasting:false, currentFile:"", code:"", updatedAt: Date.now(), joinedAt: Date.now()
+    name: lsMyName, broadcasting:false, currentFile:"", code:"", updatedAt: Date.now(), joinedAt: Date.now(),
+    pinProof: lsMyPinProof
   }, { merge:true });
   if(lsHeartbeatTimer) clearInterval(lsHeartbeatTimer);
   lsHeartbeatTimer = setInterval(lsHeartbeat, 8000);

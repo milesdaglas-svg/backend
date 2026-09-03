@@ -4,26 +4,28 @@
   "description": "VS Code God Mode — AI-powered code editor",
   "main": "app.js",
   "scripts": {
-    "start":      "node app.js",
-    "postinstall":"curl -L https://github.com/cli/cli/releases/download/v2.62.0/gh_2.62.0_linux_amd64.tar.gz -o gh.tar.gz && tar -xzf gh.tar.gz && rm gh.tar.gz",
-    "dev":        "node app.js",
-    "build":      "npm rebuild node-pty",
-    "cap:sync":   "npx cap sync",
-    "cap:android":"npx cap open android",
-    "cap:build":  "npx cap sync && npx cap open android"
+    "start": "node app.js",
+    "postinstall": "curl -L https://github.com/cli/cli/releases/download/v2.62.0/gh_2.62.0_linux_amd64.tar.gz -o gh.tar.gz && tar -xzf gh.tar.gz && rm gh.tar.gz",
+    "dev": "node app.js",
+    "build": "npm rebuild node-pty",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:build": "npx cap sync && npx cap open android"
   },
   "dependencies": {
     "body-parser": "^2.2.2",
-    "cors":        "^2.8.6",
-    "dotenv":      "^17.4.2",
-    "express":     "^5.2.1",
-    "node-pty":    "^0.10.1",
-    "web-push":    "^3.6.7",
-    "ws":          "^8.18.0"
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^12.7.0",
+    "node-cron": "^3.0.3",
+    "node-pty": "^0.10.1",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@capacitor/android": "^6.0.0",
-    "@capacitor/cli":     "^6.0.0",
-    "@capacitor/core":    "^6.0.0"
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
   }
 }

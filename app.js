@@ -10,6 +10,72 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "200mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+
+/* ══════════════════════
+   LIVE SESSION ROOM CLEANUP (server-side, admin-privileged)
+   Requires FIREBASE_SERVICE_ACCOUNT_JSON env var (full JSON key from
+   Firebase Console → Project Settings → Service Accounts → Generate
+   new private key). Without it, this silently no-ops and the client
+   still does its own best-effort lazy cleanup as a fallback.
+══════════════════════ */
+let liveAdminDb = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    const admin = require("firebase-admin");
+    const svcAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(svcAccount) });
+    liveAdminDb = admin.firestore();
+    console.log("[live-cleanup] Firebase Admin ready — server-side room cleanup enabled");
+  } else {
+    console.log("[live-cleanup] FIREBASE_SERVICE_ACCOUNT_JSON not set — server-side cleanup disabled (client-side lazy sweep still runs)");
+  }
+} catch (e) {
+  console.error("[live-cleanup] Firebase Admin init failed:", e.message);
+}
+
+async function cleanupOldLiveRooms(maxRooms = 50) {
+  if (!liveAdminDb) return { skipped: true, reason: "Firebase Admin not configured" };
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const snap = await liveAdminDb.collection("liveRooms").where("lastActivityAt", "<", cutoff).limit(maxRooms).get();
+  let deleted = 0;
+  for (const roomDoc of snap.docs) {
+    try {
+      for (const sub of ["participants", "messages"]) {
+        const subSnap = await roomDoc.ref.collection(sub).get();
+        if (!subSnap.empty) {
+          const batch = liveAdminDb.batch();
+          subSnap.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+      }
+      await roomDoc.ref.delete();
+      deleted++;
+    } catch (e) {
+      console.error("[live-cleanup] failed to delete room", roomDoc.id, e.message);
+    }
+  }
+  return { deleted, scanned: snap.size };
+}
+
+// runs every 6 hours while the server is up; no-ops if admin isn't configured
+try {
+  require("node-cron").schedule("0 */6 * * *", async () => {
+    const r = await cleanupOldLiveRooms();
+    if (r.deleted) console.log(`[live-cleanup] deleted ${r.deleted} stale room(s)`);
+  });
+} catch (e) { console.error("[live-cleanup] cron schedule failed:", e.message); }
+
+// manual trigger, gated behind a shared secret (set ADMIN_CLEANUP_SECRET on Render)
+app.post("/api/admin/cleanup-live-rooms", async (req, res) => {
+  if (!process.env.ADMIN_CLEANUP_SECRET || req.headers["x-admin-secret"] !== process.env.ADMIN_CLEANUP_SECRET) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    const result = await cleanupOldLiveRooms(200);
+    res.json({ success: true, ...result });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 /* ══════════════════════
    GITHUB OAUTH
 ══════════════════════ */

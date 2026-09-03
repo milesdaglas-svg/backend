@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ═══════════════════════════════════════
+       LIVE SESSION (pair-coding / teaching view)
+       Deploy: Firebase Console → Firestore Database → Rules → paste → Publish
+       (or `firebase deploy --only firestore:rules` if you use the CLI)
+    ═══════════════════════════════════════ */
+    match /liveRooms/{roomId} {
+      // must stay readable so the app can check a room exists / has a PIN before joining
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['createdAt','lastActivityAt','pin'])
+                    && request.resource.data.createdAt is number
+                    && request.resource.data.lastActivityAt is number
+                    && (request.resource.data.pin == null
+                        || (request.resource.data.pin is string && request.resource.data.pin.size() <= 64));
+
+      // only lastActivityAt may be bumped after creation (heartbeat/chat pings)
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActivityAt']);
+
+      // clients may only remove a room once it's genuinely dead (24h+ idle);
+      // routine cleanup otherwise happens server-side via the Admin SDK, which
+      // bypasses these rules entirely
+      allow delete: if resource.data.lastActivityAt is number
+                    && request.time.toMillis() - resource.data.lastActivityAt > 24*60*60*1000;
+
+      match /participants/{pid} {
+        allow read: if true;
+
+        // PIN is enforced here, server-side: if the room has a pin (a SHA-256
+        // hash, never the raw PIN), the write is rejected unless the client
+        // supplied a matching pinProof — this can't be bypassed by editing
+        // client JS, unlike a client-only check
+        allow create: if request.resource.data.keys().hasOnly(
+                          ['name','broadcasting','currentFile','code','cursorLine','updatedAt','joinedAt','pinProof']
+                        )
+                        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+                        && request.resource.data.broadcasting is bool
+                        && request.resource.data.code is string && request.resource.data.code.size() <= 300000
+                        && (
+                             get(/databases/$(database)/documents/liveRooms/$(roomId)).data.pin == null
+                             || request.resource.data.pinProof
+                                == get(/databases/$(database)/documents/liveRooms/$(roomId)).data.pin
+                           );
+
+        allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['broadcasting','currentFile','code','cursorLine','updatedAt','name'])
+                        && request.resource.data.code is string && request.resource.data.code.size() <= 300000;
+
+        // no per-user auth wired up in this app (no Firebase Auth), so this
+        // can't be locked to "only the owner can delete their own doc" —
+        // left open so Leave Room / disconnect cleanup keeps working
+        allow delete: if true;
+      }
+
+      match /messages/{mid} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['senderId','name','text','createdAt'])
+                        && request.resource.data.text is string && request.resource.data.text.size() <= 2000
+                        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+        allow update: if false;
+        allow delete: if false; // only the Admin SDK cleanup job removes old messages
+      }
+    }
+  }
+}

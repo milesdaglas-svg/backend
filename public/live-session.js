@@ -68,37 +68,55 @@ function renderLiveSessionPanel(){
   if(lsPublicUnsub){ lsPublicUnsub(); lsPublicUnsub=null; }
   if(!lsRoomCode){
     body.innerHTML = `
+      <div class="ls-intro">
+        <div class="ls-intro-title">👥 Live Session</div>
+        <div class="ls-intro-sub">Watch each other code in real time — for pairing, teaching, or reviewing together. Anyone in a room can flip broadcast on to show their editor; everyone else watches live.</div>
+      </div>
+
       <div class="ls-box">
-        <div class="ls-hint" style="margin:0 0 10px;">Create a room and share the code, or join one someone gave you. Whoever flips "Broadcast" on, everyone in the room watches their editor live.</div>
-        <div class="ls-row" style="margin-bottom:8px;">
+        <div class="ls-section-title"><span class="ls-step">1</span> Start a new session</div>
+        <div class="ls-section-sub">You'll get a 6-character code to share.</div>
+        <div class="ls-row" style="margin:10px 0 8px;">
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
         </div>
         <div class="ls-toggle-row" style="margin-bottom:8px;">
-          <span>🌐 Make room public (anyone can join, no PIN)</span>
+          <span>🌐 Public — anyone can find &amp; join, no PIN</span>
           <div class="ls-switch" id="lsPublicSwitch" onclick="lsTogglePublicSwitch()"></div>
         </div>
         <div class="ls-row" style="margin-bottom:10px;" id="lsPinRow">
           <input type="text" id="lsPinInput" placeholder="Optional PIN to lock room" maxlength="8">
         </div>
-        <button class="ls-btn" style="width:100%;margin-bottom:14px;" onclick="lsCreateRoom()">➕ Create Room</button>
-        <div class="ls-row" style="margin-bottom:8px;">
-          <input type="text" id="lsJoinInput" placeholder="Enter room code" maxlength="6" style="text-transform:uppercase;">
+        <button class="ls-btn" style="width:100%;" onclick="lsCreateRoom()">➕ Create Room</button>
+      </div>
+
+      <div class="ls-divider">or</div>
+
+      <div class="ls-box">
+        <div class="ls-section-title"><span class="ls-step">2</span> Join with a code</div>
+        <div class="ls-section-sub">Got a code from someone? Enter it here.</div>
+        <div class="ls-row" style="margin:10px 0 8px;">
+          <input type="text" id="lsJoinInput" placeholder="Room code" maxlength="6" style="text-transform:uppercase;">
           <button class="ls-btn secondary" onclick="lsJoinRoom()">Join</button>
         </div>
         <div class="ls-row">
-          <input type="text" id="lsJoinPinInput" placeholder="PIN (if room has one)" maxlength="8">
+          <input type="text" id="lsJoinPinInput" placeholder="PIN (only if the room has one)" maxlength="8">
         </div>
       </div>
+
+      <div class="ls-divider">or</div>
+
       <div class="ls-box">
-        <div class="ls-presence-title">🌐 Public sessions right now</div>
-        <div class="ls-public-list" id="lsPublicList"><div class="ls-empty">Loading…</div></div>
+        <div class="ls-section-title">🌐 Browse public sessions</div>
+        <div class="ls-section-sub">Open rooms anyone can hop into right now.</div>
+        <div class="ls-public-list" id="lsPublicList" style="margin-top:10px;"><div class="ls-empty">Loading…</div></div>
       </div>`;
     lsSubscribePublicRooms();
     return;
   }
 
   body.innerHTML = `
-    <div class="ls-box">
+    <div class="ls-box ls-room-card">
+      <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}</div>
       <div class="ls-code">${lsRoomCode}</div>
       <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
       <div class="ls-row" style="margin-top:10px;">
@@ -106,23 +124,31 @@ function renderLiveSessionPanel(){
         <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
       </div>
     </div>
+
     <div class="ls-box">
-      <div class="ls-toggle-row">
-        <span>📡 Broadcast my editor</span>
+      <div class="ls-section-title">📡 Your broadcast</div>
+      <div class="ls-toggle-row" style="margin-top:8px;">
+        <span>Show my editor to the room</span>
         <div class="ls-switch ${lsBroadcasting?'on':''}" id="lsSwitch" onclick="lsToggleBroadcast()"></div>
       </div>
-      <div class="ls-hint">When on, everyone in this room sees your current file live.</div>
+      <div class="ls-section-sub">When on, everyone here sees your current file live, including your cursor.</div>
     </div>
+
     <div class="ls-box">
-      <div class="ls-presence-title">In this room</div>
-      <div class="ls-presence-list" id="lsPresenceList"><div class="ls-empty">Loading…</div></div>
+      <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
+      <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
     </div>
+
+    <div class="ls-section-title ls-standalone-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
+    <div class="ls-section-sub ls-standalone-sub">Anyone with broadcast on shows up here, live.</div>
     <div class="ls-participants" id="lsParticipants">
       <div class="ls-empty">Waiting for updates…</div>
     </div>
+
     <div class="ls-box ls-chat-box">
-      <div class="ls-presence-title">💬 Chat</div>
-      <div class="ls-chat-log" id="lsChatLog"></div>
+      <div class="ls-section-title">💬 Chat</div>
+      <div class="ls-section-sub">Talk through what you're seeing, without interrupting the code.</div>
+      <div class="ls-chat-log" id="lsChatLog" style="margin-top:8px;"></div>
       <div class="ls-row" style="margin-top:8px;">
         <input type="text" id="lsChatInput" placeholder="Message the room…" onkeydown="if(event.key==='Enter')lsSendChat()">
         <button class="ls-btn secondary" onclick="lsSendChat()">Send</button>
@@ -281,6 +307,8 @@ async function lsToggleBroadcast(){
   lsBroadcasting = !lsBroadcasting;
   const sw = document.getElementById("lsSwitch");
   if(sw) sw.classList.toggle("on", lsBroadcasting);
+  const statusEl = document.getElementById("ls-panel-body")?.querySelector(".ls-room-status");
+  if(statusEl) statusEl.innerHTML = lsBroadcasting ? '<span class="ls-live-dot"></span>You\'re broadcasting' : 'In session — not broadcasting';
 
   const db = await lsInitDb(); if(!db) return;
   const {doc,setDoc} = await lsFirestoreFns();
@@ -331,6 +359,8 @@ async function lsSubscribe(){
 /* everyone currently in the room, online/broadcasting/away, not just broadcasters */
 function lsRenderPresence(list){
   const el = document.getElementById("lsPresenceList");
+  const countEl = document.getElementById("lsPeopleCount");
+  if(countEl) countEl.textContent = Math.max(1, list.length);
   if(!el) return;
   const now = Date.now();
   if(!list.length){ el.innerHTML = `<div class="ls-empty">Just you so far</div>`; return; }
@@ -372,6 +402,10 @@ async function lsHighlight(code, filename, cursorLine){
 
 async function lsRenderParticipants(list){
   const el = document.getElementById("lsParticipants");
+  const countEl = document.getElementById("lsLiveCount");
+  const now0 = Date.now();
+  const liveCount = list.filter(p => p.broadcasting && p.code && (now0-(p.updatedAt||0))<=LS_STALE_MS).length;
+  if(countEl) countEl.textContent = liveCount;
   if(!el) return;
   const now = Date.now();
   const live = list.filter(p => p.broadcasting && p.code);

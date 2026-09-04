@@ -160,45 +160,53 @@ function renderLiveSessionPanel(){
   }
 
   body.innerHTML = `
-    <div class="ls-box ls-room-card">
-      <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}</div>
-      <div class="ls-code">${lsRoomCode}</div>
-      <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
-      <div class="ls-row" style="margin-top:10px;">
-        <button class="ls-btn secondary" style="flex:1;" onclick="lsCopyCode()">📋 Copy Code</button>
-        <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
+    <div class="ls-sidebar-col">
+      <div class="ls-box ls-room-card">
+        <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}</div>
+        <div class="ls-code">${lsRoomCode}</div>
+        <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
+        <div class="ls-row" style="margin-top:10px;">
+          <button class="ls-btn secondary" style="flex:1;" onclick="lsCopyCode()">📋 Copy Code</button>
+          <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
+        </div>
+        <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">${lsExpanded?'⛶ Already fullscreen':'⛶ Expand to fullscreen'}</button>
       </div>
-      <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">⛶ Expand to fullscreen</button>
-    </div>
 
-    <div class="ls-box">
-      <div class="ls-section-title">📡 Your broadcast</div>
-      <div class="ls-toggle-row" style="margin-top:8px;">
-        <span>Show my editor to the room</span>
-        <div class="ls-switch ${lsBroadcasting?'on':''}" id="lsSwitch" onclick="lsToggleBroadcast()"></div>
+      <div class="ls-box">
+        <div class="ls-section-title">📡 Your broadcast</div>
+        <div class="ls-toggle-row" style="margin-top:8px;">
+          <span>Show my editor to the room</span>
+          <div class="ls-switch ${lsBroadcasting?'on':''}" id="lsSwitch" onclick="lsToggleBroadcast()"></div>
+        </div>
+        <div class="ls-section-sub">When on, everyone here sees your current file live, including your cursor.</div>
       </div>
-      <div class="ls-section-sub">When on, everyone here sees your current file live, including your cursor.</div>
+
+      <div class="ls-box">
+        <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
+        <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
+      </div>
+
+      <div class="ls-box">
+        <div class="ls-section-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
+        <div class="ls-section-sub">Anyone with broadcast on shows up here, live.</div>
+        <div class="ls-participants" id="lsParticipants" style="margin-top:8px;">
+          <div class="ls-empty">Waiting for updates…</div>
+        </div>
+      </div>
     </div>
 
-    <div class="ls-box">
-      <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
-      <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
-    </div>
-
-    <div class="ls-section-title ls-standalone-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
-    <div class="ls-section-sub ls-standalone-sub">Anyone with broadcast on shows up here, live.</div>
-    <div class="ls-participants" id="lsParticipants">
-      <div class="ls-empty">Waiting for updates…</div>
-    </div>
-
-    <div class="ls-box ls-chat-box">
-      <div class="ls-section-title">💬 Chat</div>
-      <div class="ls-section-sub">Talk through what you're seeing, without interrupting the code.</div>
-      <div class="ls-chat-log" id="lsChatLog" style="margin-top:8px;"></div>
-      <div class="ls-reply-bar" id="lsReplyBar" style="display:none;"></div>
-      <div class="ls-row" style="margin-top:8px;">
-        <input type="text" id="lsChatInput" placeholder="Message the room…" onkeydown="if(event.key==='Enter')lsSendChat()">
-        <button class="ls-btn secondary" onclick="lsSendChat()">Send</button>
+    <div class="ls-main-col">
+      <div class="ls-chat-box">
+        <div class="ls-chat-header">
+          <div class="ls-chat-header-title">💬 Room Chat</div>
+          <div class="ls-chat-header-sub">Talk through what you're seeing, without interrupting the code</div>
+        </div>
+        <div class="ls-chat-log" id="lsChatLog"></div>
+        <div class="ls-reply-bar" id="lsReplyBar" style="display:none;"></div>
+        <div class="ls-chat-input-row">
+          <input type="text" id="lsChatInput" placeholder="Message the room…" onkeydown="if(event.key==='Enter')lsSendChat()">
+          <button class="ls-send-btn" onclick="lsSendChat()" title="Send">➤</button>
+        </div>
       </div>
     </div>`;
   const codeEl = body.querySelector(".ls-code");
@@ -516,6 +524,13 @@ function lsFormatTime(m){
   return `${h12}:${String(min).padStart(2,"0")} ${h<12?'AM':'PM'}`;
 }
 
+const LS_AVATAR_COLORS = ["#e57373","#ba68c8","#64b5f6","#4db6ac","#f06292","#ffb74d","#81c784","#7986cb"];
+function lsAvatarColor(id){
+  let h=0; for(const c of (id||"")) h = (h*31 + c.charCodeAt(0)) >>> 0;
+  return LS_AVATAR_COLORS[h % LS_AVATAR_COLORS.length];
+}
+function lsInitial(name){ return (name||"?").trim().charAt(0).toUpperCase() || "?"; }
+
 function lsRenderChat(msgs){
   const log = document.getElementById("lsChatLog");
   if(!log) return;
@@ -529,8 +544,10 @@ function lsRenderChat(msgs){
         <span class="ls-chat-reply-name">${lsEsc(m.replyTo.name||"Someone")}</span>
         <span class="ls-chat-reply-text">${lsEsc(m.replyTo.text||"")}</span>
       </div>` : '';
+    const avatar = !mine ? `<span class="ls-chat-avatar" style="background:${lsAvatarColor(m.senderId)}">${lsInitial(m.name)}</span>` : '';
     return `
     <div class="ls-chat-msg${mine?' mine':''}${grouped?' grouped':''}" data-msg-id="${m.id}">
+      ${avatar}
       <button class="ls-chat-reply-btn" onclick="lsStartReply('${m.id}')" title="Reply">↩</button>
       ${(!mine && !grouped) ? `<span class="ls-chat-name">${lsEsc(m.name||"Someone")}</span>` : ''}
       ${replyBlock}

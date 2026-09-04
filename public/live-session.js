@@ -444,15 +444,28 @@ async function lsSubscribeChat(){
   });
 }
 
+function lsFormatTime(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  const h = d.getHours(), m = d.getMinutes();
+  const h12 = h%12===0 ? 12 : h%12;
+  return `${h12}:${String(m).padStart(2,"0")} ${h<12?'AM':'PM'}`;
+}
+
 function lsRenderChat(msgs){
   const log = document.getElementById("lsChatLog");
   if(!log) return;
   const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
-  log.innerHTML = msgs.map(m => `
-    <div class="ls-chat-msg${m.senderId===lsMyId?' mine':''}">
-      <span class="ls-chat-name">${m.senderId===lsMyId?'You':lsEsc(m.name||"Someone")}</span>
-      <span class="ls-chat-text">${lsEsc(m.text||"")}</span>
-    </div>`).join("");
+  log.innerHTML = msgs.map((m,i) => {
+    const mine = m.senderId===lsMyId;
+    const prev = msgs[i-1];
+    const grouped = prev && prev.senderId===m.senderId; // same sender as the message right before -> stack tight, no repeated name
+    return `
+    <div class="ls-chat-msg${mine?' mine':''}${grouped?' grouped':''}">
+      ${(!mine && !grouped) ? `<span class="ls-chat-name">${lsEsc(m.name||"Someone")}</span>` : ''}
+      <span class="ls-chat-text">${lsEsc(m.text||"")}<span class="ls-chat-time">${lsFormatTime(m.createdAt)}</span></span>
+    </div>`;
+  }).join("");
   if(nearBottom) log.scrollTop = log.scrollHeight;
 }
 

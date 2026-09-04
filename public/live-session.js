@@ -16,6 +16,7 @@ let lsStaleTimer    = null;
 let lsHeartbeatTimer= null;
 let lsLastList      = [];
 let lsMyPinProof    = null;
+let lsPublicUnsub   = null;
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
 const LS_STALE_MS   = 5000; // no update in 5s while marked broadcasting = treat as disconnected
@@ -64,6 +65,7 @@ async function lsHashPin(pin){
 /* ── RENDER ENTRY (called by activitySwitch) ── */
 function renderLiveSessionPanel(){
   const body = lsPanelBody(); if(!body) return;
+  if(lsPublicUnsub){ lsPublicUnsub(); lsPublicUnsub=null; }
   if(!lsRoomCode){
     body.innerHTML = `
       <div class="ls-box">
@@ -71,7 +73,11 @@ function renderLiveSessionPanel(){
         <div class="ls-row" style="margin-bottom:8px;">
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
         </div>
-        <div class="ls-row" style="margin-bottom:10px;">
+        <div class="ls-toggle-row" style="margin-bottom:8px;">
+          <span>🌐 Make room public (anyone can join, no PIN)</span>
+          <div class="ls-switch" id="lsPublicSwitch" onclick="lsTogglePublicSwitch()"></div>
+        </div>
+        <div class="ls-row" style="margin-bottom:10px;" id="lsPinRow">
           <input type="text" id="lsPinInput" placeholder="Optional PIN to lock room" maxlength="8">
         </div>
         <button class="ls-btn" style="width:100%;margin-bottom:14px;" onclick="lsCreateRoom()">➕ Create Room</button>
@@ -82,7 +88,12 @@ function renderLiveSessionPanel(){
         <div class="ls-row">
           <input type="text" id="lsJoinPinInput" placeholder="PIN (if room has one)" maxlength="8">
         </div>
+      </div>
+      <div class="ls-box">
+        <div class="ls-presence-title">🌐 Public sessions right now</div>
+        <div class="ls-public-list" id="lsPublicList"><div class="ls-empty">Loading…</div></div>
       </div>`;
+    lsSubscribePublicRooms();
     return;
   }
 
@@ -121,31 +132,39 @@ function renderLiveSessionPanel(){
   if(codeEl) codeEl.onclick = lsCopyCode;
 }
 
+function lsTogglePublicSwitch(){
+  const sw = document.getElementById("lsPublicSwitch");
+  const pinRow = document.getElementById("lsPinRow");
+  const isOn = sw.classList.toggle("on");
+  if(pinRow){ pinRow.style.display = isOn ? "none" : "flex"; }
+}
+
 /* ── ROOM ACTIONS ── */
 async function lsCreateRoom(){
   const nameInput = document.getElementById("lsNameInput");
   lsMyName = (nameInput?.value || "").trim() || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
-  const pin = (document.getElementById("lsPinInput")?.value || "").trim();
+  const isPublic = document.getElementById("lsPublicSwitch")?.classList.contains("on") || false;
+  const pin = isPublic ? "" : (document.getElementById("lsPinInput")?.value || "").trim();
   const pinHash = await lsHashPin(pin);
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,setDoc} = await lsFirestoreFns();
   const code = lsGenCode();
-  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash });
+  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash, public: isPublic });
   lsRoomCode = code;
   lsMyPinProof = pinHash;
   await lsJoinAsParticipant();
-  showToast(pin ? "✓ Room created (PIN-locked): "+code : "✓ Room created: "+code,"success");
+  showToast(isPublic ? "✓ Public room created: "+code : (pin ? "✓ Room created (PIN-locked): "+code : "✓ Room created: "+code),"success");
   renderLiveSessionPanel();
   lsSubscribe();
   lsSubscribeChat();
   lsMaybeCleanupOldRooms();
 }
 
-async function lsJoinRoom(){
+async function lsJoinRoom(directCode){
   const input = document.getElementById("lsJoinInput");
-  const code = (input?.value || "").trim().toUpperCase();
+  const code = (directCode || input?.value || "").trim().toUpperCase();
   if(!code){ showToast("Enter a room code","error"); return; }
   const nameInput = document.getElementById("lsNameInput");
   lsMyName = (nameInput?.value || "").trim() || lsMyName || ("Guest"+Math.floor(Math.random()*9000+1000));
@@ -212,6 +231,49 @@ function lsCopyCode(){
   if(!lsRoomCode) return;
   navigator.clipboard.writeText(lsRoomCode);
   showToast("Room code copied","success");
+}
+
+/* ── PUBLIC ROOMS BROWSE LIST ──
+   Single-field equality query (public==true) needs no composite index,
+   so this "just works" without any manual Firestore console step.
+   Recency/sorting happens client-side after the fetch. */
+const LS_PUBLIC_ACTIVE_MS = 30*60*1000; // hide rooms idle 30min+ from the browse list
+
+async function lsSubscribePublicRooms(){
+  if(lsPublicUnsub){ lsPublicUnsub(); lsPublicUnsub=null; }
+  const db = await lsInitDb(); if(!db) return;
+  const {collection,query,where,onSnapshot} = await lsFirestoreFns();
+  const q = query(collection(db,"liveRooms"), where("public","==",true));
+  lsPublicUnsub = onSnapshot(q, snap => {
+    const now = Date.now();
+    const rooms = [];
+    snap.forEach(d => rooms.push({ id:d.id, ...d.data() }));
+    const active = rooms
+      .filter(r => (now - (r.lastActivityAt||0)) <= LS_PUBLIC_ACTIVE_MS)
+      .sort((a,b) => (b.lastActivityAt||0) - (a.lastActivityAt||0))
+      .slice(0,20);
+    lsRenderPublicRooms(active);
+  }, () => {
+    const el = document.getElementById("lsPublicList");
+    if(el) el.innerHTML = `<div class="ls-empty">Couldn't load public sessions.</div>`;
+  });
+}
+
+function lsRenderPublicRooms(rooms){
+  const el = document.getElementById("lsPublicList");
+  if(!el) return;
+  if(!rooms.length){ el.innerHTML = `<div class="ls-empty">No public sessions active right now.</div>`; return; }
+  const now = Date.now();
+  el.innerHTML = rooms.map(r => {
+    const mins = Math.max(0, Math.round((now-(r.lastActivityAt||now))/60000));
+    return `<div class="ls-public-item">
+      <div>
+        <span class="ls-public-code">${r.id}</span>
+        <span class="ls-public-age">active ${mins<1?'just now':mins+'m ago'}</span>
+      </div>
+      <button class="ls-btn secondary" onclick="lsJoinRoom('${r.id}')">Join</button>
+    </div>`;
+  }).join("");
 }
 
 /* ── BROADCASTING ── */

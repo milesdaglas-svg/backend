@@ -52,3 +52,9 @@
 .ls-chat-name{color:#58a6ff;font-weight:600;margin-right:6px;font-size:11px;}
 .ls-chat-msg.mine .ls-chat-name{color:#3fb950;}
 .ls-chat-text{word-break:break-word;}
+
+/* public rooms */
+.ls-public-list{display:flex;flex-direction:column;gap:8px;}
+.ls-public-item{display:flex;align-items:center;justify-content:space-between;background:#181818;border-radius:8px;padding:8px 10px;}
+.ls-public-code{font-family:monospace;letter-spacing:1px;color:#58a6ff;font-weight:600;margin-right:8px;}
+.ls-public-age{color:#777;font-size:11px;}

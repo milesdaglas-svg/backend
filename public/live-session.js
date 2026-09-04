@@ -149,6 +149,7 @@ function renderLiveSessionPanel(){
       <div class="ls-section-title">💬 Chat</div>
       <div class="ls-section-sub">Talk through what you're seeing, without interrupting the code.</div>
       <div class="ls-chat-log" id="lsChatLog" style="margin-top:8px;"></div>
+      <div class="ls-reply-bar" id="lsReplyBar" style="display:none;"></div>
       <div class="ls-row" style="margin-top:8px;">
         <input type="text" id="lsChatInput" placeholder="Message the room…" onkeydown="if(event.key==='Enter')lsSendChat()">
         <button class="ls-btn secondary" onclick="lsSendChat()">Send</button>
@@ -250,6 +251,7 @@ async function lsLeaveRoom(){
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false;
+  lsReplyingTo = null; lsChatMsgsById = {};
   renderLiveSessionPanel();
 }
 
@@ -431,25 +433,40 @@ async function lsRenderParticipants(list){
 
 /* ── CHAT ── */
 let lsChatUnsub = null;
+let lsChatMsgsById = {};
+let lsReplyingTo = null;
 
 async function lsSubscribeChat(){
   if(lsChatUnsub){ lsChatUnsub(); lsChatUnsub=null; }
   const db = await lsInitDb(); if(!db) return;
   const {collection,query,orderBy,limit,onSnapshot} = await lsFirestoreFns();
-  const q = query(collection(db,"liveRooms",lsRoomCode,"messages"), orderBy("createdAt","asc"), limit(100));
+  // order by clientTs (always present the instant a message is sent, even
+  // before the server has synced it) so optimistic local messages show up
+  // immediately in roughly the right place; final ordering below then uses
+  // the authoritative server timestamp once available, which fixes any
+  // misordering caused by two devices' clocks disagreeing
+  const q = query(collection(db,"liveRooms",lsRoomCode,"messages"), orderBy("clientTs","asc"), limit(100));
   lsChatUnsub = onSnapshot(q, snap => {
     const msgs = [];
-    snap.forEach(d => msgs.push(d.data()));
+    snap.forEach(d => msgs.push({ id:d.id, ...d.data() }));
+    msgs.sort((a,b) => {
+      const ka = (a.createdAt && typeof a.createdAt.toMillis==="function") ? a.createdAt.toMillis() : (a.clientTs||0);
+      const kb = (b.createdAt && typeof b.createdAt.toMillis==="function") ? b.createdAt.toMillis() : (b.clientTs||0);
+      return ka - kb;
+    });
+    lsChatMsgsById = {};
+    msgs.forEach(m => lsChatMsgsById[m.id] = m);
     lsRenderChat(msgs);
   });
 }
 
-function lsFormatTime(ts){
+function lsFormatTime(m){
+  const ts = (m.createdAt && typeof m.createdAt.toMillis==="function") ? m.createdAt.toMillis() : m.clientTs;
   if(!ts) return "";
   const d = new Date(ts);
-  const h = d.getHours(), m = d.getMinutes();
+  const h = d.getHours(), min = d.getMinutes();
   const h12 = h%12===0 ? 12 : h%12;
-  return `${h12}:${String(m).padStart(2,"0")} ${h<12?'AM':'PM'}`;
+  return `${h12}:${String(min).padStart(2,"0")} ${h<12?'AM':'PM'}`;
 }
 
 function lsRenderChat(msgs){
@@ -459,14 +476,54 @@ function lsRenderChat(msgs){
   log.innerHTML = msgs.map((m,i) => {
     const mine = m.senderId===lsMyId;
     const prev = msgs[i-1];
-    const grouped = prev && prev.senderId===m.senderId; // same sender as the message right before -> stack tight, no repeated name
+    const grouped = prev && prev.senderId===m.senderId && !m.replyTo;
+    const replyBlock = m.replyTo ? `
+      <div class="ls-chat-reply" onclick="lsScrollToMsg('${m.replyTo.id}')">
+        <span class="ls-chat-reply-name">${lsEsc(m.replyTo.name||"Someone")}</span>
+        <span class="ls-chat-reply-text">${lsEsc(m.replyTo.text||"")}</span>
+      </div>` : '';
     return `
-    <div class="ls-chat-msg${mine?' mine':''}${grouped?' grouped':''}">
+    <div class="ls-chat-msg${mine?' mine':''}${grouped?' grouped':''}" data-msg-id="${m.id}">
+      <button class="ls-chat-reply-btn" onclick="lsStartReply('${m.id}')" title="Reply">↩</button>
       ${(!mine && !grouped) ? `<span class="ls-chat-name">${lsEsc(m.name||"Someone")}</span>` : ''}
-      <span class="ls-chat-text">${lsEsc(m.text||"")}<span class="ls-chat-time">${lsFormatTime(m.createdAt)}</span></span>
+      ${replyBlock}
+      <span class="ls-chat-text">${lsEsc(m.text||"")}<span class="ls-chat-time">${lsFormatTime(m)}</span></span>
     </div>`;
   }).join("");
   if(nearBottom) log.scrollTop = log.scrollHeight;
+}
+
+function lsScrollToMsg(id){
+  const el = document.querySelector(`.ls-chat-msg[data-msg-id="${id}"]`);
+  if(!el) return;
+  el.scrollIntoView({ behavior:"smooth", block:"center" });
+  el.classList.add("flash");
+  setTimeout(()=>el.classList.remove("flash"), 1200);
+}
+
+function lsStartReply(id){
+  const m = lsChatMsgsById[id]; if(!m) return;
+  lsReplyingTo = { id, name: m.senderId===lsMyId ? "You" : (m.name||"Someone"), text: (m.text||"").slice(0,80) };
+  lsRenderReplyBar();
+  document.getElementById("lsChatInput")?.focus();
+}
+
+function lsCancelReply(){
+  lsReplyingTo = null;
+  lsRenderReplyBar();
+}
+
+function lsRenderReplyBar(){
+  const bar = document.getElementById("lsReplyBar");
+  if(!bar) return;
+  if(!lsReplyingTo){ bar.style.display="none"; bar.innerHTML=""; return; }
+  bar.style.display="flex";
+  bar.innerHTML = `
+    <div class="ls-reply-bar-text">
+      <span class="ls-chat-reply-name">Replying to ${lsEsc(lsReplyingTo.name)}</span>
+      <span class="ls-chat-reply-text">${lsEsc(lsReplyingTo.text)}</span>
+    </div>
+    <button class="ls-reply-bar-cancel" onclick="lsCancelReply()">✕</button>`;
 }
 
 async function lsSendChat(){
@@ -474,11 +531,15 @@ async function lsSendChat(){
   const text = (input?.value || "").trim();
   if(!text || !lsRoomCode) return;
   const db = await lsInitDb(); if(!db) return;
-  const {collection,addDoc,doc,setDoc} = await lsFirestoreFns();
+  const {collection,addDoc,doc,setDoc,serverTimestamp} = await lsFirestoreFns();
   input.value = "";
+  const replyTo = lsReplyingTo ? { ...lsReplyingTo } : null;
+  lsReplyingTo = null; lsRenderReplyBar();
   try{
     await addDoc(collection(db,"liveRooms",lsRoomCode,"messages"),{
-      senderId: lsMyId, name: lsMyName, text, createdAt: Date.now()
+      senderId: lsMyId, name: lsMyName, text,
+      createdAt: serverTimestamp(), clientTs: Date.now(),
+      replyTo
     });
     await setDoc(doc(db,"liveRooms",lsRoomCode),{ lastActivityAt: Date.now() }, { merge:true });
   }catch{ showToast("Message failed to send","error"); }

@@ -23,8 +23,9 @@
 .ls-room-status{font-size:11px;color:#888;text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
 .ls-room-status .ls-live-dot{margin-right:5px;}
 
-.ls-row{display:flex;gap:8px;}
-.ls-row input[type="text"]{flex:1;background:#0d1117;border:1px solid #333;color:#ddd;border-radius:6px;padding:8px 10px;font-family:monospace;letter-spacing:1px;}
+.ls-row{display:flex;gap:8px;min-width:0;}
+.ls-row input[type="text"]{flex:1 1 0;min-width:0;background:#0d1117;border:1px solid #333;color:#ddd;border-radius:6px;padding:8px 10px;font-family:monospace;letter-spacing:1px;box-sizing:border-box;}
+.ls-row .ls-btn{flex-shrink:0;}
 .ls-btn{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap;}
 .ls-btn:hover{background:#2ea043;}
 .ls-btn.secondary{background:#30363d;}

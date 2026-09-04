@@ -141,9 +141,11 @@
 .ls-fs-code{font-family:monospace;letter-spacing:2px;color:#58a6ff;}
 .ls-fullscreen-content{flex:1;overflow:hidden;display:flex;}
 
-/* narrow sidebar: sidebar-col / main-col are just pass-through wrappers,
-   everything stacks vertically exactly as before */
-.ls-sidebar-col,.ls-main-col{display:contents;}
+/* narrow sidebar: sidebar-col / main-col stack normally, one after another —
+   just plain flex columns, same visual result as before. (display:contents
+   was tried here first but is unreliable across mobile browsers/WebViews
+   and could make the chat panel disappear entirely, so avoid it.) */
+.ls-sidebar-col,.ls-main-col{display:flex;flex-direction:column;gap:12px;}
 
 /* fullscreen: real two-column app layout, fills the page edge to edge,
    nothing scrolls except the chat log and the sidebar column themselves —

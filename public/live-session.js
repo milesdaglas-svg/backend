@@ -17,6 +17,7 @@ let lsHeartbeatTimer= null;
 let lsLastList      = [];
 let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
+let lsExpanded       = false;
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
 const LS_STALE_MS   = 5000; // no update in 5s while marked broadcasting = treat as disconnected
@@ -37,6 +38,50 @@ window.addEventListener("beforeunload", ()=>{
 });
 
 function lsPanelBody(){ return document.getElementById("ls-panel-body"); }
+
+/* ── EXPAND TO FULLSCREEN ──
+   The sidebar is only ~220px wide, so cramming live code + chat in there
+   makes everything look sparse/cramped. Rather than rebuild the whole UI
+   twice, this MOVES the actual panel-body DOM node into a fullscreen
+   overlay (and back on close) — same element, same ids, so every
+   onSnapshot listener and getElementById() call in the rest of this file
+   just keeps working without any special-casing. */
+function lsToggleExpand(){
+  lsExpanded ? lsCloseFullscreen() : lsOpenFullscreen();
+}
+
+function lsOpenFullscreen(){
+  const panelBody = document.getElementById("ls-panel-body");
+  if(!panelBody || lsExpanded) return;
+  const overlay = document.createElement("div");
+  overlay.id = "lsFullscreenOverlay";
+  overlay.className = "ls-fullscreen-overlay";
+  overlay.innerHTML = `
+    <div class="ls-fullscreen-header">
+      <span>👥 Live Session${lsRoomCode?' — Room <span class="ls-fs-code">'+lsRoomCode+'</span>':''}</span>
+      <button class="ls-btn secondary" onclick="lsToggleExpand()">✕ Exit Fullscreen</button>
+    </div>
+    <div class="ls-fullscreen-content" id="lsFullscreenContent"></div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("lsFullscreenContent").appendChild(panelBody);
+  panelBody.classList.add("ls-body-fullscreen");
+  const btn = panelBody.querySelector(".ls-expand-btn");
+  if(btn) btn.textContent = "⛶ Already fullscreen";
+  lsExpanded = true;
+}
+
+function lsCloseFullscreen(){
+  const panelBody = document.getElementById("ls-panel-body");
+  const homeSlot = document.querySelector('.sidebar-panel[data-panel="live-session"]');
+  if(panelBody && homeSlot){
+    panelBody.classList.remove("ls-body-fullscreen");
+    homeSlot.appendChild(panelBody);
+    const btn = panelBody.querySelector(".ls-expand-btn");
+    if(btn) btn.textContent = "⛶ Expand to fullscreen";
+  }
+  document.getElementById("lsFullscreenOverlay")?.remove();
+  lsExpanded = false;
+}
 
 async function lsInitDb(){
   if(lsDb) return lsDb;
@@ -123,6 +168,7 @@ function renderLiveSessionPanel(){
         <button class="ls-btn secondary" style="flex:1;" onclick="lsCopyCode()">📋 Copy Code</button>
         <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
       </div>
+      <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">⛶ Expand to fullscreen</button>
     </div>
 
     <div class="ls-box">
@@ -252,6 +298,7 @@ async function lsLeaveRoom(){
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false;
   lsReplyingTo = null; lsChatMsgsById = {};
+  if(lsExpanded) lsCloseFullscreen();
   renderLiveSessionPanel();
 }
 

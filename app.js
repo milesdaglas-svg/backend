@@ -425,11 +425,23 @@ function githubAPI(method, path, token, body) {
       let raw = "";
       res.on("data", chunk => raw += chunk);
       res.on("end", () => {
+        if (res.statusCode >= 400) {
+          // GitHub error responses are usually JSON, but on rate limits,
+          // outages, or proxy errors they can come back as HTML or empty —
+          // reject on the status code regardless of whether the body parses
+          try {
+            const parsed = raw ? JSON.parse(raw) : {};
+            reject(new Error(parsed.message || `GitHub API error ${res.statusCode}`));
+          } catch(e) {
+            reject(new Error(`GitHub API error ${res.statusCode}${raw ? ": " + raw.slice(0,150) : ""}`));
+          }
+          return;
+        }
         try {
-          const parsed = raw ? JSON.parse(raw) : {};
-          if (res.statusCode >= 400) reject(new Error(parsed.message || `GitHub API error ${res.statusCode}`));
-          else resolve(parsed);
-        } catch(e) { resolve(raw); }
+          resolve(raw ? JSON.parse(raw) : {});
+        } catch(e) {
+          reject(new Error(`GitHub returned an unparseable response (status ${res.statusCode})`));
+        }
       });
     });
     req.on("error", reject);
@@ -609,7 +621,31 @@ app.post("/api/github/push-all", async (req, res) => {
     }
   }
 
-  res.json({ success: true, pushed: results.success.length, failed: results.failed.length, details: results });
+  // Verify: re-fetch the tree and confirm the files we think we pushed are
+  // actually there. This is the real fix for "push said success but the
+  // repo is empty" — we no longer just trust each PUT response, we check.
+  let verifiedCount = 0;
+  let verifyFailed = false;
+  try {
+    const freshTree = await githubAPI("GET", `/repos/${owner}/${repo}/git/trees/${targetBranch}?recursive=1`, token);
+    const presentPaths = new Set((freshTree.tree || []).filter(i => i.type === "blob").map(i => i.path));
+    verifiedCount = results.success.filter(p => presentPaths.has(p)).length;
+    if (results.success.length > 0 && verifiedCount === 0) verifyFailed = true;
+  } catch(e) {
+    // couldn't even verify — don't claim success we can't back up
+    if (results.success.length > 0) verifyFailed = true;
+  }
+
+  if (verifyFailed) {
+    return res.status(502).json({
+      success: false,
+      pushed: 0, failed: results.success.length,
+      error: "GitHub accepted the requests but the files aren't showing up in the repo tree afterward — push did not actually take effect. Try again, and if it keeps happening GitHub may be having an issue.",
+      details: { failed: results.success.map(f => ({ file: f, error: "not found after push" })), succeeded: [] }
+    });
+  }
+
+  res.json({ success: true, pushed: verifiedCount, failed: results.failed.length + (results.success.length - verifiedCount), details: results });
 });
 
 /* ── POST /api/github/pull-all ──

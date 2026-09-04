@@ -18,6 +18,9 @@ let lsLastList      = [];
 let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
+let lsUnreadCount    = 0;
+let lsPanelVisible   = false;
+let lsTalliedMsgIds  = new Set();
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
 const LS_STALE_MS   = 5000; // no update in 5s while marked broadcasting = treat as disconnected
@@ -38,6 +41,29 @@ window.addEventListener("beforeunload", ()=>{
 });
 
 function lsPanelBody(){ return document.getElementById("ls-panel-body"); }
+
+/* ── UNREAD MESSAGE BADGE ──
+   Lets someone deep in the code editor tell, at a glance, that people are
+   chatting in Live Session without needing to switch over and check. */
+function lsSetVisible(visible){
+  lsPanelVisible = visible;
+  if(visible){
+    lsUnreadCount = 0;
+    Object.keys(lsChatMsgsById).forEach(id => lsTalliedMsgIds.add(id));
+    lsUpdateUnreadBadge();
+  }
+}
+
+function lsUpdateUnreadBadge(){
+  const badge = document.getElementById("ls-activity-badge");
+  if(!badge) return;
+  if(lsUnreadCount > 0){
+    badge.textContent = lsUnreadCount > 9 ? "9+" : String(lsUnreadCount);
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
 
 /* ── EXPAND TO FULLSCREEN ──
    The sidebar is only ~220px wide, so cramming live code + chat in there
@@ -110,6 +136,7 @@ async function lsHashPin(pin){
 /* ── RENDER ENTRY (called by activitySwitch) ── */
 function renderLiveSessionPanel(){
   const body = lsPanelBody(); if(!body) return;
+  lsSetVisible(true);
   if(lsPublicUnsub){ lsPublicUnsub(); lsPublicUnsub=null; }
   if(!lsRoomCode){
     body.innerHTML = `
@@ -306,6 +333,7 @@ async function lsLeaveRoom(){
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false;
   lsReplyingTo = null; lsChatMsgsById = {};
+  lsUnreadCount = 0; lsTalliedMsgIds = new Set(); lsUpdateUnreadBadge();
   if(lsExpanded) lsCloseFullscreen();
   renderLiveSessionPanel();
 }
@@ -510,8 +538,15 @@ async function lsSubscribeChat(){
       return ka - kb;
     });
     lsChatMsgsById = {};
-    msgs.forEach(m => lsChatMsgsById[m.id] = m);
+    msgs.forEach(m => {
+      lsChatMsgsById[m.id] = m;
+      if(!lsTalliedMsgIds.has(m.id)){
+        lsTalliedMsgIds.add(m.id);
+        if(m.senderId !== lsMyId && !lsPanelVisible) lsUnreadCount++;
+      }
+    });
     lsRenderChat(msgs);
+    lsUpdateUnreadBadge();
   });
 }
 

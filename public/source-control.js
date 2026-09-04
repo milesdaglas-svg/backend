@@ -231,6 +231,7 @@ function parseGenericOutline(content) {
 function activitySwitch(panel) {
   document.querySelectorAll(".activity-btn").forEach(b=>b.classList.toggle("active",b.dataset.panel===panel));
   document.querySelectorAll(".sidebar-panel").forEach(p=>p.classList.toggle("active",p.dataset.panel===panel));
+  if(typeof lsSetVisible==="function") lsSetVisible(panel==="live-session");
   const sidebar=document.getElementById("sidebar");
   if(window.innerWidth<=768&&sidebar&&!sidebar.classList.contains("open")){sidebar.classList.add("open");document.getElementById("sidebarOverlay")?.classList.add("active");}
   if(panel==="search") setTimeout(()=>document.getElementById("searchInput")?.focus(),50);

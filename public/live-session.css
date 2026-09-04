@@ -131,6 +131,9 @@
 .ls-public-code{font-family:monospace;letter-spacing:1px;color:#58a6ff;font-weight:600;margin-right:8px;}
 .ls-public-age{color:#777;font-size:11px;}
 
+/* unread-message badge on the activity bar icon, WhatsApp-style */
+.ls-badge-wa{background:#25D366!important;box-shadow:0 0 0 2px #11161d;top:6px;bottom:auto!important;}
+
 /* expand-to-fullscreen */
 .ls-expand-btn{width:100%;margin-top:8px;}
 .ls-fullscreen-overlay{position:fixed;inset:0;z-index:99995;background:#0d1117;display:flex;flex-direction:column;}

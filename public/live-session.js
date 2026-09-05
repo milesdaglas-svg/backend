@@ -19,7 +19,6 @@ let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
 let lsUnreadCount    = 0;
-let lsPanelVisible   = false;
 let lsTalliedMsgIds  = new Set();
 let lsDb            = null;
 let lsFns           = null; // cached firestore fn refs
@@ -46,7 +45,6 @@ function lsPanelBody(){ return document.getElementById("ls-panel-body"); }
    Lets someone deep in the code editor tell, at a glance, that people are
    chatting in Live Session without needing to switch over and check. */
 function lsSetVisible(visible){
-  lsPanelVisible = visible;
   if(visible){
     lsUnreadCount = 0;
     Object.keys(lsChatMsgsById).forEach(id => lsTalliedMsgIds.add(id));
@@ -238,6 +236,15 @@ function renderLiveSessionPanel(){
     </div>`;
   const codeEl = body.querySelector(".ls-code");
   if(codeEl) codeEl.onclick = lsCopyCode;
+
+  // this rebuild just wiped #lsChatLog etc back to empty placeholders —
+  // repopulate immediately from what we already know instead of waiting
+  // for the next Firestore event (which might not come until someone
+  // sends a new message)
+  const cachedMsgs = Object.values(lsChatMsgsById);
+  if(cachedMsgs.length) lsRenderChat(lsSortMsgs(cachedMsgs));
+  lsRenderPresence(lsLastList);
+  lsRenderParticipants(lsLastList);
 }
 
 function lsTogglePublicSwitch(){
@@ -519,6 +526,23 @@ let lsChatUnsub = null;
 let lsChatMsgsById = {};
 let lsReplyingTo = null;
 
+function lsSortMsgs(msgs){
+  return msgs.slice().sort((a,b) => {
+    const ka = (a.createdAt && typeof a.createdAt.toMillis==="function") ? a.createdAt.toMillis() : (a.clientTs||0);
+    const kb = (b.createdAt && typeof b.createdAt.toMillis==="function") ? b.createdAt.toMillis() : (b.clientTs||0);
+    return ka - kb;
+  });
+}
+
+/* Ground-truth check instead of trusting a stored flag — reads the actual
+   DOM each time, so it can never drift out of sync with what's really on
+   screen (e.g. after a re-render swaps elements around). */
+function lsIsPanelVisible(){
+  if(lsExpanded) return true;
+  const el = document.querySelector('.sidebar-panel[data-panel="live-session"]');
+  return !!(el && el.classList.contains("active"));
+}
+
 async function lsSubscribeChat(){
   if(lsChatUnsub){ lsChatUnsub(); lsChatUnsub=null; }
   const db = await lsInitDb(); if(!db) return;
@@ -530,22 +554,19 @@ async function lsSubscribeChat(){
   // misordering caused by two devices' clocks disagreeing
   const q = query(collection(db,"liveRooms",lsRoomCode,"messages"), orderBy("clientTs","asc"), limit(100));
   lsChatUnsub = onSnapshot(q, snap => {
-    const msgs = [];
-    snap.forEach(d => msgs.push({ id:d.id, ...d.data() }));
-    msgs.sort((a,b) => {
-      const ka = (a.createdAt && typeof a.createdAt.toMillis==="function") ? a.createdAt.toMillis() : (a.clientTs||0);
-      const kb = (b.createdAt && typeof b.createdAt.toMillis==="function") ? b.createdAt.toMillis() : (b.clientTs||0);
-      return ka - kb;
-    });
+    const msgs = lsSortMsgs(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+    const visible = lsIsPanelVisible();
     lsChatMsgsById = {};
     msgs.forEach(m => {
       lsChatMsgsById[m.id] = m;
       if(!lsTalliedMsgIds.has(m.id)){
         lsTalliedMsgIds.add(m.id);
-        if(m.senderId !== lsMyId && !lsPanelVisible) lsUnreadCount++;
+        if(m.senderId !== lsMyId && !visible) lsUnreadCount++;
       }
     });
-    lsRenderChat(msgs);
+    if(visible) { lsUnreadCount = 0; } // caught up just by having it open
+    if(document.getElementById("lsChatLog")) lsRenderChat(msgs);
+    lsUpdateUnreadBadge();
     lsUpdateUnreadBadge();
   });
 }

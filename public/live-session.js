@@ -441,6 +441,12 @@ async function lsSubscribe(){
     lsLastList = list;
     lsRenderParticipants(list);
     lsRenderPresence(list);
+  }, err => {
+    // without this handler a Firestore internal error kills the listener
+    // silently — the live editors panel just stays empty forever with no
+    // sign anything went wrong. Log it and auto-resubscribe instead.
+    console.error("[LiveSession] participants listener error:", err);
+    if(lsRoomCode) setTimeout(()=>{ if(lsRoomCode) lsSubscribe(); }, 3000);
   });
   if(lsStaleTimer) clearInterval(lsStaleTimer);
   // re-render on a timer too (not just on new data) so a frozen/disconnected
@@ -568,6 +574,9 @@ async function lsSubscribeChat(){
     if(document.getElementById("lsChatLog")) lsRenderChat(msgs);
     lsUpdateUnreadBadge();
     lsUpdateUnreadBadge();
+  }, err => {
+    console.error("[LiveSession] chat listener error:", err);
+    if(lsRoomCode) setTimeout(()=>{ if(lsRoomCode) lsSubscribeChat(); }, 3000);
   });
 }
 

@@ -30,21 +30,42 @@ const ANNOUNCE_COLLECTION = "announcements";
 const REPLIES_COLLECTION  = "replies";
 
 let announceDB = null;
+let announceDBPromise = null; // guards against double-init when several
+                               // panels call initAnnounceDB() at once
 let lastSeenAnnouncementId = localStorage.getItem("last_seen_announce") || null;
 let announceCheckTimer = null;
 
 /* ── FIREBASE INIT ── */
 async function initAnnounceDB() {
   if (announceDB) return announceDB;
-  const cfg = typeof getFirebaseConfig === "function" ? getFirebaseConfig() : null;
-  if (!cfg?.apiKey) return null;
-  try {
-    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    const app = getApps().length ? getApps()[0] : initializeApp(cfg);
-    announceDB = getFirestore(app);
-    return announceDB;
-  } catch(e) { return null; }
+  if (announceDBPromise) return announceDBPromise;
+  announceDBPromise = (async () => {
+    const cfg = typeof getFirebaseConfig === "function" ? getFirebaseConfig() : null;
+    if (!cfg?.apiKey) { announceDBPromise = null; return null; }
+    try {
+      const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const { initializeFirestore, memoryLocalCache, getFirestore } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+      try {
+        // memory-only cache: this app is realtime-only (chat, live editors,
+        // presence) with no offline needs, and the default IndexedDB-backed
+        // cache is what throws "UnknownError: Internal error" in WebViews /
+        // sandboxed contexts, silently killing onSnapshot listeners.
+        announceDB = initializeFirestore(app, { localCache: memoryLocalCache() });
+      } catch(e) {
+        // Firestore was already initialized for this app elsewhere — just
+        // use that existing instance instead of failing outright.
+        announceDB = getFirestore(app);
+      }
+      return announceDB;
+    } catch(e) {
+      console.error("[Firestore] init failed:", e);
+      announceDBPromise = null;
+      return null;
+    }
+  })();
+  return announceDBPromise;
 }
 
 /* ── FETCH ── */

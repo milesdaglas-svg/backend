@@ -186,7 +186,7 @@ function renderLiveSessionPanel(){
 
   body.innerHTML = `
     <div class="ls-sidebar-col">
-      <div class="ls-box ls-room-card">
+      <div class="ls-box ls-room-card ls-room-info-box">
         <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}</div>
         <div class="ls-code">${lsRoomCode}</div>
         <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
@@ -197,7 +197,7 @@ function renderLiveSessionPanel(){
         <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">${lsExpanded?'⛶ Already fullscreen':'⛶ Expand to fullscreen'}</button>
       </div>
 
-      <div class="ls-box">
+      <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">📡 Your broadcast</div>
         <div class="ls-toggle-row" style="margin-top:8px;">
           <span>Show my editor to the room</span>
@@ -206,12 +206,12 @@ function renderLiveSessionPanel(){
         <div class="ls-section-sub">When on, everyone here sees your current file live, including your cursor.</div>
       </div>
 
-      <div class="ls-box">
+      <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
         <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
       </div>
 
-      <div class="ls-box">
+      <div class="ls-box ls-live-editors-box">
         <div class="ls-section-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
         <div class="ls-section-sub">Anyone with broadcast on shows up here, live.</div>
         <div class="ls-participants" id="lsParticipants" style="margin-top:8px;">
@@ -507,6 +507,11 @@ async function lsRenderParticipants(list){
   if(!el) return;
   const now = Date.now();
   const live = list.filter(p => p.broadcasting && p.code);
+  // in fullscreen, once someone's actually broadcasting, the room-code/
+  // copy/leave/people sidebar isn't needed anymore (it's all one click
+  // away in the header) — give that space to the live editors instead.
+  const panelBody = document.getElementById("ls-panel-body");
+  if(panelBody) panelBody.classList.toggle("ls-has-broadcast", live.length > 0);
   if(!live.length){
     el.innerHTML = `<div class="ls-empty">No one is broadcasting yet. Flip the switch above to show your editor.</div>`;
     return;

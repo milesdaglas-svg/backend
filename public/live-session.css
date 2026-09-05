@@ -180,6 +180,13 @@
   height:100%;overflow:hidden;box-sizing:border-box;
 }
 .ls-body-fullscreen .ls-sidebar-col{display:flex;flex-direction:column;gap:18px;width:370px;flex-shrink:0;height:100%;overflow-y:auto;padding-right:4px;box-sizing:border-box;}
+/* once someone's actually broadcasting, drop the room-code/copy/leave/
+   broadcast-toggle/people boxes — the room code's already in the header,
+   and what matters now is the live editors themselves. */
+.ls-body-fullscreen.ls-has-broadcast .ls-room-info-box{display:none;}
+.ls-body-fullscreen.ls-has-broadcast .ls-sidebar-col{width:520px;}
+.ls-body-fullscreen.ls-has-broadcast .ls-live-editors-box{flex:1;display:flex;flex-direction:column;min-height:0;}
+.ls-body-fullscreen.ls-has-broadcast .ls-live-editors-box .ls-participants{flex:1;min-height:0;overflow-y:auto;}
 .ls-body-fullscreen .ls-main-col{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;height:100%;box-sizing:border-box;}
 .ls-body-fullscreen .ls-chat-box{height:100%;min-height:0;background:linear-gradient(180deg,rgba(28,31,36,.55),rgba(18,20,24,.55));border:1px solid rgba(255,255,255,.06);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.35);}
 .ls-body-fullscreen .ls-chat-log{min-height:0;max-height:none;padding:22px;}

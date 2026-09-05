@@ -182,3 +182,17 @@
 .ls-body-fullscreen .ls-chat-input-row input{font-size:14px;padding:12px 18px;}
 .ls-body-fullscreen .ls-send-btn{width:44px;height:44px;font-size:18px;}
 .ls-body-fullscreen .ls-presence-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 16px;}
+
+/* on phones, a fixed 360px sidebar + chat side-by-side doesn't fit the
+   screen at all — the chat column just gets pushed off past the right
+   edge. Stack them instead: room info/people/live-editors on top
+   (scrollable, capped height), chat fills the rest below. */
+@media (max-width: 768px){
+  .ls-body-fullscreen{flex-direction:column;padding:12px;gap:10px;}
+  .ls-body-fullscreen .ls-sidebar-col{width:100%;height:auto;max-height:38vh;flex-shrink:0;overflow-y:auto;padding-right:0;gap:10px;}
+  .ls-body-fullscreen .ls-main-col{width:100%;flex:1;min-height:0;}
+  .ls-body-fullscreen .ls-box{padding:14px;}
+  .ls-body-fullscreen .ls-code{font-size:22px;}
+  .ls-body-fullscreen .ls-participants{grid-template-columns:1fr;}
+  .ls-fullscreen-header{padding:0 14px;font-size:14px;}
+}

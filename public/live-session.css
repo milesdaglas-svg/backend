@@ -37,8 +37,14 @@
 .ls-row{display:flex;gap:9px;min-width:0;}
 .ls-row input[type="text"]{flex:1 1 0;min-width:0;background:rgba(13,17,23,.7);border:1px solid rgba(255,255,255,.09);color:#e6e9ef;border-radius:8px;padding:9px 12px;font-family:'SF Mono',Consolas,monospace;letter-spacing:1.5px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;}
 .ls-row input[type="text"]:focus{outline:none;border-color:#58a6ff;box-shadow:0 0 0 3px rgba(88,166,255,.12);}
+/* buttons in a plain input+button row (e.g. join-by-code) shouldn't
+   shrink — the input takes the squeeze instead. But when TWO buttons
+   share a row (Copy Code / Leave), each needs to be allowed to shrink
+   below its own text width on narrow desktop sidebars, or the pair
+   overflows the panel instead of compressing to fit. */
 .ls-row .ls-btn{flex-shrink:0;}
-.ls-btn{background:linear-gradient(135deg,#2ea043,#238636);color:#fff;border:none;border-radius:8px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(35,134,54,.3);transition:transform .12s,box-shadow .12s,filter .12s;}
+.ls-row .ls-btn[style*="flex:1"]{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.ls-btn{box-sizing:border-box;background:linear-gradient(135deg,#2ea043,#238636);color:#fff;border:none;border-radius:8px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(35,134,54,.3);transition:transform .12s,box-shadow .12s,filter .12s;}
 .ls-btn:hover{filter:brightness(1.1);box-shadow:0 4px 14px rgba(35,134,54,.45);transform:translateY(-1px);}
 .ls-btn:active{transform:translateY(0);}
 .ls-btn.secondary{background:linear-gradient(135deg,#3a4149,#2b3138);box-shadow:0 2px 8px rgba(0,0,0,.25);}

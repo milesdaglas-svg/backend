@@ -1362,6 +1362,37 @@ function fileToBase64(file) {
   });
 }
 
+/* downscale + recompress before upload — a raw phone photo can be several MB,
+   which over Render's free tier is what was triggering ERR_HTTP2_PROTOCOL_ERROR
+   on the push request. Shrinking to a sane max dimension keeps slide images
+   sharp on screen while cutting typical payload size by 80-90%. */
+function fileToResizedBase64(file, maxDim = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not decode image"));
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.round(width * scale) || 1;
+        height = Math.round(height * scale) || 1;
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        // keep small PNGs as PNG (transparency-friendly); everything else -> JPEG to stay light
+        const keepPng = file.type === "image/png" && file.size < 800 * 1024;
+        const mime = keepPng ? "image/png" : "image/jpeg";
+        const dataUrl = canvas.toDataURL(mime, mime === "image/jpeg" ? quality : undefined);
+        resolve({ base64: dataUrl.split(",")[1], ext: keepPng ? "png" : "jpg" });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function publishAppUpdate() {
   const fileInput = document.getElementById("upd-apk-file");
   const versionEl = document.getElementById("upd-version");
@@ -1524,13 +1555,13 @@ async function admIntroUploadImage(file) {
   const ghToken = typeof ghGetToken === "function" ? ghGetToken() : localStorage.getItem("gh_token");
   if (!ghToken) throw new Error("Connect GitHub first (Source Control panel)");
 
-  const base64 = await fileToBase64(file);
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const { base64, ext } = await fileToResizedBase64(file);
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/\.[^.]+$/, "") + "." + ext;
   const filePath = `public/app-intro/uploads/${Date.now()}-${safeName}`;
 
   const res = await fetch("https://backend-forz.onrender.com/api/github/push", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-github-token": ghToken },
     body: JSON.stringify({
       owner: "milesdaglas-svg",
       repo: "backend",
@@ -1541,7 +1572,8 @@ async function admIntroUploadImage(file) {
       message: `Add app intro slide image: ${safeName}`
     })
   });
-  const data = await res.json();
+  let data;
+  try { data = await res.json(); } catch { throw new Error(`Upload failed (server returned ${res.status})`); }
   if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
 
   return `https://raw.githubusercontent.com/milesdaglas-svg/backend/main/${filePath}`;

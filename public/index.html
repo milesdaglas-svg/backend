@@ -38,6 +38,7 @@
 <link rel="stylesheet" href="onboarding.css">
 <link rel="stylesheet" href="app-intro.css">
 <link rel="stylesheet" href="feature-spotlight.css">
+<link rel="stylesheet" href="explorer-vscode.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
@@ -224,6 +225,12 @@
       <div class="sidebar-header">
         <span>Explorer</span>
         <span id="explorer-ci-badge" style="font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;display:none;"></span>
+        <div class="exp-toolbar desktop-only">
+          <button title="New File" onclick="document.getElementById('newFileBtn').click()">📄</button>
+          <button title="New Folder" onclick="document.getElementById('newFolderBtn').click()">📁</button>
+          <button title="Refresh Explorer" onclick="renderFiles()">⟳</button>
+          <button title="Collapse Folders" onclick="openFolders.clear();renderFiles();saveToStorage();">⤢</button>
+        </div>
         <button class="mobile-only" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');" style="background:transparent;color:#aaa;padding:4px 8px;">✕</button>
       </div>
       <div id="recentProjects"></div>
@@ -549,6 +556,7 @@
 <script src="extensions-pack4.js"></script>
 <script src="extensions-pack5.js"></script>
 <script src="app.js"></script>
+<script src="file-icons.js"></script>
 <script src="app-intro.js"></script>
 <script src="update-check.js"></script>
 <script src="onboarding.js"></script>

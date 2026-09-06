@@ -22,16 +22,25 @@
 }
 .sidebar-panel[data-panel="explorer"] > .sidebar-header > span:first-child{ flex:1; }
 
-/* toolbar icon buttons — New File / New Folder / Refresh / Collapse All */
+/* toolbar icon buttons — New File / New Folder / Refresh / Collapse All.
+   Locked down explicitly (incl. !important on the properties other
+   button{} rules elsewhere in the app also set) so nothing else in the
+   stylesheet cascade can re-skew size/shape/hover behavior here. */
 .exp-toolbar{ display:flex; align-items:center; gap:2px; }
 .exp-toolbar button{
-  width:22px; height:22px; padding:0;
+  width:22px !important; height:22px !important; min-width:22px;
+  padding:0 !important; margin:0 !important;
   display:flex; align-items:center; justify-content:center;
-  background:transparent; border:none; border-radius:5px;
-  color:#c5c5c5; font-size:14px; cursor:pointer;
+  background:transparent !important; border:none !important; border-radius:5px !important;
+  color:#c5c5c5; font-size:0; cursor:pointer;
+  box-shadow:none !important; transform:none !important;
   transition:background .12s;
 }
-.exp-toolbar button:hover{ background:#2a2d2e; color:#fff; }
+.exp-toolbar button:hover{
+  background:#2a2d2e !important; color:#fff;
+  box-shadow:none !important; transform:none !important;
+}
+.exp-toolbar button svg{ width:16px; height:16px; display:block; fill:currentColor; pointer-events:none; }
 
 .fi-real{ width:16px; height:16px; flex-shrink:0; object-fit:contain; }
 

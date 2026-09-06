@@ -11,21 +11,23 @@ service cloud.firestore {
       // must stay readable so the app can check a room exists / has a PIN before joining
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['createdAt','lastActivityAt','pin','public'])
+      allow create: if request.resource.data.keys().hasOnly(['createdAt','lastActivityAt','pin','public','permanent'])
                     && request.resource.data.createdAt is number
                     && request.resource.data.lastActivityAt is number
                     && request.resource.data.public is bool
+                    && (!('permanent' in request.resource.data) || request.resource.data.permanent is bool)
                     && (request.resource.data.pin == null
                         || (request.resource.data.pin is string && request.resource.data.pin.size() <= 64));
 
       // only lastActivityAt may be bumped after creation (heartbeat/chat pings)
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActivityAt']);
 
-      // clients may only remove a room once it's genuinely dead (24h+ idle);
-      // routine cleanup otherwise happens server-side via the Admin SDK, which
-      // bypasses these rules entirely
+      // clients may only remove a room once it's genuinely dead (24h+ idle)
+      // AND it wasn't marked permanent — routine cleanup otherwise happens
+      // server-side via the Admin SDK, which bypasses these rules entirely
       allow delete: if resource.data.lastActivityAt is number
-                    && request.time.toMillis() - resource.data.lastActivityAt > 24*60*60*1000;
+                    && request.time.toMillis() - resource.data.lastActivityAt > 24*60*60*1000
+                    && resource.data.permanent != true;
 
       match /participants/{pid} {
         allow read: if true;

@@ -18,6 +18,7 @@ let lsLastList      = [];
 let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
+let lsRoomPermanent  = false;
 let lsUnreadCount    = 0;
 let lsTalliedMsgIds  = new Set();
 let lsDb            = null;
@@ -156,6 +157,10 @@ function renderLiveSessionPanel(){
         <div class="ls-row" style="margin-bottom:10px;" id="lsPinRow">
           <input type="text" id="lsPinInput" placeholder="Optional PIN to lock room" maxlength="8">
         </div>
+        <div class="ls-toggle-row" style="margin-bottom:10px;">
+          <span>📌 Permanent — room stays open even when empty, never auto-expires</span>
+          <div class="ls-switch" id="lsPermanentSwitch" onclick="document.getElementById('lsPermanentSwitch').classList.toggle('on')"></div>
+        </div>
         <button class="ls-btn" style="width:100%;" onclick="lsCreateRoom()">➕ Create Room</button>
       </div>
 
@@ -187,7 +192,7 @@ function renderLiveSessionPanel(){
   body.innerHTML = `
     <div class="ls-sidebar-col">
       <div class="ls-box ls-room-card ls-room-info-box">
-        <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}</div>
+        <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}${lsRoomPermanent?' <span style="color:#e3b341;">· 📌 permanent</span>':''}</div>
         <div class="ls-code">${lsRoomCode}</div>
         <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
         <div class="ls-row" style="margin-top:10px;">
@@ -260,17 +265,19 @@ async function lsCreateRoom(){
   lsMyName = (nameInput?.value || "").trim() || ("Guest"+Math.floor(Math.random()*9000+1000));
   localStorage.setItem("ls_myName", lsMyName);
   const isPublic = document.getElementById("lsPublicSwitch")?.classList.contains("on") || false;
+  const isPermanent = document.getElementById("lsPermanentSwitch")?.classList.contains("on") || false;
   const pin = isPublic ? "" : (document.getElementById("lsPinInput")?.value || "").trim();
   const pinHash = await lsHashPin(pin);
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,setDoc} = await lsFirestoreFns();
   const code = lsGenCode();
-  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash, public: isPublic });
+  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash, public: isPublic, permanent: isPermanent });
   lsRoomCode = code;
   lsMyPinProof = pinHash;
+  lsRoomPermanent = isPermanent;
   await lsJoinAsParticipant();
-  showToast(isPublic ? "✓ Public room created: "+code : (pin ? "✓ Room created (PIN-locked): "+code : "✓ Room created: "+code),"success");
+  showToast((isPermanent ? "📌 Permanent room created: " : (isPublic ? "✓ Public room created: " : (pin ? "✓ Room created (PIN-locked): " : "✓ Room created: ")))+code,"success");
   renderLiveSessionPanel();
   lsSubscribe();
   lsSubscribeChat();
@@ -295,6 +302,7 @@ async function lsJoinRoom(directCode){
   if(roomData.pin && roomData.pin !== pinHashEntered){ showToast("Incorrect PIN","error"); return; }
   lsRoomCode = code;
   lsMyPinProof = roomData.pin || null;
+  lsRoomPermanent = roomData.permanent === true;
   await lsJoinAsParticipant();
   await setDoc(doc(db,"liveRooms",code),{ lastActivityAt: Date.now() }, { merge:true });
   showToast("✓ Joined room "+code,"success");
@@ -338,7 +346,7 @@ async function lsLeaveRoom(){
   if(lsStaleTimer){ clearInterval(lsStaleTimer); lsStaleTimer=null; }
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
-  lsRoomCode = null; lsBroadcasting = false;
+  lsRoomCode = null; lsBroadcasting = false; lsRoomPermanent = false;
   lsReplyingTo = null; lsChatMsgsById = {};
   lsUnreadCount = 0; lsTalliedMsgIds = new Set(); lsUpdateUnreadBadge();
   if(lsExpanded) lsCloseFullscreen();
@@ -694,6 +702,7 @@ async function lsMaybeCleanupOldRooms(){
     const q = query(collection(db,"liveRooms"), where("lastActivityAt","<",cutoff), limit(10));
     const snap = await getDocs(q);
     for(const roomDoc of snap.docs){
+      if(roomDoc.data().permanent === true) continue; // never auto-delete a permanent room
       try{
         const participants = await getDocs(collection(db,"liveRooms",roomDoc.id,"participants"));
         for(const p of participants.docs) await deleteDoc(p.ref);

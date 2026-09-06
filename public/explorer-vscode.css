@@ -94,3 +94,14 @@
 .file-split,.file-delete{ font-size:10px; padding:2px 4px; border-radius:3px; color:#c5c5c5; }
 .file-split:hover{ background:#3a3d3e; color:#58a6ff; }
 .file-delete:hover{ background:#3a1414; color:#f14c4c; }
+
+/* ---- inline new-file/new-folder row (real VS Code style) ---- */
+.ic-row{ display:flex; align-items:center; gap:6px; height:22px; padding-right:8px; }
+.ic-icon{ display:flex; align-items:center; flex-shrink:0; }
+.ic-input{
+  flex:1; min-width:0;
+  background:#3c3c3c; color:#cccccc;
+  border:1px solid #007fd4; border-radius:2px;
+  outline:none; font-size:13px; font-family:inherit;
+  padding:1px 4px; height:18px; box-sizing:border-box;
+}

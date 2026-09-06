@@ -263,7 +263,7 @@ function renderTreeNode(node,container,prefix){
       container.appendChild(div);
     } else {
       const isOpen=openFolders.has(path);
-      const fd=document.createElement("div");fd.className="folder-item";
+      const fd=document.createElement("div");fd.className="folder-item";fd.dataset.path=path;
       fd.style.paddingLeft=(prefix.split("/").filter(Boolean).length*14+6)+"px";
       fd.innerHTML=`<span class="folder-arrow">${isOpen?"▾":"▸"}</span>${getFolderIcon(key,isOpen)}<span class="folder-name">${key}</span><span class="folder-actions"><span class="folder-new-file" title="New file">+F</span><span class="folder-new-folder" title="New folder">+D</span><span class="folder-delete" title="Delete">✕</span></span>`;
       const sub=document.createElement("div");sub.className="folder-children";sub.style.display=isOpen?"block":"none";

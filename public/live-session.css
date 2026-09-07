@@ -86,6 +86,37 @@
 .ls-presence-away{background:#555;}
 .ls-presence-status{margin-left:auto;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
 
+/* ---- Discord-style status chips (replaces plain room-status text) ---- */
+.ls-status-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:2px;}
+.ls-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  color:#9aa4b2;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;border-radius:20px;padding:4px 10px;}
+.ls-chip-live{background:rgba(237,66,69,.15);border-color:rgba(237,66,69,.3);color:#ff6b6e;}
+.ls-chip-live .ls-live-dot{margin-right:0;}
+.ls-chip-gold{background:rgba(227,179,65,.14);border-color:rgba(227,179,65,.3);color:#e3b341;}
+
+/* ---- Discord-style setting row (icon bubble + title/sub + switch) ---- */
+.ls-setting-row{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  border-radius:10px;padding:10px 12px;transition:background .15s,border-color .15s;}
+.ls-setting-row:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.09);}
+.ls-setting-icon{flex-shrink:0;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+.ls-setting-text{flex:1;min-width:0;}
+.ls-setting-title{font-size:13px;font-weight:700;color:#f0f2f6;}
+.ls-setting-sub{font-size:11px;color:#8b93a1;margin-top:1px;line-height:1.4;}
+
+/* ---- Discord-style member list (replaces flat presence rows) ---- */
+.ls-member-row{display:flex;align-items:center;gap:10px;padding:5px 6px;border-radius:8px;transition:background .12s;}
+.ls-member-row:hover{background:rgba(255,255,255,.05);}
+.ls-member-avatar{position:relative;flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+.ls-member-dot{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;border:2.5px solid #1c1f24;}
+.ls-member-dot-broadcasting{background:#ED4245;box-shadow:0 0 0 0 rgba(237,66,69,.6);animation:ls-pulse 1.5s infinite;}
+.ls-member-dot-online{background:#3BA55C;}
+.ls-member-dot-away{background:#747f8d;}
+.ls-member-info{flex:1;min-width:0;}
+.ls-member-name{font-size:12.5px;font-weight:600;color:#dbe0e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ls-member-sub{font-size:10px;color:#72767d;text-transform:uppercase;letter-spacing:.3px;font-weight:600;}
+
 /* chat — a self-contained panel: header pinned top, log scrolls,
    input row pinned bottom (never moves as messages pile up) */
 .ls-chat-box{display:flex;flex-direction:column;background:transparent;border:none;border-radius:0;overflow:visible;height:460px;min-height:0;}

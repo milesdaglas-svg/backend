@@ -150,15 +150,23 @@ function renderLiveSessionPanel(){
         <div class="ls-row" style="margin:10px 0 8px;">
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
         </div>
-        <div class="ls-toggle-row" style="margin-bottom:8px;">
-          <span>🌐 Public — anyone can find &amp; join, no PIN</span>
+        <div class="ls-setting-row" style="margin-bottom:8px;">
+          <div class="ls-setting-icon" style="background:#5865F2;">🌐</div>
+          <div class="ls-setting-text">
+            <div class="ls-setting-title">Public</div>
+            <div class="ls-setting-sub">Anyone can find &amp; join, no PIN</div>
+          </div>
           <div class="ls-switch" id="lsPublicSwitch" onclick="lsTogglePublicSwitch()"></div>
         </div>
         <div class="ls-row" style="margin-bottom:10px;" id="lsPinRow">
           <input type="text" id="lsPinInput" placeholder="Optional PIN to lock room" maxlength="8">
         </div>
-        <div class="ls-toggle-row" style="margin-bottom:10px;">
-          <span>📌 Permanent — room stays open even when empty, never auto-expires</span>
+        <div class="ls-setting-row" style="margin-bottom:10px;">
+          <div class="ls-setting-icon" style="background:#e3b341;">📌</div>
+          <div class="ls-setting-text">
+            <div class="ls-setting-title">Permanent</div>
+            <div class="ls-setting-sub">Room stays open when empty, never auto-expires</div>
+          </div>
           <div class="ls-switch" id="lsPermanentSwitch" onclick="document.getElementById('lsPermanentSwitch').classList.toggle('on')"></div>
         </div>
         <button class="ls-btn" style="width:100%;" onclick="lsCreateRoom()">➕ Create Room</button>
@@ -192,7 +200,7 @@ function renderLiveSessionPanel(){
   body.innerHTML = `
     <div class="ls-sidebar-col">
       <div class="ls-box ls-room-card ls-room-info-box">
-        <div class="ls-room-status">${lsBroadcasting?'<span class="ls-live-dot"></span>You\'re broadcasting':'In session — not broadcasting'}${lsRoomPermanent?' <span style="color:#e3b341;">· 📌 permanent</span>':''}</div>
+        <div class="ls-status-chips">${lsStatusChipsHtml()}</div>
         <div class="ls-code">${lsRoomCode}</div>
         <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
         <div class="ls-row" style="margin-top:10px;">
@@ -204,11 +212,14 @@ function renderLiveSessionPanel(){
 
       <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">📡 Your broadcast</div>
-        <div class="ls-toggle-row" style="margin-top:8px;">
-          <span>Show my editor to the room</span>
+        <div class="ls-setting-row" style="margin-top:8px;">
+          <div class="ls-setting-icon" style="background:${lsBroadcasting?'#ED4245':'#3a3d41'};">${lsBroadcasting?'🔴':'📡'}</div>
+          <div class="ls-setting-text">
+            <div class="ls-setting-title">Show my editor</div>
+            <div class="ls-setting-sub">Everyone here sees your current file live, including your cursor</div>
+          </div>
           <div class="ls-switch ${lsBroadcasting?'on':''}" id="lsSwitch" onclick="lsToggleBroadcast()"></div>
         </div>
-        <div class="ls-section-sub">When on, everyone here sees your current file live, including your cursor.</div>
       </div>
 
       <div class="ls-box ls-room-info-box">
@@ -407,8 +418,8 @@ async function lsToggleBroadcast(){
   lsBroadcasting = !lsBroadcasting;
   const sw = document.getElementById("lsSwitch");
   if(sw) sw.classList.toggle("on", lsBroadcasting);
-  const statusEl = document.getElementById("ls-panel-body")?.querySelector(".ls-room-status");
-  if(statusEl) statusEl.innerHTML = lsBroadcasting ? '<span class="ls-live-dot"></span>You\'re broadcasting' : 'In session — not broadcasting';
+  const statusEl = document.getElementById("ls-panel-body")?.querySelector(".ls-status-chips");
+  if(statusEl) statusEl.innerHTML = lsStatusChipsHtml();
 
   const db = await lsInitDb(); if(!db) return;
   const {doc,setDoc} = await lsFirestoreFns();
@@ -463,6 +474,14 @@ async function lsSubscribe(){
 }
 
 /* everyone currently in the room, online/broadcasting/away, not just broadcasters */
+function lsAvatarColor(name){
+  const colors = ["#5865F2","#57F287","#FEE75C","#EB459E","#ED4245","#3BA55C","#FAA61A","#9B59B6","#1ABC9C","#E67E22"];
+  const s = name || "?";
+  let hash = 0;
+  for(let i=0;i<s.length;i++) hash = s.charCodeAt(i) + ((hash<<5)-hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
 function lsRenderPresence(list){
   const el = document.getElementById("lsPresenceList");
   const countEl = document.getElementById("lsPeopleCount");
@@ -473,15 +492,32 @@ function lsRenderPresence(list){
   el.innerHTML = list.map(p => {
     const age = now - (p.updatedAt||0);
     const status = p.broadcasting && age <= LS_STALE_MS ? "broadcasting" : age <= LS_STALE_MS*2 ? "online" : "away";
-    return `<div class="ls-presence-item">
-      <span class="ls-presence-dot ls-presence-${status}"></span>
-      ${p.id===lsMyId ? '<span class="ls-you">You</span>' : lsEsc(p.name||"Someone")}
-      <span class="ls-presence-status">${status}</span>
+    const name = p.id===lsMyId ? "You" : lsEsc(p.name||"Someone");
+    const initial = (p.name||"?").trim().charAt(0).toUpperCase() || "?";
+    const statusLabel = status==="broadcasting" ? "Live" : status==="online" ? "Online" : "Away";
+    return `<div class="ls-member-row">
+      <div class="ls-member-avatar" style="background:${lsAvatarColor(p.name||p.id)};">
+        ${initial}
+        <span class="ls-member-dot ls-member-dot-${status}"></span>
+      </div>
+      <div class="ls-member-info">
+        <div class="ls-member-name">${name}</div>
+        <div class="ls-member-sub">${statusLabel}</div>
+      </div>
     </div>`;
   }).join("");
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function lsStatusChipsHtml(){
+  const chips = [];
+  chips.push(lsBroadcasting
+    ? `<span class="ls-chip ls-chip-live"><span class="ls-live-dot"></span>Broadcasting</span>`
+    : `<span class="ls-chip">In session</span>`);
+  if(lsRoomPermanent) chips.push(`<span class="ls-chip ls-chip-gold">📌 Permanent</span>`);
+  return chips.join("");
+}
 
 /* Syntax-highlight using Monaco's own colorizer (already loaded for the
    main editor, so this stays visually consistent with it and needs no

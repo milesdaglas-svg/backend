@@ -37,8 +37,9 @@ async function cleanupOldLiveRooms(maxRooms = 50) {
   if (!liveAdminDb) return { skipped: true, reason: "Firebase Admin not configured" };
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   const snap = await liveAdminDb.collection("liveRooms").where("lastActivityAt", "<", cutoff).limit(maxRooms).get();
-  let deleted = 0;
+  let deleted = 0, skippedPermanent = 0;
   for (const roomDoc of snap.docs) {
+    if (roomDoc.data().permanent === true) { skippedPermanent++; continue; } // never delete a permanent room
     try {
       for (const sub of ["participants", "messages"]) {
         const subSnap = await roomDoc.ref.collection(sub).get();
@@ -54,7 +55,7 @@ async function cleanupOldLiveRooms(maxRooms = 50) {
       console.error("[live-cleanup] failed to delete room", roomDoc.id, e.message);
     }
   }
-  return { deleted, scanned: snap.size };
+  return { deleted, skippedPermanent, scanned: snap.size };
 }
 
 // runs every 6 hours while the server is up; no-ops if admin isn't configured

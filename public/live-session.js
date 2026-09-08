@@ -638,11 +638,6 @@ function lsFormatTime(m){
   return `${h12}:${String(min).padStart(2,"0")} ${h<12?'AM':'PM'}`;
 }
 
-const LS_AVATAR_COLORS = ["#e57373","#ba68c8","#64b5f6","#4db6ac","#f06292","#ffb74d","#81c784","#7986cb"];
-function lsAvatarColor(id){
-  let h=0; for(const c of (id||"")) h = (h*31 + c.charCodeAt(0)) >>> 0;
-  return LS_AVATAR_COLORS[h % LS_AVATAR_COLORS.length];
-}
 function lsInitial(name){ return (name||"?").trim().charAt(0).toUpperCase() || "?"; }
 
 function lsRenderChat(msgs){
@@ -658,14 +653,22 @@ function lsRenderChat(msgs){
         <span class="ls-chat-reply-name">${lsEsc(m.replyTo.name||"Someone")}</span>
         <span class="ls-chat-reply-text">${lsEsc(m.replyTo.text||"")}</span>
       </div>` : '';
-    const avatar = !mine ? `<span class="ls-chat-avatar" style="background:${lsAvatarColor(m.senderId)}">${lsInitial(m.name)}</span>` : '';
+    const color = lsAvatarColor(m.senderId);
+    const avatarCol = !grouped
+      ? `<span class="ls-chat-avatar" style="background:${color}">${lsInitial(m.name)}</span>`
+      : `<span class="ls-chat-gutter-time">${lsFormatTime(m)}</span>`;
+    const headerLine = !grouped
+      ? `<div class="ls-chat-header-line"><span class="ls-chat-name" style="color:${color}">${mine?'You':lsEsc(m.name||"Someone")}</span><span class="ls-chat-time">${lsFormatTime(m)}</span></div>`
+      : '';
     return `
-    <div class="ls-chat-msg${mine?' mine':''}${grouped?' grouped':''}" data-msg-id="${m.id}">
-      ${avatar}
+    <div class="ls-chat-msg${grouped?' grouped':''}" data-msg-id="${m.id}">
+      ${avatarCol}
+      <div class="ls-chat-body-col">
+        ${headerLine}
+        ${replyBlock}
+        <div class="ls-chat-text">${lsEsc(m.text||"")}</div>
+      </div>
       <button class="ls-chat-reply-btn" onclick="lsStartReply('${m.id}')" title="Reply">↩</button>
-      ${(!mine && !grouped) ? `<span class="ls-chat-name">${lsEsc(m.name||"Someone")}</span>` : ''}
-      ${replyBlock}
-      <span class="ls-chat-text">${lsEsc(m.text||"")}<span class="ls-chat-time">${lsFormatTime(m)}</span></span>
     </div>`;
   }).join("");
   if(nearBottom) log.scrollTop = log.scrollHeight;

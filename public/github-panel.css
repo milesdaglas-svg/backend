@@ -388,6 +388,24 @@
   gap: 8px;
 }
 
+/* ── AI CHANGE-REVIEW DIFF (showAiDiffModal) ── */
+.ai-diff-file{ background:#0d1117; border:1px solid #222; border-radius:6px; overflow:hidden; }
+.ai-diff-file-head{ display:flex; align-items:center; gap:8px; padding:8px 10px; cursor:pointer; font-size:12px; color:#ccc; user-select:none; }
+.ai-diff-file-head:hover{ background:rgba(255,255,255,.03); }
+.ai-diff-toggle{ font-size:10px; color:#8b93a1; transition:transform .12s; flex-shrink:0; }
+.ai-diff-file.open .ai-diff-toggle{ transform:rotate(90deg); }
+.ai-diff-stats{ margin-left:auto; display:flex; gap:8px; font-size:11px; font-weight:700; font-family:monospace; }
+.ai-diff-add-count{ color:#3fb950; }
+.ai-diff-del-count{ color:#f85149; }
+.ai-diff-body{ display:none; border-top:1px solid #1c2128; max-height:280px; overflow-y:auto; }
+.ai-diff-file.open .ai-diff-body{ display:block; }
+.ai-diff-line{ padding:1px 10px 1px 6px; font-family:'SF Mono',Consolas,monospace; font-size:11.5px; white-space:pre-wrap; word-break:break-all; line-height:1.5; }
+.ai-diff-prefix{ display:inline-block; width:14px; opacity:.7; user-select:none; }
+.ai-diff-add{ background:rgba(63,185,80,.12); color:#aff5b4; }
+.ai-diff-del{ background:rgba(248,81,73,.12); color:#ffc1bc; }
+.ai-diff-ctx{ color:#7d8590; }
+.ai-diff-collapsed{ padding:3px 10px; font-size:10.5px; color:#5a6270; text-align:center; font-style:italic; }
+
 /* ── GUTTER BLAME ── */
 .gh-blame-decoration {
   background: rgba(31,111,235,0.08);

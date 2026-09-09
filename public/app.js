@@ -58,18 +58,93 @@ function applyTemplate(key){
 }
 let pendingAiChanges = [];
 
+/* small LCS-based line diff — good enough for reviewing AI-proposed
+   changes without pulling in a diff library. Caps out on huge files
+   rather than freezing the tab; huge files just skip the preview. */
+function aiComputeLineDiff(oldStr, newStr){
+  const a = (oldStr||"").split("\n");
+  const b = (newStr||"").split("\n");
+  const n = a.length, m = b.length;
+  if(n*m > 250000) return null;
+  const dp = Array.from({length:n+1}, () => new Int32Array(m+1));
+  for(let i=n-1;i>=0;i--){
+    for(let j=m-1;j>=0;j--){
+      dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  const ops = [];
+  let i=0, j=0;
+  while(i<n && j<m){
+    if(a[i]===b[j]){ ops.push({type:"same",line:a[i]}); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({type:"del",line:a[i]}); i++; }
+    else { ops.push({type:"add",line:b[j]}); j++; }
+  }
+  while(i<n){ ops.push({type:"del",line:a[i]}); i++; }
+  while(j<m){ ops.push({type:"add",line:b[j]}); j++; }
+  return ops;
+}
+
+/* collapse long unchanged runs down to a couple lines of context each
+   side, like a normal unified diff, so a one-line change in a 500-line
+   file doesn't dump the whole file into the modal */
+function aiRenderDiffHtml(ops){
+  if(!ops) return `<div style="padding:8px;color:#8b93a1;font-size:11px;">File too large to preview — will still be applied as-is.</div>`;
+  const CONTEXT = 2;
+  const out = [];
+  let i = 0;
+  while(i < ops.length){
+    if(ops[i].type === "same"){
+      let j = i;
+      while(j < ops.length && ops[j].type === "same") j++;
+      const runLen = j - i;
+      const showStart = (i===0) ? 0 : CONTEXT;
+      const showEnd = (j===ops.length) ? runLen : runLen - CONTEXT;
+      if(runLen <= CONTEXT*2 + 1){
+        for(let k=i;k<j;k++) out.push(aiDiffLineHtml(ops[k]));
+      } else {
+        for(let k=i;k<i+showStart;k++) out.push(aiDiffLineHtml(ops[k]));
+        out.push(`<div class="ai-diff-collapsed">⋯ ${runLen - showStart - (runLen-showEnd)} unchanged lines ⋯</div>`);
+        for(let k=i+showEnd;k<j;k++) out.push(aiDiffLineHtml(ops[k]));
+      }
+      i = j;
+    } else {
+      out.push(aiDiffLineHtml(ops[i]));
+      i++;
+    }
+  }
+  return out.join("");
+}
+function aiDiffLineHtml(op){
+  const esc = (s)=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const cls = op.type==="add" ? "ai-diff-add" : op.type==="del" ? "ai-diff-del" : "ai-diff-ctx";
+  const prefix = op.type==="add" ? "+" : op.type==="del" ? "−" : "\u00a0";
+  return `<div class="ai-diff-line ${cls}"><span class="ai-diff-prefix">${prefix}</span>${esc(op.line)||"&nbsp;"}</div>`;
+}
+
 function showAiDiffModal(changes){
   pendingAiChanges = changes;
   document.querySelector(".gh-modal-overlay")?.remove();
   const overlay = document.createElement("div");
   overlay.className = "gh-modal-overlay";
   overlay.innerHTML = `
-    <div class="gh-modal">
+    <div class="gh-modal" style="width:min(640px,92vw);">
       <div class="gh-modal-title">🤖 AI wants to change ${changes.length} file(s)</div>
-      <div style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
-        ${changes.map(c=>`<div style="font-size:12px;color:#ccc;padding:6px 10px;background:#0d1117;border-radius:6px;">
-          ${files[c.file]!==undefined?"📝 Modified":"🆕 New"}: <b>${c.file}</b>
-        </div>`).join("")}
+      <div style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+        ${changes.map((c,idx)=>{
+          const isNew = files[c.file]===undefined;
+          const ops = isNew ? null : aiComputeLineDiff(files[c.file], c.code||"");
+          const added = ops ? ops.filter(o=>o.type==="add").length : (isNew ? (c.code||"").split("\n").length : 0);
+          const removed = ops ? ops.filter(o=>o.type==="del").length : 0;
+          return `
+          <div class="ai-diff-file">
+            <div class="ai-diff-file-head" onclick="this.parentElement.classList.toggle('open')">
+              <span class="ai-diff-toggle">▸</span>
+              <span>${isNew?"🆕 New":"📝 Modified"}: <b>${c.file}</b></span>
+              <span class="ai-diff-stats">${added?`<span class="ai-diff-add-count">+${added}</span>`:""}${removed?`<span class="ai-diff-del-count">−${removed}</span>`:""}</span>
+            </div>
+            <div class="ai-diff-body">${isNew ? `<div style="padding:8px;color:#8b93a1;font-size:11px;">New file — ${(c.code||"").split("\n").length} lines</div>` : aiRenderDiffHtml(ops)}</div>
+          </div>`;
+        }).join("")}
       </div>
       <div class="gh-modal-row" style="margin-top:10px;">
         <button class="gh-btn gh-btn-green" onclick="applyPendingAiChanges()">✓ Apply All</button>

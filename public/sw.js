@@ -72,6 +72,7 @@ const PRECACHE = [
   "/extensions-pack4.js",
   "/extensions-pack5.js",
   "/app.js",
+  "/linting.js",
   "/file-icons.js",
   "/inline-create.js",
   "/app-intro.js",

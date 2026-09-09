@@ -400,6 +400,7 @@ function openFile(file){
   editor1.setValue(files[file]);monaco.editor.setModelLanguage(editor1.getModel(),getLang(file));
   if(!splitActive){editor2.setValue(files[file]);monaco.editor.setModelLanguage(editor2.getModel(),getLang(file));}
   isSyncing=false;
+  if(typeof debouncedLint==="function") debouncedLint(file, editor1.getModel());
   if(file.endsWith(".html"))updatePreview(file);
   renderFiles();renderTabs();addRecent(file);updateSplitHeader();saveToStorage();
   if(window.innerWidth<=768){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("active");}
@@ -736,12 +737,13 @@ const shared={
     if(isSyncing)return;files[currentFile]=editor1.getValue();
     if(!splitActive){isSyncing=true;editor2.setValue(editor1.getValue());isSyncing=false;}
     if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);
+    if(typeof debouncedLint==="function") debouncedLint(currentFile, editor1.getModel());
     debouncedAutosave();
   });
   editor2.onDidChangeModelContent(()=>{
     if(isSyncing)return;
-    if(splitActive){files[splitFile]=editor2.getValue();if(splitFile.endsWith(".html"))debouncedUpdatePreview(splitFile);}
-    else{files[currentFile]=editor2.getValue();isSyncing=true;editor1.setValue(editor2.getValue());isSyncing=false;if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);}
+    if(splitActive){files[splitFile]=editor2.getValue();if(splitFile.endsWith(".html"))debouncedUpdatePreview(splitFile);if(typeof debouncedLint==="function") debouncedLint(splitFile, editor2.getModel());}
+    else{files[currentFile]=editor2.getValue();isSyncing=true;editor1.setValue(editor2.getValue());isSyncing=false;if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);if(typeof debouncedLint==="function") debouncedLint(currentFile, editor1.getModel());}
     debouncedAutosave();
   });
   // safety net: flush immediately (skip the debounce wait) the moment the

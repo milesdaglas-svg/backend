@@ -17,12 +17,20 @@ const TERM_SERVER = "https://backend-forz.onrender.com";
    glyphs swap in later at a different width — this is what causes
    "b a s h" style letter-spacing bugs. Forcing the font to finish
    loading BEFORE `new Terminal()` runs prevents the mismatch.
+
+   ROOT CAUSE (found after 5 earlier fix attempts): this preload was
+   waiting on 'Share Tech Mono' + 'JetBrains Mono', but the terminals
+   below were actually configured with fontFamily:'Roboto Mono' — a
+   font never linked/loaded ANYWHERE in this app. So xterm always
+   silently fell back to the browser's generic 'monospace', and every
+   previous attempt to fix the race condition was preloading a font
+   that was never even in use. Now both sides agree: fontFamily uses
+   the same 'JetBrains Mono' this preload actually waits for.
 ══════════════════════ */
 async function ensureTermFontLoaded() {
   try {
     if (document.fonts && document.fonts.load) {
       await Promise.all([
-        document.fonts.load("400 13px 'Share Tech Mono'"),
         document.fonts.load("400 13px 'JetBrains Mono'"),
         document.fonts.load("700 13px 'JetBrains Mono'")
       ]);
@@ -659,13 +667,17 @@ async function initPtyTerminal() {
       background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#00d4ff",
       selection:"rgba(0,212,255,0.3)", ...TERM_ANSI_THEME
     },
-    fontFamily:"'Roboto Mono',monospace",
+    fontFamily:"'JetBrains Mono',monospace",
     fontSize: 13, lineHeight: 1.4, letterSpacing: 0, cursorBlink: true, cursorStyle: "block",
-    scrollback: 5000, allowTransparency: true, rescaleOverlappingGlyphs: false
+    scrollback: 5000, allowTransparency: true
   });
 
   ptyFit = new FitAddon.FitAddon();
   ptyTerm.loadAddon(ptyFit);
+  // canvas renderer paints glyphs directly instead of laying out DOM spans —
+  // sidesteps the whole class of sub-pixel measurement/collision bug this
+  // was hit by, even if font metrics are ever slightly off again
+  try { if (window.CanvasAddon) ptyTerm.loadAddon(new CanvasAddon.CanvasAddon()); } catch {}
   ptyTerm.open(container);
   ptyTerm.focus();
   try { ptyFit.fit(); } catch {}
@@ -740,11 +752,12 @@ async function initVmTerminal() {
 
   vmTerm = new Terminal({
     theme: { background:"#0a0a0f", foreground:"#c0c8d8", cursor:"#a855f7", ...TERM_ANSI_THEME },
-    fontFamily:"'Roboto Mono',monospace",
-    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000, rescaleOverlappingGlyphs: false
+    fontFamily:"'JetBrains Mono',monospace",
+    fontSize:13, lineHeight:1.4, letterSpacing:0, cursorBlink:true, scrollback:5000
   });
   vmFit = new FitAddon.FitAddon();
   vmTerm.loadAddon(vmFit);
+  try { if (window.CanvasAddon) vmTerm.loadAddon(new CanvasAddon.CanvasAddon()); } catch {}
   vmTerm.open(container);
   vmTerm.focus();
   try { vmFit.fit(); } catch {}

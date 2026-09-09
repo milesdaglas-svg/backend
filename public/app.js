@@ -721,16 +721,36 @@ const shared={
     clearTimeout(previewDebounceTimer);
     previewDebounceTimer=setTimeout(()=>updatePreview(page),400);
   }
+  // edits were only ever persisted to localStorage on discrete actions
+  // (opening another file, delete, rename, etc.) — never while actually
+  // typing, and there was no save-on-close safety net either. On mobile
+  // especially, the OS can kill a backgrounded tab with zero warning, so
+  // unsaved keystrokes could just vanish. Debounced autosave + a few
+  // "about to lose the page" hooks close that gap.
+  let autosaveDebounceTimer=null;
+  function debouncedAutosave(){
+    clearTimeout(autosaveDebounceTimer);
+    autosaveDebounceTimer=setTimeout(()=>{ try{saveToStorage();}catch{} },700);
+  }
   editor1.onDidChangeModelContent(()=>{
     if(isSyncing)return;files[currentFile]=editor1.getValue();
     if(!splitActive){isSyncing=true;editor2.setValue(editor1.getValue());isSyncing=false;}
     if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);
+    debouncedAutosave();
   });
   editor2.onDidChangeModelContent(()=>{
     if(isSyncing)return;
     if(splitActive){files[splitFile]=editor2.getValue();if(splitFile.endsWith(".html"))debouncedUpdatePreview(splitFile);}
     else{files[currentFile]=editor2.getValue();isSyncing=true;editor1.setValue(editor2.getValue());isSyncing=false;if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);}
+    debouncedAutosave();
   });
+  // safety net: flush immediately (skip the debounce wait) the moment the
+  // page might be about to disappear — covers the case where the tab gets
+  // killed mid-debounce, which the timer alone wouldn't catch
+  const flushAutosave = () => { clearTimeout(autosaveDebounceTimer); try{saveToStorage();}catch{} };
+  document.addEventListener("visibilitychange", () => { if(document.hidden) flushAutosave(); });
+  window.addEventListener("pagehide", flushAutosave);
+  window.addEventListener("beforeunload", flushAutosave);
   renderFiles();renderTabs();updatePreview(currentFile);updateSplitHeader();
   setTimeout(()=>Object.keys(files).filter(f=>!f.endsWith("/.gitkeep")).forEach(f=>addRecent(f)),300);
   editor1.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyS,saveCurrentFile);

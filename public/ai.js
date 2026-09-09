@@ -23,7 +23,7 @@ function saveAiUser(u){ localStorage.setItem("ai_user", JSON.stringify(u)); }
 function logoutAiUser(){
   localStorage.removeItem("ai_user");
   currentAiUser = null;
-  history = [];
+  if(typeof aiChatHistory !== "undefined") aiChatHistory = [];
   document.getElementById("aiChat").innerHTML = "";
   renderAiLoginUI();
   showToast("Logged out ✓", "info");
@@ -187,12 +187,16 @@ async function loadUserChat(){
     const snap = await getDoc(doc(firebaseDB,"ai_chats",currentAiUser.username));
     if(snap.exists()){
       const data = snap.data();
-      history = Array.isArray(data.messages) ? data.messages : [];
+      const loaded = Array.isArray(data.messages) ? data.messages : [];
+      // feed this into the SAME history array the AI Assistant sends as
+      // conversation context (app.js's aiChatHistory) — a separate local
+      // array here would silently lose that context after every reload
+      if(typeof aiChatHistory !== "undefined") aiChatHistory = loaded;
       // render loaded messages
       const chat = document.getElementById("aiChat");
       if(chat){
         renderAiUserHeader();
-        history.forEach(m => {
+        loaded.forEach(m => {
           const div = document.createElement("div");
           div.className = `message ${m.role==="user"?"user-message":"ai-message"}`;
           div.innerHTML = formatAiMessage(m.content||"");
@@ -203,7 +207,7 @@ async function loadUserChat(){
     } else {
       // new user — no chat yet
       renderAiUserHeader();
-      history = [];
+      if(typeof aiChatHistory !== "undefined") aiChatHistory = [];
     }
   }catch(e){console.warn("Cloud load:",e.message);}
 }

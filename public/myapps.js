@@ -173,11 +173,11 @@ const COMMAND_LIST = [
   { name:"New File", fn:()=>document.getElementById("newFileBtn").click() },
   { name:"New Folder", fn:()=>document.getElementById("newFolderBtn").click() },
   { name:"Save", fn:()=>document.getElementById("saveBtn").click() },
-  { name:"Run", fn:smartRun },
+  { name:"Run", fn:()=>smartRun() },
   { name:"Toggle Terminal", fn:toggleTerminal },
   { name:"Toggle AI Panel", fn:()=>document.getElementById("toggleAiBtn").click() },
   { name:"Download ZIP", fn:downloadProjectZip },
-  { name:"Open Template Menu", fn:openTemplateMenu },
+  { name:"Open Template Menu", fn:()=>openTemplateMenu() },
   { name:"Toggle Theme", fn:()=>document.getElementById("themeBtn").click() },
   { name:"Open Admin Panel", fn:openAdminPanel },
 ];

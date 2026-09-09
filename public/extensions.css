@@ -129,8 +129,15 @@
   padding: 30px 12px; text-align: center; color: #6a6a6a; font-size: 12px;
 }
 .snippet-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 4999;
-}
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 4999;}
+
+/* ── GO TO FILE (Ctrl+P) — reuses .snippet-menu/.snippet-item, adds icon+path row ── */
+.gtf-row{ display:flex; align-items:center; gap:8px; }
+.gtf-row .snippet-item-name{ flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gtf-icon{ display:flex; align-items:center; flex-shrink:0; }
+.gtf-icon img{ width:16px; height:16px; }
+.gtf-path{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; font-size:10.5px; color:#6b7280; }
+.gtf-row.gtf-sel{ background:rgba(0,122,204,0.28); }
 /* ── DETAILS MODAL ── */
 .ext-detail-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 6000;

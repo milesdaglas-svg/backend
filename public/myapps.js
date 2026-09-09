@@ -167,7 +167,76 @@ async function deleteMyApp(index){
 }
 document.addEventListener("keydown", e=>{
   if(e.ctrlKey && e.shiftKey && e.key==="P"){ e.preventDefault(); openCommandPalette(); }
+  if(e.ctrlKey && !e.shiftKey && (e.key==="p"||e.key==="P")){ e.preventDefault(); openGoToFile(); }
 });
+
+function openGoToFile(){
+  document.querySelector(".snippet-overlay")?.remove();
+  document.querySelector(".snippet-menu")?.remove();
+  const overlay=document.createElement("div");
+  overlay.className="snippet-overlay";
+  overlay.onclick=()=>{overlay.remove();menu.remove();};
+  const menu=document.createElement("div");
+  menu.className="snippet-menu";
+  menu.innerHTML=`
+    <div class="snippet-menu-header"><span>📄 Go to File</span></div>
+    <div style="padding:8px;"><input id="gtfInput" placeholder="Type a filename..." style="width:100%;background:#0d1117;border:1px solid #333;color:#ccc;padding:8px;border-radius:6px;" autofocus></div>
+    <div class="snippet-menu-list" id="gtfList"></div>`;
+  document.body.append(overlay,menu);
+
+  let selIdx = 0;
+  let current = [];
+
+  const openPicked = (path) => {
+    openFile(path);
+    overlay.remove(); menu.remove();
+  };
+
+  const renderList = (q="") => {
+    const query = q.toLowerCase().trim();
+    const allPaths = Object.keys(files||{}).filter(p=>!p.endsWith("/.gitkeep"));
+    // simple fuzzy-ish match: substring on the query, ranked by how early the match starts
+    // and preferring matches on the filename itself over the full path
+    current = allPaths
+      .map(p => {
+        const base = p.split("/").pop().toLowerCase();
+        const full = p.toLowerCase();
+        let score = -1;
+        if(!query) score = 0;
+        else if(base.includes(query)) score = 100 - base.indexOf(query);
+        else if(full.includes(query)) score = 50 - full.indexOf(query);
+        return { p, score };
+      })
+      .filter(r => r.score > -1)
+      .sort((a,b) => b.score - a.score)
+      .slice(0, 60)
+      .map(r => r.p);
+    selIdx = 0;
+    const list = document.getElementById("gtfList");
+    list.innerHTML = current.map((p,i) => `
+      <div class="snippet-item gtf-row${i===0?' gtf-sel':''}" data-idx="${i}" onclick="(function(){var f=${JSON.stringify(p)};document.querySelector('.snippet-menu').remove();document.querySelector('.snippet-overlay').remove();openFile(f);})()">
+        <span class="gtf-icon">${typeof getFileIcon==="function"?getFileIcon(p):"📄"}</span>
+        <div class="snippet-item-name">${p.split("/").pop()}</div>
+        <span class="gtf-path">${p.includes("/")?p.slice(0,p.lastIndexOf("/")):""}</span>
+      </div>`).join("") || `<div class="snippet-menu-empty">No matching files</div>`;
+  };
+
+  const updateSel = () => {
+    document.querySelectorAll("#gtfList .gtf-row").forEach((el,i)=>el.classList.toggle("gtf-sel", i===selIdx));
+    document.querySelector("#gtfList .gtf-sel")?.scrollIntoView({block:"nearest"});
+  };
+
+  renderList();
+  const input = document.getElementById("gtfInput");
+  input.addEventListener("input", e=>renderList(e.target.value));
+  input.addEventListener("keydown", e=>{
+    if(e.key==="ArrowDown"){ e.preventDefault(); if(current.length){ selIdx=(selIdx+1)%current.length; updateSel(); } }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); if(current.length){ selIdx=(selIdx-1+current.length)%current.length; updateSel(); } }
+    else if(e.key==="Enter"){ e.preventDefault(); if(current[selIdx]) openPicked(current[selIdx]); }
+    else if(e.key==="Escape"){ e.preventDefault(); overlay.remove(); menu.remove(); }
+  });
+  setTimeout(()=>input?.focus(),50);
+}
 
 const COMMAND_LIST = [
   { name:"New File", fn:()=>document.getElementById("newFileBtn").click() },

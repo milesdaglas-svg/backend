@@ -563,7 +563,20 @@
 <script src="onboarding.js"></script>
 <script src="feature-spotlight.js"></script>
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  // when the new service worker (freshly deployed code) takes over,
+  // let the user know instead of leaving them silently running stale
+  // JS/CSS until they happen to reload on their own
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swRefreshing) return;
+    swRefreshing = true;
+    if (typeof showToast === "function") {
+      showToast("✨ New version available — refresh to update", "info");
+    }
+  });
+}
 
 document.getElementById("settingsBtn").onclick = () => openSettings();
 document.getElementById("updatesBtn").onclick  = () => checkAndShowPopup(true);

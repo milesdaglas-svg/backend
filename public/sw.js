@@ -19,7 +19,7 @@ importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
    Caches app for offline use
 ========================= */
 
-const CACHE = "vscode-godmode-v3";
+const CACHE = "vscode-godmode-v4";
 
 const PRECACHE = [
   "/",
@@ -43,6 +43,11 @@ const PRECACHE = [
   "/github-panel.css",
   "/extensions.css",
   "/myapps.css",
+  "/explorer-vscode.css",
+  "/feature-spotlight.css",
+  "/live-session.css",
+  "/app-intro.css",
+  "/onboarding.css",
   "/ai.js",
   "/announcements.js",
   "/admin.js",
@@ -60,12 +65,19 @@ const PRECACHE = [
   "/github-panel.js",
   "/extensions-cloud.js",
   "/myapps.js",
+  "/live-session.js",
   "/extensions-pack1.js",
   "/extensions-pack2.js",
   "/extensions-pack3.js",
   "/extensions-pack4.js",
   "/extensions-pack5.js",
   "/app.js",
+  "/file-icons.js",
+  "/inline-create.js",
+  "/app-intro.js",
+  "/update-check.js",
+  "/onboarding.js",
+  "/feature-spotlight.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/extensions-icon.png",
@@ -78,7 +90,8 @@ const PRECACHE = [
   "https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css",
   "https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js",
   "https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js",
-  "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+  "https://cdn.jsdelivr.net/npm/xterm-addon-canvas@0.5.0/lib/xterm-addon-canvas.js",
+  "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
 ];
 
 // Install: cache all core files
@@ -132,15 +145,22 @@ self.addEventListener("fetch", e => {
     return;
   }
 
+  // stale-while-revalidate: answer instantly from cache (fast + works
+  // offline), but always kick off a network fetch in the background to
+  // refresh the cache for next time — so a new deploy reaches people
+  // within one extra reload instead of being stuck behind a stale cache
+  // indefinitely (which is what a pure cache-first strategy does unless
+  // the CACHE version string below gets bumped by hand on every deploy).
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        if (!res || res.status !== 200 || res.type === "opaque") return res;
-        const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+    caches.open(CACHE).then(async cache => {
+      const cached = await cache.match(e.request);
+      const networkFetch = fetch(e.request).then(res => {
+        if (res && res.status === 200 && res.type !== "opaque") cache.put(e.request, res.clone());
         return res;
-      }).catch(() => caches.match("/index.html"));
+      }).catch(() => null);
+      if (cached) { networkFetch; return cached; } // don't block on the background refresh
+      const fresh = await networkFetch;
+      return fresh || caches.match("/index.html");
     })
   );
 });

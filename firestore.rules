@@ -66,6 +66,18 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if false; // only the Admin SDK cleanup job removes old messages
       }
+      match /sharedFiles/{fileId} {
+        allow read: if true;
+        // co-edit sync doc, one per file path being collaboratively edited.
+        // Same reasoning as participants/messages above: no Firebase Auth
+        // wired up, so this can't be locked to "only room members" beyond
+        // knowing the room code itself.
+        allow write: if request.resource.data.keys().hasOnly(['code','updatedAt','updatedBy'])
+                      && request.resource.data.code is string && request.resource.data.code.size() <= 500000
+                      && request.resource.data.updatedAt is number
+                      && request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 64;
+        allow delete: if false; // cleaned up alongside the room by the Admin SDK job
+      }
     }
   }
 }

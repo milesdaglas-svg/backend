@@ -41,7 +41,7 @@ async function cleanupOldLiveRooms(maxRooms = 50) {
   for (const roomDoc of snap.docs) {
     if (roomDoc.data().permanent === true) { skippedPermanent++; continue; } // never delete a permanent room
     try {
-      for (const sub of ["participants", "messages"]) {
+      for (const sub of ["participants", "messages", "sharedFiles"]) {
         const subSnap = await roomDoc.ref.collection(sub).get();
         if (!subSnap.empty) {
           const batch = liveAdminDb.batch();

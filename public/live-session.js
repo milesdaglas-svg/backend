@@ -19,6 +19,12 @@ let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
 let lsRoomPermanent  = false;
+let lsCoEditing      = false;
+let lsCoEditFile      = null;
+let lsCoEditUnsub     = null;
+let lsCoEditPushTimer = null;
+let lsCoEditApplyingRemote = false;
+let lsCoEditLastAppliedAt  = 0;
 let lsUnreadCount    = 0;
 let lsTalliedMsgIds  = new Set();
 let lsDb            = null;
@@ -223,6 +229,18 @@ function renderLiveSessionPanel(){
       </div>
 
       <div class="ls-box ls-room-info-box">
+        <div class="ls-section-title">🖊️ Co-Edit</div>
+        <div class="ls-setting-row" style="margin-top:8px;">
+          <div class="ls-setting-icon" style="background:${lsCoEditing?'#5865F2':'#3a3d41'};">${lsCoEditing?'✍️':'🖊️'}</div>
+          <div class="ls-setting-text">
+            <div class="ls-setting-title">Edit together — ${lsEsc(currentFile||"no file open")}</div>
+            <div class="ls-setting-sub">${lsCoEditing?'Live: your edits sync with anyone else co-editing this exact file':'Turn on, then anyone else with it on for the same open file edits it with you live'}</div>
+          </div>
+          <div class="ls-switch ${lsCoEditing?'on':''}" id="lsCoEditSwitch" onclick="lsToggleCoEdit()"></div>
+        </div>
+      </div>
+
+      <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
         <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
       </div>
@@ -358,6 +376,7 @@ async function lsLeaveRoom(){
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false; lsRoomPermanent = false;
+  lsCoEditing = false; lsUnsubscribeCoEdit();
   lsReplyingTo = null; lsChatMsgsById = {};
   lsUnreadCount = 0; lsTalliedMsgIds = new Set(); lsUpdateUnreadBadge();
   if(lsExpanded) lsCloseFullscreen();
@@ -411,6 +430,119 @@ function lsRenderPublicRooms(rooms){
       <button class="ls-btn secondary" onclick="lsJoinRoom('${r.id}')">Join</button>
     </div>`;
   }).join("");
+}
+
+/* ── CO-EDIT (multiplayer editing of one file) ──
+   Additive to broadcasting, not a replacement: broadcast is one-way
+   "watch my screen", co-edit is two-way "we're both typing in this
+   file". Scoped per-file on purpose — there's no single "host" in this
+   app, so co-editing just naturally happens whenever two or more people
+   have the toggle on AND the exact same file open. Switch files while
+   it's on and it follows you: unsubscribes from the old file's sync
+   doc, subscribes to the new one.
+
+   Conflict handling is last-write-wins at the Firestore layer (no real
+   OT/CRDT — out of scope for what can be safely built without live
+   multi-client testing), but remote updates are applied as a line-diff
+   patch rather than a full setValue(), so an edit on line 80 doesn't
+   yank your cursor while you're typing on line 10. */
+function lsCoEditDocId(path){
+  // Firestore doc IDs can't contain "/" — encode, then also swap the
+  // encoded slash-equivalent so it stays a clean single path segment
+  return encodeURIComponent(path).replace(/%2F/g, "~");
+}
+
+async function lsToggleCoEdit(){
+  lsCoEditing = !lsCoEditing;
+  const sw = document.getElementById("lsCoEditSwitch");
+  if(sw) sw.classList.toggle("on", lsCoEditing);
+  if(lsCoEditing) await lsSubscribeCoEdit(typeof currentFile!=="undefined" ? currentFile : null);
+  else lsUnsubscribeCoEdit();
+  renderLiveSessionPanel();
+}
+
+/* called from app.js's openFile() so co-edit follows whichever file
+   you actually have open, instead of silently syncing a file you've
+   since navigated away from */
+async function lsCoEditFileChanged(newFile){
+  if(!lsCoEditing) return;
+  await lsSubscribeCoEdit(newFile);
+  const panelBody = document.getElementById("ls-panel-body");
+  if(panelBody) renderLiveSessionPanel();
+}
+
+async function lsSubscribeCoEdit(path){
+  lsUnsubscribeCoEdit();
+  lsCoEditFile = path || null;
+  if(!lsCoEditFile || !lsRoomCode) return;
+  const db = await lsInitDb(); if(!db) return;
+  const {doc, onSnapshot} = await lsFirestoreFns();
+  lsCoEditLastAppliedAt = 0;
+  lsCoEditUnsub = onSnapshot(doc(db,"liveRooms",lsRoomCode,"sharedFiles",lsCoEditDocId(lsCoEditFile)), snap => {
+    if(!snap.exists()) return;
+    const data = snap.data();
+    if(!data || data.updatedBy===lsMyId) return; // our own write coming back
+    if(data.updatedAt && data.updatedAt <= lsCoEditLastAppliedAt) return;
+    if(typeof currentFile==="undefined" || currentFile !== lsCoEditFile) return; // navigated away
+    lsCoEditLastAppliedAt = data.updatedAt || Date.now();
+    lsApplyRemoteCoEdit(typeof editor1!=="undefined" ? editor1.getModel() : null, data.code||"");
+  }, err => {
+    console.error("[LiveSession] co-edit listener error:", err);
+  });
+}
+
+function lsUnsubscribeCoEdit(){
+  if(lsCoEditUnsub){ lsCoEditUnsub(); lsCoEditUnsub=null; }
+  if(lsCoEditPushTimer){ clearTimeout(lsCoEditPushTimer); lsCoEditPushTimer=null; }
+  lsCoEditFile = null;
+}
+
+/* apply an incoming remote version as a minimal patch (reuses the same
+   LCS line-diff app.js already has for the AI change-review diff view)
+   instead of setValue(), which would blow away cursor position and
+   undo history on every remote keystroke from someone else */
+function lsApplyRemoteCoEdit(model, newText){
+  if(!model) return;
+  const oldText = model.getValue();
+  if(oldText === newText) return;
+  lsCoEditApplyingRemote = true;
+  try{
+    const ops = (typeof aiComputeLineDiff==="function") ? aiComputeLineDiff(oldText, newText) : null;
+    if(!ops){ model.setValue(newText); return; } // huge-file fallback
+    const edits = [];
+    let oldLine = 1, i = 0;
+    while(i < ops.length){
+      if(ops[i].type === "same"){ oldLine++; i++; continue; }
+      const startLine = oldLine;
+      const addLines = [];
+      while(i < ops.length && ops[i].type !== "same"){
+        if(ops[i].type === "del") oldLine++;
+        else addLines.push(ops[i].line);
+        i++;
+      }
+      edits.push({ range: new monaco.Range(startLine, 1, oldLine, 1), text: addLines.length ? addLines.join("\n")+"\n" : "" });
+    }
+    if(edits.length) model.pushEditOperations([], edits, () => null);
+  } finally {
+    lsCoEditApplyingRemote = false;
+  }
+}
+
+/* called from app.js's editor1.onDidChangeModelContent, debounced */
+function lsOnLocalEditForCoEdit(file, model){
+  if(!lsCoEditing || lsCoEditApplyingRemote) return;
+  if(!lsCoEditFile || file !== lsCoEditFile) return;
+  clearTimeout(lsCoEditPushTimer);
+  lsCoEditPushTimer = setTimeout(async () => {
+    const db = await lsInitDb(); if(!db) return;
+    const {doc,setDoc} = await lsFirestoreFns();
+    const now = Date.now();
+    lsCoEditLastAppliedAt = now;
+    try{
+      await setDoc(doc(db,"liveRooms",lsRoomCode,"sharedFiles",lsCoEditDocId(lsCoEditFile)),
+        { code: model.getValue(), updatedAt: now, updatedBy: lsMyId }, { merge:true });
+    }catch(e){ console.error("[LiveSession] co-edit push failed:", e); }
+  }, 400);
 }
 
 /* ── BROADCASTING ── */

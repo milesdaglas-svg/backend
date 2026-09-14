@@ -401,6 +401,7 @@ function openFile(file){
   if(!splitActive){editor2.setValue(files[file]);monaco.editor.setModelLanguage(editor2.getModel(),getLang(file));}
   isSyncing=false;
   if(typeof debouncedLint==="function") debouncedLint(file, editor1.getModel());
+  if(typeof lsCoEditFileChanged==="function") lsCoEditFileChanged(file);
   if(file.endsWith(".html"))updatePreview(file);
   renderFiles();renderTabs();addRecent(file);updateSplitHeader();saveToStorage();
   if(window.innerWidth<=768){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("active");}
@@ -738,6 +739,7 @@ const shared={
     if(!splitActive){isSyncing=true;editor2.setValue(editor1.getValue());isSyncing=false;}
     if(currentFile.endsWith(".html"))debouncedUpdatePreview(currentFile);
     if(typeof debouncedLint==="function") debouncedLint(currentFile, editor1.getModel());
+    if(typeof lsOnLocalEditForCoEdit==="function") lsOnLocalEditForCoEdit(currentFile, editor1.getModel());
     debouncedAutosave();
   });
   editor2.onDidChangeModelContent(()=>{

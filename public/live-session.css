@@ -37,6 +37,27 @@
 .ls-row{display:flex;gap:9px;min-width:0;}
 .ls-row input[type="text"]{flex:1 1 0;min-width:0;background:rgba(13,17,23,.7);border:1px solid rgba(255,255,255,.09);color:#e6e9ef;border-radius:8px;padding:9px 12px;font-family:'SF Mono',Consolas,monospace;letter-spacing:1.5px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;}
 .ls-row input[type="text"]:focus{outline:none;border-color:#5865F2;box-shadow:0 0 0 3px rgba(88,101,242,.18);}
+
+/* clickable "change your picture" avatar in the create/join form */
+.ls-my-avatar-picker{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:50%;cursor:pointer;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,#5865F2,#4752C4);box-shadow:0 2px 8px rgba(88,101,242,.35);}
+.ls-my-avatar-picker img{width:100%;height:100%;object-fit:cover;}
+.ls-my-avatar-edit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);
+  color:#fff;font-size:13px;opacity:0;transition:opacity .12s;}
+.ls-my-avatar-picker:hover .ls-my-avatar-edit{opacity:1;}
+
+.ls-room-title{text-align:center;font-size:14px;font-weight:800;color:#f2f4f8;margin:2px 0 8px;}
+.ls-room-icon-picker{position:relative;flex-shrink:0;width:38px;height:38px;border-radius:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);transition:border-color .12s,background .12s;}
+.ls-room-icon-picker:hover{background:rgba(255,255,255,.09);border-color:rgba(88,101,242,.4);}
+.ls-room-icon-pop{display:none;flex-wrap:wrap;gap:4px;padding:8px;margin:6px 0 2px;
+  background:rgba(13,17,23,.9);border:1px solid rgba(255,255,255,.08);border-radius:10px;}
+.ls-room-icon-pop.open{display:flex;}
+.ls-room-icon-pop span{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  border-radius:7px;cursor:pointer;transition:background .12s;}
+.ls-room-icon-pop span:hover{background:rgba(88,101,242,.25);}
 /* buttons in a plain input+button row (e.g. join-by-code) shouldn't
    shrink — the input takes the squeeze instead. But when TWO buttons
    share a row (Copy Code / Leave), each needs to be allowed to shrink
@@ -74,6 +95,8 @@
 @keyframes ls-pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.5);}70%{box-shadow:0 0 0 6px rgba(63,185,80,0);}100%{box-shadow:0 0 0 0 rgba(63,185,80,0);}}
 .ls-participant-file{color:#8b93a1;font-size:11px;}
 .ls-participant-code{margin:0;padding:12px;max-height:260px;overflow:auto;font-family:'SF Mono',Consolas,monospace;font-size:12px;line-height:1.6;color:#d9dee6;white-space:pre;background:rgba(9,11,14,.7);}
+.ls-edit-with-btn{width:100%;border-radius:0;font-size:12px;padding:9px;}
+.ls-edit-with-btn:disabled{cursor:default;opacity:.85;}
 .ls-empty{color:#6b7280;font-size:12px;text-align:center;padding:20px 0;}
 
 /* presence list */
@@ -107,6 +130,7 @@
 /* ---- Discord-style member list (replaces flat presence rows) ---- */
 .ls-member-row{display:flex;align-items:center;gap:10px;padding:5px 6px;border-radius:8px;transition:background .12s;}
 .ls-member-row:hover{background:rgba(255,255,255,.05);}
+.ls-member-avatar-wrap{position:relative;flex-shrink:0;}
 .ls-member-avatar{position:relative;flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   color:#fff;font-size:13px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.3);}
 .ls-member-dot{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;border:2.5px solid #1c1f24;}

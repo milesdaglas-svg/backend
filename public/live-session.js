@@ -9,6 +9,7 @@
 let lsRoomCode      = null;
 let lsMyId          = localStorage.getItem("ls_myId") || null;
 let lsMyName        = localStorage.getItem("ls_myName") || (typeof currentAiUser !== "undefined" && currentAiUser?.username) || "";
+let lsMyAvatar       = localStorage.getItem("ls_myAvatar") || null; // small base64 data URL, or null -> falls back to initial circle
 let lsBroadcasting  = false;
 let lsUnsub         = null;
 let lsBroadcastTimer= null;
@@ -19,6 +20,9 @@ let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
 let lsRoomPermanent  = false;
+let lsRoomName       = "";
+let lsRoomIcon       = "";
+let lsPickedRoomIcon = "";
 let lsCoEditing      = false;
 let lsCoEditFile      = null;
 let lsCoEditUnsub     = null;
@@ -89,7 +93,7 @@ function lsOpenFullscreen(){
   overlay.className = "ls-fullscreen-overlay";
   overlay.innerHTML = `
     <div class="ls-fullscreen-header">
-      <span>👥 Live Session${lsRoomCode?' — Room <span class="ls-fs-code">'+lsRoomCode+'</span>':''}</span>
+      <span>${lsRoomIcon?lsEsc(lsRoomIcon)+' ':'👥 '}${lsRoomName?lsEsc(lsRoomName):'Live Session'}${lsRoomCode?' — Room <span class="ls-fs-code">'+lsRoomCode+'</span>':''}</span>
       <button class="ls-btn secondary" onclick="lsToggleExpand()">✕ Exit Fullscreen</button>
     </div>
     <div class="ls-fullscreen-content" id="lsFullscreenContent"></div>`;
@@ -153,8 +157,22 @@ function renderLiveSessionPanel(){
       <div class="ls-box">
         <div class="ls-section-title"><span class="ls-step">1</span> Start a new session</div>
         <div class="ls-section-sub">You'll get a 6-character code to share.</div>
-        <div class="ls-row" style="margin:10px 0 8px;">
+        <div class="ls-row" style="margin:10px 0 8px;align-items:center;">
+          <div class="ls-my-avatar-picker" onclick="lsPickAvatar()" title="Click to change your picture">
+            ${lsMyAvatar ? `<img src="${lsMyAvatar}">` : `<span>${lsInitial(lsMyName)}</span>`}
+            <span class="ls-my-avatar-edit">✎</span>
+          </div>
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
+        </div>
+        <input type="file" id="lsAvatarFileInput" accept="image/*" style="display:none;" onchange="lsHandleAvatarFile(this.files[0])">
+        <div class="ls-row" style="margin-bottom:8px;align-items:center;">
+          <div class="ls-room-icon-picker" onclick="document.getElementById('lsRoomIconPop').classList.toggle('open')" title="Pick a server icon">
+            <span>${lsPickedRoomIcon||'👥'}</span>
+          </div>
+          <input type="text" id="lsRoomNameInput" placeholder="Server name (optional)" style="font-family:inherit;letter-spacing:normal;" maxlength="40">
+        </div>
+        <div class="ls-room-icon-pop" id="lsRoomIconPop">
+          ${["👥","🚀","💻","🎮","📚","🔥","⭐","🎨","🐛","🧪","🎯","☕"].map(e=>`<span onclick="lsPickRoomIcon('${e}')">${e}</span>`).join("")}
         </div>
         <div class="ls-setting-row" style="margin-bottom:8px;">
           <div class="ls-setting-icon" style="background:#5865F2;">🌐</div>
@@ -207,6 +225,7 @@ function renderLiveSessionPanel(){
     <div class="ls-sidebar-col">
       <div class="ls-box ls-room-card ls-room-info-box">
         <div class="ls-status-chips">${lsStatusChipsHtml()}</div>
+        ${(lsRoomName||lsRoomIcon) ? `<div class="ls-room-title">${lsRoomIcon?lsEsc(lsRoomIcon)+' ':''}${lsEsc(lsRoomName||'Untitled server')}</div>` : ''}
         <div class="ls-code">${lsRoomCode}</div>
         <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
         <div class="ls-row" style="margin-top:10px;">
@@ -214,6 +233,21 @@ function renderLiveSessionPanel(){
           <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
         </div>
         <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">${lsExpanded?'⛶ Already fullscreen':'⛶ Expand to fullscreen'}</button>
+      </div>
+
+      <div class="ls-box ls-room-info-box">
+        <div class="ls-section-title">⚙️ Server Profile</div>
+        <div class="ls-setting-sub" style="margin-bottom:8px;">Name and icon for this room — different for every server, seen by everyone here</div>
+        <div class="ls-row" style="align-items:center;">
+          <div class="ls-room-icon-picker" onclick="document.getElementById('lsRoomIconPopLive').classList.toggle('open')" title="Change server icon">
+            <span>${lsRoomIcon||'👥'}</span>
+          </div>
+          <input type="text" id="lsRoomNameEditInput" placeholder="Server name" value="${lsEsc(lsRoomName)}" style="font-family:inherit;letter-spacing:normal;" maxlength="40">
+          <button class="ls-btn secondary" onclick="lsSaveRoomProfile()">Save</button>
+        </div>
+        <div class="ls-room-icon-pop" id="lsRoomIconPopLive">
+          ${["👥","🚀","💻","🎮","📚","🔥","⭐","🎨","🐛","🧪","🎯","☕"].map(e=>`<span onclick="lsPickRoomIconLive('${e}')">${e}</span>`).join("")}
+        </div>
       </div>
 
       <div class="ls-box ls-room-info-box">
@@ -230,11 +264,12 @@ function renderLiveSessionPanel(){
 
       <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">🖊️ Co-Edit</div>
+        <div class="ls-setting-sub" style="margin-bottom:2px;">Easiest way in: scroll to Live Editors below and tap "✏️ Edit this with [name]" on someone who's broadcasting — it opens their file and turns this on for you both automatically.</div>
         <div class="ls-setting-row" style="margin-top:8px;">
           <div class="ls-setting-icon" style="background:${lsCoEditing?'#5865F2':'#3a3d41'};">${lsCoEditing?'✍️':'🖊️'}</div>
           <div class="ls-setting-text">
             <div class="ls-setting-title">Edit together — ${lsEsc(currentFile||"no file open")}</div>
-            <div class="ls-setting-sub">${lsCoEditing?'Live: your edits sync with anyone else co-editing this exact file':'Turn on, then anyone else with it on for the same open file edits it with you live'}</div>
+            <div class="ls-setting-sub">${lsCoEditing?'Live: your edits sync with anyone else co-editing this exact file':'Or turn this on manually — then anyone else with it on for the same open file edits it with you live'}</div>
           </div>
           <div class="ls-switch ${lsCoEditing?'on':''}" id="lsCoEditSwitch" onclick="lsToggleCoEdit()"></div>
         </div>
@@ -297,14 +332,21 @@ async function lsCreateRoom(){
   const isPermanent = document.getElementById("lsPermanentSwitch")?.classList.contains("on") || false;
   const pin = isPublic ? "" : (document.getElementById("lsPinInput")?.value || "").trim();
   const pinHash = await lsHashPin(pin);
+  const roomName = (document.getElementById("lsRoomNameInput")?.value || "").trim().slice(0,40);
+  const roomIcon = (lsPickedRoomIcon || "").trim().slice(0,8);
 
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   const {doc,setDoc} = await lsFirestoreFns();
   const code = lsGenCode();
-  await setDoc(doc(db,"liveRooms",code),{ createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash, public: isPublic, permanent: isPermanent });
+  const roomDoc = { createdAt: Date.now(), lastActivityAt: Date.now(), pin: pinHash, public: isPublic, permanent: isPermanent };
+  if(roomName) roomDoc.roomName = roomName;
+  if(roomIcon) roomDoc.roomIcon = roomIcon;
+  await setDoc(doc(db,"liveRooms",code), roomDoc);
   lsRoomCode = code;
   lsMyPinProof = pinHash;
   lsRoomPermanent = isPermanent;
+  lsRoomName = roomName;
+  lsRoomIcon = roomIcon;
   await lsJoinAsParticipant();
   showToast((isPermanent ? "📌 Permanent room created: " : (isPublic ? "✓ Public room created: " : (pin ? "✓ Room created (PIN-locked): " : "✓ Room created: ")))+code,"success");
   renderLiveSessionPanel();
@@ -332,6 +374,8 @@ async function lsJoinRoom(directCode){
   lsRoomCode = code;
   lsMyPinProof = roomData.pin || null;
   lsRoomPermanent = roomData.permanent === true;
+  lsRoomName = roomData.roomName || "";
+  lsRoomIcon = roomData.roomIcon || "";
   await lsJoinAsParticipant();
   await setDoc(doc(db,"liveRooms",code),{ lastActivityAt: Date.now() }, { merge:true });
   showToast("✓ Joined room "+code,"success");
@@ -341,12 +385,81 @@ async function lsJoinRoom(directCode){
   lsMaybeCleanupOldRooms();
 }
 
-async function lsJoinAsParticipant(){
+/* ── PROFILE PICTURE (small, resized client-side, stored inline in the
+   participant doc — same reasoning as the app-intro image fix earlier:
+   keep payloads tiny so it's reliable, no separate image-hosting infra
+   needed for something this small) ── */
+function lsPickAvatar(){ document.getElementById("lsAvatarFileInput")?.click(); }
+
+function lsHandleAvatarFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 96;
+      const canvas = document.createElement("canvas");
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      // cover-crop to a square so odd-aspect photos don't look squished
+      const scale = Math.max(size/img.width, size/img.height);
+      const w = img.width*scale, h = img.height*scale;
+      ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      lsMyAvatar = dataUrl;
+      try{ localStorage.setItem("ls_myAvatar", dataUrl); }catch{}
+      renderLiveSessionPanel();
+      if(lsRoomCode) lsPushAvatarUpdate();
+    };
+    img.onerror = () => showToast("Couldn't read that image","error");
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function lsPushAvatarUpdate(){
   const db = await lsInitDb(); if(!db) return;
+  const {doc,setDoc} = await lsFirestoreFns();
+  try{ await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{ avatarImg: lsMyAvatar }, { merge:true }); }catch{}
+}
+
+function lsPickRoomIconLive(emoji){
+  document.getElementById("lsRoomIconPopLive")?.classList.remove("open");
+  const btn = document.querySelector("#ls-panel-body .ls-room-info-box .ls-room-icon-picker span");
+  if(btn) btn.textContent = emoji;
+  lsSaveRoomProfile(emoji);
+}
+
+async function lsSaveRoomProfile(iconOverride){
+  const nameVal = (document.getElementById("lsRoomNameEditInput")?.value || "").trim().slice(0,40);
+  const iconVal = (iconOverride !== undefined ? iconOverride : document.querySelector("#ls-panel-body .ls-room-info-box .ls-room-icon-picker span")?.textContent || "").trim().slice(0,8);
+  const db = await lsInitDb(); if(!db) return;
+  const {doc,setDoc} = await lsFirestoreFns();
+  try{
+    await setDoc(doc(db,"liveRooms",lsRoomCode), { roomName: nameVal, roomIcon: iconVal }, { merge:true });
+    lsRoomName = nameVal;
+    lsRoomIcon = iconVal;
+    showToast("✓ Server profile saved","success");
+    renderLiveSessionPanel();
+    const header = document.querySelector(".ls-fullscreen-header span");
+    if(header) header.innerHTML = `${lsRoomIcon?lsEsc(lsRoomIcon)+' ':'👥 '}${lsRoomName?lsEsc(lsRoomName):'Live Session'}${lsRoomCode?' — Room <span class="ls-fs-code">'+lsRoomCode+'</span>':''}`;
+  }catch(e){ showToast("Couldn't save — "+e.message,"error"); }
+}
+
+function lsPickRoomIcon(emoji){
+  lsPickedRoomIcon = emoji;
+  document.getElementById("lsRoomIconPop")?.classList.remove("open");
+  // targeted update only — a full re-render here would wipe out whatever
+  // the user had already typed into the room-name field next to it
+  const btn = document.querySelector(".ls-room-icon-picker span");
+  if(btn) btn.textContent = emoji;
+}
+
+async function lsJoinAsParticipant(){  const db = await lsInitDb(); if(!db) return;
   const {doc,setDoc} = await lsFirestoreFns();
   await setDoc(doc(db,"liveRooms",lsRoomCode,"participants",lsMyId),{
     name: lsMyName, broadcasting:false, currentFile:"", code:"", updatedAt: Date.now(), joinedAt: Date.now(),
-    pinProof: lsMyPinProof
+    pinProof: lsMyPinProof, avatarImg: lsMyAvatar
   }, { merge:true });
   if(lsHeartbeatTimer) clearInterval(lsHeartbeatTimer);
   lsHeartbeatTimer = setInterval(lsHeartbeat, 8000);
@@ -376,6 +489,7 @@ async function lsLeaveRoom(){
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
   lsRoomCode = null; lsBroadcasting = false; lsRoomPermanent = false;
+  lsRoomName = ""; lsRoomIcon = ""; lsPickedRoomIcon = "";
   lsCoEditing = false; lsUnsubscribeCoEdit();
   lsReplyingTo = null; lsChatMsgsById = {};
   lsUnreadCount = 0; lsTalliedMsgIds = new Set(); lsUpdateUnreadBadge();
@@ -424,7 +538,7 @@ function lsRenderPublicRooms(rooms){
     const mins = Math.max(0, Math.round((now-(r.lastActivityAt||now))/60000));
     return `<div class="ls-public-item">
       <div>
-        <span class="ls-public-code">${r.id}</span>
+        <span class="ls-public-code">${r.roomIcon?lsEsc(r.roomIcon)+' ':''}${r.roomName?lsEsc(r.roomName)+' · ':''}${r.id}</span>
         <span class="ls-public-age">active ${mins<1?'just now':mins+'m ago'}</span>
       </div>
       <button class="ls-btn secondary" onclick="lsJoinRoom('${r.id}')">Join</button>
@@ -545,6 +659,37 @@ function lsOnLocalEditForCoEdit(file, model){
   }, 400);
 }
 
+/* the one-click bridge from "watching someone broadcast" to "actually
+   co-editing with them" — this is what was missing: broadcasting only
+   ever showed a read-only snapshot of someone's code as plain text, with
+   no way to actually get into it and start typing together. */
+async function lsEditWithThem(pid){
+  const p = lsLastList.find(x=>x.id===pid);
+  if(!p || !p.currentFile){ showToast("Nothing to open yet","info"); return; }
+  const path = p.currentFile;
+  if(typeof files!=="undefined" && files[path]===undefined) files[path] = ""; // just so openFile() doesn't no-op below
+  if(typeof openFile==="function") openFile(path);
+
+  lsCoEditing = true;
+  document.getElementById("lsCoEditSwitch")?.classList.add("on");
+  await lsSubscribeCoEdit(path);
+
+  // seed the co-edit sync doc from their current broadcast if nobody's
+  // started one for this file yet — if one already exists, the normal
+  // subscribe above + remote-apply path takes over automatically instead
+  const db = await lsInitDb();
+  if(db){
+    const {doc,getDoc,setDoc} = await lsFirestoreFns();
+    const ref = doc(db,"liveRooms",lsRoomCode,"sharedFiles",lsCoEditDocId(path));
+    try{
+      const existing = await getDoc(ref);
+      if(!existing.exists()) await setDoc(ref, { code: p.code||"", updatedAt: Date.now(), updatedBy: p.id });
+    }catch(e){}
+  }
+  showToast(`✏️ Co-editing ${path} with ${p.name||"them"}`, "success");
+  renderLiveSessionPanel();
+}
+
 /* ── BROADCASTING ── */
 async function lsToggleBroadcast(){
   lsBroadcasting = !lsBroadcasting;
@@ -628,8 +773,8 @@ function lsRenderPresence(list){
     const initial = (p.name||"?").trim().charAt(0).toUpperCase() || "?";
     const statusLabel = status==="broadcasting" ? "Live" : status==="online" ? "Online" : "Away";
     return `<div class="ls-member-row">
-      <div class="ls-member-avatar" style="background:${lsAvatarColor(p.name||p.id)};">
-        ${initial}
+      <div class="ls-member-avatar-wrap">
+        ${lsAvatarHtml(p, "ls-member-avatar")}
         <span class="ls-member-dot ls-member-dot-${status}"></span>
       </div>
       <div class="ls-member-info">
@@ -641,6 +786,16 @@ function lsRenderPresence(list){
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+/* shared avatar renderer: real picture if the person set one, otherwise
+   the colored initial circle, used consistently across presence list,
+   chat, and live-editor cards */
+function lsAvatarHtml(p, sizeClass){
+  const initial = lsInitial(p.name);
+  const color = lsAvatarColor(p.name||p.id);
+  if(p.avatarImg) return `<span class="${sizeClass}" style="background-image:url('${p.avatarImg}');background-size:cover;background-position:center;"></span>`;
+  return `<span class="${sizeClass}" style="background:${color};">${initial}</span>`;
+}
 
 function lsStatusChipsHtml(){
   const chips = [];
@@ -695,14 +850,20 @@ async function lsRenderParticipants(list){
   const cards = await Promise.all(live.map(async p => {
     const stale = (now - (p.updatedAt||0)) > LS_STALE_MS;
     const html = await lsHighlight(p.code, p.currentFile, p.cursorLine);
+    const isMe = p.id===lsMyId;
+    const alreadyCoEditingThis = lsCoEditing && lsCoEditFile === p.currentFile;
     return `
     <div class="ls-participant live${stale?' stale':''}">
       <div class="ls-participant-head">
-        <span>${p.id===lsMyId ? '<span class="ls-you">You</span>' : `<span class="ls-live-dot"></span>${lsEsc(p.name||"Someone")}`}
+        <span>${isMe ? '<span class="ls-you">You</span>' : `<span class="ls-live-dot"></span>${lsEsc(p.name||"Someone")}`}
           ${stale?'<span class="ls-stale-badge">connection lost</span>':''}</span>
         <span class="ls-participant-file">${lsEsc(p.currentFile||"")}${p.cursorLine?` · Ln ${p.cursorLine}`:''}</span>
       </div>
       <pre class="ls-participant-code">${html}</pre>
+      ${(!isMe && !stale && p.currentFile) ? `
+        <button class="ls-btn ${alreadyCoEditingThis?'secondary':''} ls-edit-with-btn" onclick="lsEditWithThem('${p.id}')" ${alreadyCoEditingThis?'disabled':''}>
+          ${alreadyCoEditingThis ? '✓ Co-editing this with you' : `✏️ Edit this with ${lsEsc(p.name||"them")}`}
+        </button>` : ''}
     </div>`;
   }));
   el.innerHTML = cards.join("");
@@ -786,8 +947,9 @@ function lsRenderChat(msgs){
         <span class="ls-chat-reply-text">${lsEsc(m.replyTo.text||"")}</span>
       </div>` : '';
     const color = lsAvatarColor(m.senderId);
+    const sender = lsLastList.find(p=>p.id===m.senderId) || { name:m.name, id:m.senderId };
     const avatarCol = !grouped
-      ? `<span class="ls-chat-avatar" style="background:${color}">${lsInitial(m.name)}</span>`
+      ? lsAvatarHtml(sender, "ls-chat-avatar")
       : `<span class="ls-chat-gutter-time">${lsFormatTime(m)}</span>`;
     const headerLine = !grouped
       ? `<div class="ls-chat-header-line"><span class="ls-chat-name" style="color:${color}">${mine?'You':lsEsc(m.name||"Someone")}</span><span class="ls-chat-time">${lsFormatTime(m)}</span></div>`

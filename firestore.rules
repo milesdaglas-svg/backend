@@ -11,16 +11,21 @@ service cloud.firestore {
       // must stay readable so the app can check a room exists / has a PIN before joining
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['createdAt','lastActivityAt','pin','public','permanent'])
+      allow create: if request.resource.data.keys().hasOnly(['createdAt','lastActivityAt','pin','public','permanent','roomName','roomIcon'])
                     && request.resource.data.createdAt is number
                     && request.resource.data.lastActivityAt is number
                     && request.resource.data.public is bool
                     && (!('permanent' in request.resource.data) || request.resource.data.permanent is bool)
+                    && (!('roomName' in request.resource.data) || (request.resource.data.roomName is string && request.resource.data.roomName.size() <= 40))
+                    && (!('roomIcon' in request.resource.data) || (request.resource.data.roomIcon is string && request.resource.data.roomIcon.size() <= 8))
                     && (request.resource.data.pin == null
                         || (request.resource.data.pin is string && request.resource.data.pin.size() <= 64));
 
-      // only lastActivityAt may be bumped after creation (heartbeat/chat pings)
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActivityAt']);
+      // lastActivityAt (heartbeat/chat pings) or the room's own name/icon
+      // ("Server Profile") may be updated after creation
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActivityAt','roomName','roomIcon'])
+                    && (!('roomName' in request.resource.data) || (request.resource.data.roomName is string && request.resource.data.roomName.size() <= 40))
+                    && (!('roomIcon' in request.resource.data) || (request.resource.data.roomIcon is string && request.resource.data.roomIcon.size() <= 8));
 
       // clients may only remove a room once it's genuinely dead (24h+ idle)
       // AND it wasn't marked permanent — routine cleanup otherwise happens
@@ -37,11 +42,12 @@ service cloud.firestore {
         // supplied a matching pinProof — this can't be bypassed by editing
         // client JS, unlike a client-only check
         allow create: if request.resource.data.keys().hasOnly(
-                          ['name','broadcasting','currentFile','code','cursorLine','updatedAt','joinedAt','pinProof']
+                          ['name','broadcasting','currentFile','code','cursorLine','updatedAt','joinedAt','pinProof','avatarImg']
                         )
                         && request.resource.data.name is string && request.resource.data.name.size() <= 60
                         && request.resource.data.broadcasting is bool
                         && request.resource.data.code is string && request.resource.data.code.size() <= 300000
+                        && (!('avatarImg' in request.resource.data) || request.resource.data.avatarImg == null || (request.resource.data.avatarImg is string && request.resource.data.avatarImg.size() <= 30000))
                         && (
                              get(/databases/$(database)/documents/liveRooms/$(roomId)).data.pin == null
                              || request.resource.data.pinProof
@@ -49,8 +55,9 @@ service cloud.firestore {
                            );
 
         allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['broadcasting','currentFile','code','cursorLine','updatedAt','name'])
-                        && request.resource.data.code is string && request.resource.data.code.size() <= 300000;
+                          .hasOnly(['broadcasting','currentFile','code','cursorLine','updatedAt','name','avatarImg'])
+                        && request.resource.data.code is string && request.resource.data.code.size() <= 300000
+                        && (!('avatarImg' in request.resource.data) || request.resource.data.avatarImg == null || (request.resource.data.avatarImg is string && request.resource.data.avatarImg.size() <= 30000));
 
         // no per-user auth wired up in this app (no Firebase Auth), so this
         // can't be locked to "only the owner can delete their own doc" —

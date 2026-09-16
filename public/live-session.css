@@ -282,3 +282,35 @@
   .ls-body-fullscreen .ls-participants{grid-template-columns:1fr;}
   .ls-fullscreen-header{padding:0 14px;font-size:14px;}
 }
+
+/* ---- voice call button on each member row + floating call widget ---- */
+.ls-call-btn{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+  background:rgba(59,165,92,.16);color:#3BA55C;transition:background .12s,transform .12s;}
+.ls-call-btn:hover:not(:disabled){background:rgba(59,165,92,.3);transform:translateY(-1px);}
+.ls-call-btn:disabled{opacity:.3;cursor:default;}
+
+#lsCallWidget{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;
+  display:flex;align-items:center;gap:12px;padding:10px 16px 10px 10px;min-width:220px;
+  background:linear-gradient(180deg,rgba(30,33,38,.97),rgba(20,22,26,.97));
+  border:1px solid rgba(255,255,255,.09);border-radius:16px;
+  box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(14px);animation:ls-call-widget-in .18s ease-out;}
+@keyframes ls-call-widget-in{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.ls-call-avatar{flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:15px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.ls-call-info{flex:1;min-width:0;}
+.ls-call-name{font-size:13px;font-weight:700;color:#f2f4f8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ls-call-status{font-size:11px;color:#8b93a1;margin-top:1px;font-variant-numeric:tabular-nums;}
+.ls-call-actions{display:flex;gap:8px;flex-shrink:0;}
+.ls-call-icon-btn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:#e6e9ef;
+  transition:background .12s,transform .12s;}
+.ls-call-icon-btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.14);}
+.ls-call-icon-btn.danger{background:linear-gradient(135deg,#f0463f,#da3633);color:#fff;}
+.ls-call-icon-btn.accept{background:linear-gradient(135deg,#2ea043,#238636);color:#fff;}
+.ls-call-icon-btn.active{background:rgba(237,66,69,.25);color:#ED4245;}
+@media (max-width: 480px){
+  #lsCallWidget{left:12px;right:12px;bottom:12px;transform:none;min-width:0;}
+  @keyframes ls-call-widget-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+}

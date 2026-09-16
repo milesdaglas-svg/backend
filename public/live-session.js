@@ -352,6 +352,7 @@ async function lsCreateRoom(){
   renderLiveSessionPanel();
   lsSubscribe();
   lsSubscribeChat();
+  lsSubscribeIncomingCalls();
   lsMaybeCleanupOldRooms();
 }
 
@@ -382,6 +383,7 @@ async function lsJoinRoom(directCode){
   renderLiveSessionPanel();
   lsSubscribe();
   lsSubscribeChat();
+  lsSubscribeIncomingCalls();
   lsMaybeCleanupOldRooms();
 }
 
@@ -476,6 +478,8 @@ async function lsHeartbeat(){
 
 async function lsLeaveRoom(){
   if(lsBroadcasting) await lsToggleBroadcast();
+  if(lsCallState!=="idle") lsHangupCall();
+  if(lsIncomingUnsub){ lsIncomingUnsub(); lsIncomingUnsub=null; }
   try{
     const db = await lsInitDb();
     if(db){
@@ -772,6 +776,7 @@ function lsRenderPresence(list){
     const name = p.id===lsMyId ? "You" : lsEsc(p.name||"Someone");
     const initial = (p.name||"?").trim().charAt(0).toUpperCase() || "?";
     const statusLabel = status==="broadcasting" ? "Live" : status==="online" ? "Online" : "Away";
+    const canCall = p.id!==lsMyId && status!=="away" && lsCallState==="idle";
     return `<div class="ls-member-row">
       <div class="ls-member-avatar-wrap">
         ${lsAvatarHtml(p, "ls-member-avatar")}
@@ -781,8 +786,311 @@ function lsRenderPresence(list){
         <div class="ls-member-name">${name}</div>
         <div class="ls-member-sub">${statusLabel}</div>
       </div>
+      ${p.id!==lsMyId ? `<button class="ls-call-btn" ${canCall?'':'disabled'} onclick="lsStartCall('${p.id}')" title="${canCall?'Call '+name:'Unavailable'}">📞</button>` : ''}
     </div>`;
   }).join("");
+}
+
+/* ══════════════════════════════════════════
+   VOICE CALLING — 1:1 WebRTC audio call between two people in the same
+   room. Signaling goes through Firestore (same pattern as everything
+   else here — no separate signaling server): a `calls` doc carries the
+   SDP offer/answer + status, and a `candidates` subcollection carries
+   ICE candidates from each side. STUN-only (no TURN), so it'll fail to
+   connect on some strict/symmetric-NAT networks — most home/mobile
+   connections are fine.
+══════════════════════════════════════════ */
+let lsCallState      = "idle"; // idle | outgoing | incoming | active
+let lsCallId         = null;
+let lsCallOtherId    = null;
+let lsCallOtherName  = "";
+let lsCallPC         = null;
+let lsCallLocalStream= null;
+let lsCallRemoteAudio= null;
+let lsCallMuted      = false;
+let lsCallStartedAt  = null;
+let lsCallTimerInt   = null;
+let lsIncomingUnsub  = null;
+let lsCallDocUnsub   = null;
+let lsCallCandUnsub  = null;
+let lsCallSeenCandIds= new Set();
+
+const LS_ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" }
+];
+
+/* listens room-wide for any call doc where I'm the callee — set up once
+   per room join, torn down on leave, same lifecycle as chat/presence */
+async function lsSubscribeIncomingCalls(){
+  if(lsIncomingUnsub){ lsIncomingUnsub(); lsIncomingUnsub=null; }
+  const db = await lsInitDb(); if(!db) return;
+  const {collection,query,where,onSnapshot} = await lsFirestoreFns();
+  const q = query(collection(db,"liveRooms",lsRoomCode,"calls"), where("calleeId","==",lsMyId));
+  lsIncomingUnsub = onSnapshot(q, snap => {
+    snap.docChanges().forEach(ch => {
+      const data = ch.doc.data();
+      if(ch.type==="added" && data.status==="ringing"){
+        if(lsCallState!=="idle"){
+          // already on a call / calling someone — auto-decline as busy
+          lsFirestoreFns().then(({doc,updateDoc}) => updateDoc(doc(db,"liveRooms",lsRoomCode,"calls",ch.doc.id),{status:"declined"}).catch(()=>{}));
+          return;
+        }
+        lsCallId = ch.doc.id;
+        lsCallOtherId = data.callerId;
+        lsCallOtherName = data.callerName || "Someone";
+        lsCallState = "incoming";
+        lsWatchCallDoc();
+        lsRenderCallWidget();
+      }
+    });
+  }, err => console.error("[LiveSession] incoming-call listener error:", err));
+}
+
+function lsCallDocId(){ return lsCallId; }
+
+async function lsStartCall(calleeId){
+  if(lsCallState!=="idle") return;
+  const p = lsLastList.find(x=>x.id===calleeId);
+  const calleeName = p?.name || "them";
+  const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(e){ showToast("Couldn't access microphone — "+(e.message||"permission denied"),"error"); return; }
+
+  lsCallLocalStream = stream;
+  lsCallOtherId = calleeId;
+  lsCallOtherName = calleeName;
+  lsCallState = "outgoing";
+  lsRenderCallWidget();
+
+  const pc = lsCreatePeerConnection("caller");
+  stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  const {doc,collection,setDoc} = await lsFirestoreFns();
+  const callRef = doc(collection(db,"liveRooms",lsRoomCode,"calls"));
+  lsCallId = callRef.id;
+  await setDoc(callRef, {
+    callerId: lsMyId, callerName: lsMyName || "Someone",
+    calleeId, calleeName,
+    offer: { type: offer.type, sdp: offer.sdp },
+    status: "ringing", createdAt: Date.now()
+  });
+  lsWatchCallDoc();
+  lsWatchCandidates("caller");
+}
+
+async function lsAcceptCall(){
+  if(lsCallState!=="incoming" || !lsCallId) return;
+  const db = await lsInitDb(); if(!db) return;
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(e){ showToast("Couldn't access microphone — "+(e.message||"permission denied"),"error"); lsDeclineCall(); return; }
+  lsCallLocalStream = stream;
+
+  const {doc,getDoc,updateDoc} = await lsFirestoreFns();
+  const callRef = doc(db,"liveRooms",lsRoomCode,"calls",lsCallId);
+  const snap = await getDoc(callRef);
+  if(!snap.exists() || snap.data().status!=="ringing"){ lsCleanupCall(); return; }
+  const offer = snap.data().offer;
+
+  const pc = lsCreatePeerConnection("callee");
+  stream.getTracks().forEach(t => pc.addTrack(t, stream));
+  await pc.setRemoteDescription(offer);
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await updateDoc(callRef, { answer: { type: answer.type, sdp: answer.sdp }, status: "active" });
+  lsCallState = "active";
+  lsCallStartedAt = Date.now();
+  lsStartCallTimer();
+  lsWatchCandidates("callee");
+  lsRenderCallWidget();
+}
+
+async function lsDeclineCall(){
+  if(lsCallId){
+    try{
+      const db = await lsInitDb();
+      const {doc,updateDoc} = await lsFirestoreFns();
+      await updateDoc(doc(db,"liveRooms",lsRoomCode,"calls",lsCallId),{status:"declined"});
+    }catch{}
+  }
+  lsCleanupCall();
+}
+
+async function lsHangupCall(){
+  if(lsCallId){
+    try{
+      const db = await lsInitDb();
+      const {doc,updateDoc} = await lsFirestoreFns();
+      await updateDoc(doc(db,"liveRooms",lsRoomCode,"calls",lsCallId),{status:"ended"});
+    }catch{}
+  }
+  lsCleanupCall();
+}
+
+function lsToggleMute(){
+  if(!lsCallLocalStream) return;
+  lsCallMuted = !lsCallMuted;
+  lsCallLocalStream.getAudioTracks().forEach(t => t.enabled = !lsCallMuted);
+  lsRenderCallWidget();
+}
+
+function lsCreatePeerConnection(role){
+  const pc = new RTCPeerConnection({ iceServers: LS_ICE_SERVERS });
+  pc.onicecandidate = async (ev) => {
+    if(!ev.candidate || !lsCallId) return;
+    try{
+      const db = await lsInitDb();
+      const {collection,addDoc} = await lsFirestoreFns();
+      await addDoc(collection(db,"liveRooms",lsRoomCode,"calls",lsCallId,"candidates"), {
+        from: role, candidate: ev.candidate.toJSON(), createdAt: Date.now()
+      });
+    }catch{}
+  };
+  pc.ontrack = (ev) => {
+    if(!lsCallRemoteAudio){
+      lsCallRemoteAudio = document.createElement("audio");
+      lsCallRemoteAudio.autoplay = true;
+      lsCallRemoteAudio.id = "lsCallRemoteAudio";
+      document.body.appendChild(lsCallRemoteAudio);
+    }
+    lsCallRemoteAudio.srcObject = ev.streams[0];
+  };
+  pc.onconnectionstatechange = () => {
+    if(["failed","disconnected","closed"].includes(pc.connectionState) && lsCallState!=="idle"){
+      if(pc.connectionState==="failed") showToast("Call connection failed","error");
+    }
+  };
+  lsCallPC = pc;
+  return pc;
+}
+
+/* watches the call doc itself: caller waits here for the answer + for
+   status flips (declined/ended from the other side); callee watches
+   for the other side hanging up mid-call */
+async function lsWatchCallDoc(){
+  if(lsCallDocUnsub){ lsCallDocUnsub(); lsCallDocUnsub=null; }
+  const db = await lsInitDb(); if(!db) return;
+  const {doc,onSnapshot} = await lsFirestoreFns();
+  lsCallDocUnsub = onSnapshot(doc(db,"liveRooms",lsRoomCode,"calls",lsCallId), async snap => {
+    if(!snap.exists()){ if(lsCallState!=="idle") lsCleanupCall(); return; }
+    const data = snap.data();
+    if(data.status==="declined" && lsCallState==="outgoing"){
+      showToast(`${lsCallOtherName} declined the call`,"info");
+      lsCleanupCall();
+      return;
+    }
+    if(data.status==="ended" && lsCallState!=="idle"){
+      lsCleanupCall();
+      return;
+    }
+    if(data.status==="active" && data.answer && lsCallState==="outgoing" && lsCallPC && !lsCallPC.currentRemoteDescription){
+      await lsCallPC.setRemoteDescription(data.answer);
+      lsCallState = "active";
+      lsCallStartedAt = Date.now();
+      lsStartCallTimer();
+      lsRenderCallWidget();
+    }
+  }, err => console.error("[LiveSession] call-doc listener error:", err));
+}
+
+async function lsWatchCandidates(role){
+  if(lsCallCandUnsub){ lsCallCandUnsub(); lsCallCandUnsub=null; }
+  const db = await lsInitDb(); if(!db) return;
+  const {collection,onSnapshot} = await lsFirestoreFns();
+  const otherRole = role==="caller" ? "callee" : "caller";
+  lsCallSeenCandIds = new Set();
+  lsCallCandUnsub = onSnapshot(collection(db,"liveRooms",lsRoomCode,"calls",lsCallId,"candidates"), snap => {
+    snap.docChanges().forEach(ch => {
+      if(ch.type!=="added") return;
+      const data = ch.doc.data();
+      if(data.from!==otherRole || lsCallSeenCandIds.has(ch.doc.id)) return;
+      lsCallSeenCandIds.add(ch.doc.id);
+      if(lsCallPC) lsCallPC.addIceCandidate(data.candidate).catch(()=>{});
+    });
+  }, err => console.error("[LiveSession] ICE candidate listener error:", err));
+}
+
+function lsStartCallTimer(){
+  if(lsCallTimerInt) clearInterval(lsCallTimerInt);
+  lsCallTimerInt = setInterval(lsRenderCallWidget, 1000);
+}
+
+function lsCleanupCall(){
+  if(lsCallPC){ try{ lsCallPC.close(); }catch{} lsCallPC=null; }
+  if(lsCallLocalStream){ lsCallLocalStream.getTracks().forEach(t=>t.stop()); lsCallLocalStream=null; }
+  if(lsCallRemoteAudio){ lsCallRemoteAudio.srcObject=null; lsCallRemoteAudio.remove(); lsCallRemoteAudio=null; }
+  if(lsCallDocUnsub){ lsCallDocUnsub(); lsCallDocUnsub=null; }
+  if(lsCallCandUnsub){ lsCallCandUnsub(); lsCallCandUnsub=null; }
+  if(lsCallTimerInt){ clearInterval(lsCallTimerInt); lsCallTimerInt=null; }
+  // best-effort: clean up the call doc if it's still there and I'm the one closing it out
+  const idToClean = lsCallId;
+  if(idToClean){
+    lsInitDb().then(async db => {
+      try{
+        const {doc,deleteDoc} = await lsFirestoreFns();
+        await deleteDoc(doc(db,"liveRooms",lsRoomCode,"calls",idToClean));
+      }catch{}
+    });
+  }
+  lsCallState = "idle"; lsCallId = null; lsCallOtherId = null; lsCallOtherName = "";
+  lsCallMuted = false; lsCallStartedAt = null; lsCallSeenCandIds = new Set();
+  lsRenderCallWidget();
+  lsRenderPresence(lsLastList);
+}
+
+function lsFmtCallDuration(){
+  if(!lsCallStartedAt) return "";
+  const secs = Math.floor((Date.now()-lsCallStartedAt)/1000);
+  const m = Math.floor(secs/60), s = secs%60;
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+
+/* floating widget, appended straight to <body> (not the panel) so a call
+   stays visible/controllable no matter which tab someone's looking at,
+   same reasoning as putting the remote <audio> element on body */
+function lsRenderCallWidget(){
+  let w = document.getElementById("lsCallWidget");
+  if(lsCallState==="idle"){ w?.remove(); return; }
+  if(!w){
+    w = document.createElement("div");
+    w.id = "lsCallWidget";
+    document.body.appendChild(w);
+  }
+  const initial = (lsCallOtherName||"?").trim().charAt(0).toUpperCase() || "?";
+  const color = lsAvatarColor(lsCallOtherName);
+  let body = "";
+  if(lsCallState==="outgoing"){
+    body = `<div class="ls-call-status">Calling…</div>
+      <div class="ls-call-actions">
+        <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Cancel">✕</button>
+      </div>`;
+  } else if(lsCallState==="incoming"){
+    body = `<div class="ls-call-status">Incoming call…</div>
+      <div class="ls-call-actions">
+        <button class="ls-call-icon-btn danger" onclick="lsDeclineCall()" title="Decline">✕</button>
+        <button class="ls-call-icon-btn accept" onclick="lsAcceptCall()" title="Accept">📞</button>
+      </div>`;
+  } else if(lsCallState==="active"){
+    body = `<div class="ls-call-status">${lsFmtCallDuration()}</div>
+      <div class="ls-call-actions">
+        <button class="ls-call-icon-btn ${lsCallMuted?'active':''}" onclick="lsToggleMute()" title="${lsCallMuted?'Unmute':'Mute'}">${lsCallMuted?'🔇':'🎙️'}</button>
+        <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Hang up">✕</button>
+      </div>`;
+  }
+  w.innerHTML = `
+    <div class="ls-call-avatar" style="background:${color};">${initial}</div>
+    <div class="ls-call-info">
+      <div class="ls-call-name">${lsEsc(lsCallOtherName)}</div>
+      ${body}
+    </div>`;
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }

@@ -227,9 +227,12 @@ function renderLiveSessionPanel(){
         <div class="ls-section-sub">Open rooms anyone can hop into right now.</div>
         <div class="ls-public-list" id="lsPublicList" style="margin-top:10px;"><div class="ls-empty">Loading…</div></div>
       </div>`;
+    body.classList.remove("ls-in-room");
     lsSubscribePublicRooms();
     return;
   }
+
+  body.classList.add("ls-in-room");
 
   body.innerHTML = `
     <div class="ls-sidebar-col">

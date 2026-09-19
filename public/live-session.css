@@ -236,11 +236,16 @@
    nothing scrolls except the chat log and the sidebar column themselves —
    the chat input row never moves */
 .ls-body-fullscreen{
-  max-width:none;width:100%;
+  max-width:640px;margin:0 auto;width:100%;
   padding:20px 24px 22px;
-  display:flex;flex-direction:row;align-items:stretch;gap:20px;
-  height:100%;overflow:hidden;box-sizing:border-box;
+  display:flex;flex-direction:column;gap:14px;
+  height:100%;overflow-y:auto;box-sizing:border-box;
 }
+/* once actually in a room, it's sidebar-col + main-col (each scrolls
+   internally) instead of the flat stacked create/join boxes above —
+   only then does the outer container switch to a row and stop
+   scrolling itself */
+.ls-body-fullscreen.ls-in-room{max-width:none;margin:0;flex-direction:row;align-items:stretch;gap:20px;overflow:hidden;}
 .ls-body-fullscreen .ls-sidebar-col{display:flex;flex-direction:column;gap:18px;width:370px;flex-shrink:0;height:100%;overflow-y:auto;padding-right:4px;box-sizing:border-box;}
 /* once someone's actually broadcasting, drop the room-code/copy/leave/
    broadcast-toggle/people boxes — the room code's already in the header,
@@ -282,7 +287,8 @@
    edge. Stack them instead: room info/people/live-editors on top
    (scrollable, capped height), chat fills the rest below. */
 @media (max-width: 768px){
-  .ls-body-fullscreen{flex-direction:column;padding:12px;gap:10px;}
+  .ls-body-fullscreen{padding:12px;gap:10px;}
+  .ls-body-fullscreen.ls-in-room{flex-direction:column;}
   .ls-body-fullscreen .ls-sidebar-col{width:100%;height:auto;max-height:38vh;flex-shrink:0;overflow-y:auto;padding-right:0;gap:10px;}
   .ls-body-fullscreen .ls-main-col{width:100%;flex:1;min-height:0;}
   .ls-body-fullscreen .ls-box{padding:14px;}

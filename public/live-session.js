@@ -159,16 +159,22 @@ function renderLiveSessionPanel(){
       </div>
 
       <div class="ls-box">
-        <div class="ls-section-title"><span class="ls-step">1</span> Start a new session</div>
-        <div class="ls-section-sub">You'll get a 6-character code to share.</div>
-        <div class="ls-row" style="margin:10px 0 8px;align-items:center;">
+        <div class="ls-section-title">👤 Your profile</div>
+        <div class="ls-section-sub">Everyone sees this — set it once, works whether you create a room or join one below.</div>
+        <div class="ls-row" style="margin:10px 0 2px;align-items:center;">
           <div class="ls-my-avatar-picker" onclick="lsPickAvatar()" title="Click to change your picture">
             ${lsMyAvatar ? `<img src="${lsMyAvatar}">` : `<span>${lsInitial(lsMyName)}</span>`}
-            <span class="ls-my-avatar-edit">✎</span>
+            <span class="ls-my-avatar-edit">📷</span>
           </div>
           <input type="text" id="lsNameInput" placeholder="Your name" value="${lsMyName ? lsMyName.replace(/"/g,'&quot;') : ''}">
         </div>
+        <div class="ls-hint" style="text-align:left;margin-top:0;">Tap the circle to add a photo</div>
         <input type="file" id="lsAvatarFileInput" accept="image/*" style="display:none;" onchange="lsHandleAvatarFile(this.files[0])">
+      </div>
+
+      <div class="ls-box">
+        <div class="ls-section-title"><span class="ls-step">1</span> Start a new session</div>
+        <div class="ls-section-sub">You'll get a 6-character code to share.</div>
         <div class="ls-row" style="margin-bottom:8px;align-items:center;">
           <div class="ls-room-icon-picker" onclick="document.getElementById('lsRoomIconPop').classList.toggle('open')" title="Pick a server icon">
             <span>${lsPickedRoomIcon||'👥'}</span>
@@ -204,7 +210,7 @@ function renderLiveSessionPanel(){
 
       <div class="ls-box">
         <div class="ls-section-title"><span class="ls-step">2</span> Join with a code</div>
-        <div class="ls-section-sub">Got a code from someone? Enter it here.</div>
+        <div class="ls-section-sub">Got a code from someone? Enter it here — joins using the name/photo you set above.</div>
         <div class="ls-row" style="margin:10px 0 8px;">
           <input type="text" id="lsJoinInput" placeholder="Room code" maxlength="6" style="text-transform:uppercase;">
           <button class="ls-btn secondary" onclick="lsJoinRoom()">Join</button>

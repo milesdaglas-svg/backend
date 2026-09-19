@@ -815,6 +815,58 @@ let lsCallDocUnsub   = null;
 let lsCallCandUnsub  = null;
 let lsCallSeenCandIds= new Set();
 
+/* ---- ringtone — synthesized via Web Audio so no audio asset/network
+   request is needed (keeps this working offline like the rest of the PWA).
+   This was the actual reported bug: incoming calls only showed a silent
+   floating widget, so unless you were staring at the tab you'd never know. */
+let lsRingCtx = null, lsRingLoopInt = null, lsRingVibrateInt = null;
+
+function lsBeep(ctx, t, freq, dur, vol){
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = "sine"; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(vol, t+0.02);
+  gain.gain.linearRampToValueAtTime(0, t+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t+dur+0.02);
+}
+
+function lsPlayRingCycle(kind){
+  try{
+    if(!lsRingCtx) lsRingCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const ctx = lsRingCtx;
+    if(ctx.state==="suspended") ctx.resume().catch(()=>{});
+    const now = ctx.currentTime;
+    if(kind==="incoming"){
+      lsBeep(ctx, now, 880, 0.35, 0.2); lsBeep(ctx, now+0.42, 880, 0.35, 0.2);
+    } else {
+      lsBeep(ctx, now, 440, 1.0, 0.08); // soft ringback for the caller
+    }
+  }catch{}
+}
+
+function lsStartRingtone(kind){
+  lsStopRingtone();
+  lsPlayRingCycle(kind);
+  lsRingLoopInt = setInterval(()=>lsPlayRingCycle(kind), kind==="incoming" ? 1700 : 3200);
+  if(kind==="incoming" && navigator.vibrate){
+    navigator.vibrate([400,200,400,200]);
+    lsRingVibrateInt = setInterval(()=>navigator.vibrate([400,200,400,200]), 1700);
+  }
+  if(kind==="incoming" && document.hidden && "Notification" in window && Notification.permission==="granted"){
+    try{
+      const n = new Notification("Incoming call", { body: (lsCallOtherName||"Someone")+" is calling", tag:"ls-incoming-call", requireInteraction:true });
+      n.onclick = () => { window.focus(); n.close(); };
+    }catch{}
+  }
+}
+
+function lsStopRingtone(){
+  if(lsRingLoopInt){ clearInterval(lsRingLoopInt); lsRingLoopInt=null; }
+  if(lsRingVibrateInt){ clearInterval(lsRingVibrateInt); lsRingVibrateInt=null; }
+  if(navigator.vibrate) navigator.vibrate(0);
+}
+
 const LS_ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" }
@@ -824,6 +876,7 @@ const LS_ICE_SERVERS = [
    per room join, torn down on leave, same lifecycle as chat/presence */
 async function lsSubscribeIncomingCalls(){
   if(lsIncomingUnsub){ lsIncomingUnsub(); lsIncomingUnsub=null; }
+  if("Notification" in window && Notification.permission==="default"){ try{ Notification.requestPermission(); }catch{} }
   const db = await lsInitDb(); if(!db) return;
   const {collection,query,where,onSnapshot} = await lsFirestoreFns();
   const q = query(collection(db,"liveRooms",lsRoomCode,"calls"), where("calleeId","==",lsMyId));
@@ -842,6 +895,7 @@ async function lsSubscribeIncomingCalls(){
         lsCallState = "incoming";
         lsWatchCallDoc();
         lsRenderCallWidget();
+        lsStartRingtone("incoming");
       }
     });
   }, err => console.error("[LiveSession] incoming-call listener error:", err));
@@ -864,6 +918,7 @@ async function lsStartCall(calleeId){
   lsCallOtherName = calleeName;
   lsCallState = "outgoing";
   lsRenderCallWidget();
+  lsStartRingtone("outgoing");
 
   const pc = lsCreatePeerConnection("caller");
   stream.getTracks().forEach(t => pc.addTrack(t, stream));
@@ -908,6 +963,7 @@ async function lsAcceptCall(){
   await updateDoc(callRef, { answer: { type: answer.type, sdp: answer.sdp }, status: "active" });
   lsCallState = "active";
   lsCallStartedAt = Date.now();
+  lsStopRingtone();
   lsStartCallTimer();
   lsWatchCandidates("callee");
   lsRenderCallWidget();
@@ -995,6 +1051,7 @@ async function lsWatchCallDoc(){
       await lsCallPC.setRemoteDescription(data.answer);
       lsCallState = "active";
       lsCallStartedAt = Date.now();
+      lsStopRingtone();
       lsStartCallTimer();
       lsRenderCallWidget();
     }
@@ -1024,6 +1081,7 @@ function lsStartCallTimer(){
 }
 
 function lsCleanupCall(){
+  lsStopRingtone();
   if(lsCallPC){ try{ lsCallPC.close(); }catch{} lsCallPC=null; }
   if(lsCallLocalStream){ lsCallLocalStream.getTracks().forEach(t=>t.stop()); lsCallLocalStream=null; }
   if(lsCallRemoteAudio){ lsCallRemoteAudio.srcObject=null; lsCallRemoteAudio.remove(); lsCallRemoteAudio=null; }

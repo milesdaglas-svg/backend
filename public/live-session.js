@@ -94,15 +94,21 @@ function lsOpenFullscreen(){
   overlay.innerHTML = `
     <div class="ls-fullscreen-header">
       <span>${lsRoomIcon?lsEsc(lsRoomIcon)+' ':'👥 '}${lsRoomName?lsEsc(lsRoomName):'Live Session'}${lsRoomCode?' — Room <span class="ls-fs-code">'+lsRoomCode+'</span>':''}</span>
-      <button class="ls-btn secondary" onclick="lsToggleExpand()">✕ Exit Fullscreen</button>
+      <button class="ls-btn secondary" onclick="lsExitFullscreenToEditor()">✕ Exit Fullscreen</button>
     </div>
     <div class="ls-fullscreen-content" id="lsFullscreenContent"></div>`;
   document.body.appendChild(overlay);
   document.getElementById("lsFullscreenContent").appendChild(panelBody);
   panelBody.classList.add("ls-body-fullscreen");
-  const btn = panelBody.querySelector(".ls-expand-btn");
-  if(btn) btn.textContent = "⛶ Already fullscreen";
   lsExpanded = true;
+}
+
+/* the exit button backs out to the normal editor view entirely — Live
+   Session no longer has a narrow sidebar form to fall back into, it's
+   fullscreen-or-closed */
+function lsExitFullscreenToEditor(){
+  lsCloseFullscreen();
+  if(typeof activitySwitch==="function") activitySwitch("explorer");
 }
 
 function lsCloseFullscreen(){
@@ -110,9 +116,7 @@ function lsCloseFullscreen(){
   const homeSlot = document.querySelector('.sidebar-panel[data-panel="live-session"]');
   if(panelBody && homeSlot){
     panelBody.classList.remove("ls-body-fullscreen");
-    homeSlot.appendChild(panelBody);
-    const btn = panelBody.querySelector(".ls-expand-btn");
-    if(btn) btn.textContent = "⛶ Expand to fullscreen";
+    homeSlot.appendChild(panelBody); // parked here, hidden — this tab has no non-fullscreen view anymore
   }
   document.getElementById("lsFullscreenOverlay")?.remove();
   lsExpanded = false;
@@ -232,7 +236,6 @@ function renderLiveSessionPanel(){
           <button class="ls-btn secondary" style="flex:1;" onclick="lsCopyCode()">📋 Copy Code</button>
           <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
         </div>
-        <button class="ls-btn secondary ls-expand-btn" onclick="lsToggleExpand()">${lsExpanded?'⛶ Already fullscreen':'⛶ Expand to fullscreen'}</button>
       </div>
 
       <div class="ls-box ls-room-info-box">
@@ -497,7 +500,7 @@ async function lsLeaveRoom(){
   lsCoEditing = false; lsUnsubscribeCoEdit();
   lsReplyingTo = null; lsChatMsgsById = {};
   lsUnreadCount = 0; lsTalliedMsgIds = new Set(); lsUpdateUnreadBadge();
-  if(lsExpanded) lsCloseFullscreen();
+  if(lsExpanded){ renderLiveSessionPanel(); return; } // stay fullscreen, just show the create/join screen there
   renderLiveSessionPanel();
 }
 

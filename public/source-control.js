@@ -233,13 +233,20 @@ function activitySwitch(panel) {
   document.querySelectorAll(".sidebar-panel").forEach(p=>p.classList.toggle("active",p.dataset.panel===panel));
   if(panel==="live-session" && typeof lsSetVisible==="function") lsSetVisible(true);
   const sidebar=document.getElementById("sidebar");
-  if(window.innerWidth<=768&&sidebar&&!sidebar.classList.contains("open")){sidebar.classList.add("open");document.getElementById("sidebarOverlay")?.classList.add("active");}
+  // live-session goes straight to its own fullscreen overlay (below), so it
+  // doesn't need the narrow mobile drawer opening underneath it too
+  if(panel!=="live-session" && window.innerWidth<=768 && sidebar && !sidebar.classList.contains("open")){sidebar.classList.add("open");document.getElementById("sidebarOverlay")?.classList.add("active");}
   if(panel==="search") setTimeout(()=>document.getElementById("searchInput")?.focus(),50);
   if(panel==="source-control") scRefresh();
   if(panel==="outline") buildOutline();
   if(panel==="extensions") setTimeout(()=>{if(typeof renderExtensionsPanel==="function")renderExtensionsPanel();},50);
   if(panel==="github") setTimeout(()=>{if(typeof renderGithubPanel==="function")renderGithubPanel();},50);
-  if(panel==="live-session") setTimeout(()=>{if(typeof renderLiveSessionPanel==="function")renderLiveSessionPanel();},50);
+  if(panel==="live-session") setTimeout(()=>{
+    if(typeof renderLiveSessionPanel==="function") renderLiveSessionPanel();
+    // fill the whole page instead of being cramped in the narrow sidebar —
+    // reuses the same fullscreen overlay the old manual "Expand" button used
+    if(typeof lsOpenFullscreen==="function" && typeof lsExpanded!=="undefined" && !lsExpanded) lsOpenFullscreen();
+  },50);
 }
 
 /* ══════════════════════

@@ -236,17 +236,15 @@ function renderLiveSessionPanel(){
       </div>
 
       <div class="ls-box ls-room-info-box">
-        <div class="ls-section-title">⚙️ Server Profile</div>
-        <div class="ls-setting-sub" style="margin-bottom:8px;">Name and icon for this room — different for every server, seen by everyone here</div>
-        <div class="ls-row" style="align-items:center;">
-          <div class="ls-room-icon-picker" onclick="document.getElementById('lsRoomIconPopLive').classList.toggle('open')" title="Change server icon">
-            <span>${lsRoomIcon||'👥'}</span>
-          </div>
-          <input type="text" id="lsRoomNameEditInput" placeholder="Server name" value="${lsEsc(lsRoomName)}" style="font-family:inherit;letter-spacing:normal;" maxlength="40">
-          <button class="ls-btn secondary" onclick="lsSaveRoomProfile()">Save</button>
-        </div>
-        <div class="ls-room-icon-pop" id="lsRoomIconPopLive">
-          ${["👥","🚀","💻","🎮","📚","🔥","⭐","🎨","🐛","🧪","🎯","☕"].map(e=>`<span onclick="lsPickRoomIconLive('${e}')">${e}</span>`).join("")}
+        <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
+        <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
+      </div>
+
+      <div class="ls-box ls-live-editors-box">
+        <div class="ls-section-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
+        <div class="ls-section-sub">Anyone with broadcast on shows up here, live.</div>
+        <div class="ls-participants" id="lsParticipants" style="margin-top:8px;">
+          <div class="ls-empty">Waiting for updates…</div>
         </div>
       </div>
 
@@ -264,7 +262,7 @@ function renderLiveSessionPanel(){
 
       <div class="ls-box ls-room-info-box">
         <div class="ls-section-title">🖊️ Co-Edit</div>
-        <div class="ls-setting-sub" style="margin-bottom:2px;">Easiest way in: scroll to Live Editors below and tap "✏️ Edit this with [name]" on someone who's broadcasting — it opens their file and turns this on for you both automatically.</div>
+        <div class="ls-setting-sub" style="margin-bottom:2px;">Easiest way in: tap "✏️ Edit this with [name]" on someone who's broadcasting up in Live editors — it opens their file and turns this on for you both automatically.</div>
         <div class="ls-setting-row" style="margin-top:8px;">
           <div class="ls-setting-icon" style="background:${lsCoEditing?'#5865F2':'#3a3d41'};">${lsCoEditing?'✍️':'🖊️'}</div>
           <div class="ls-setting-text">
@@ -276,15 +274,17 @@ function renderLiveSessionPanel(){
       </div>
 
       <div class="ls-box ls-room-info-box">
-        <div class="ls-section-title">👥 People <span class="ls-count-badge" id="lsPeopleCount">1</span></div>
-        <div class="ls-presence-list" id="lsPresenceList" style="margin-top:8px;"><div class="ls-empty">Loading…</div></div>
-      </div>
-
-      <div class="ls-box ls-live-editors-box">
-        <div class="ls-section-title">🖥️ Live editors <span class="ls-count-badge" id="lsLiveCount">0</span></div>
-        <div class="ls-section-sub">Anyone with broadcast on shows up here, live.</div>
-        <div class="ls-participants" id="lsParticipants" style="margin-top:8px;">
-          <div class="ls-empty">Waiting for updates…</div>
+        <div class="ls-section-title">⚙️ Server Profile</div>
+        <div class="ls-setting-sub" style="margin-bottom:8px;">Name and icon for this room — different for every server, seen by everyone here</div>
+        <div class="ls-row" style="align-items:center;">
+          <div class="ls-room-icon-picker" onclick="document.getElementById('lsRoomIconPopLive').classList.toggle('open')" title="Change server icon">
+            <span>${lsRoomIcon||'👥'}</span>
+          </div>
+          <input type="text" id="lsRoomNameEditInput" placeholder="Server name" value="${lsEsc(lsRoomName)}" style="font-family:inherit;letter-spacing:normal;" maxlength="40">
+          <button class="ls-btn secondary" onclick="lsSaveRoomProfile()">Save</button>
+        </div>
+        <div class="ls-room-icon-pop" id="lsRoomIconPopLive">
+          ${["👥","🚀","💻","🎮","📚","🔥","⭐","🎨","🐛","🧪","🎯","☕"].map(e=>`<span onclick="lsPickRoomIconLive('${e}')">${e}</span>`).join("")}
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ let lsLastList      = [];
 let lsMyPinProof    = null;
 let lsPublicUnsub   = null;
 let lsExpanded       = false;
+let lsMobileView     = "session"; // "session" | "chat" — which half shows on phones, where both can't fit at once
 let lsRoomPermanent  = false;
 let lsRoomName       = "";
 let lsRoomIcon       = "";
@@ -81,6 +82,13 @@ function lsUpdateUnreadBadge(){
    overlay (and back on close) — same element, same ids, so every
    onSnapshot listener and getElementById() call in the rest of this file
    just keeps working without any special-casing. */
+function lsSetMobileView(view){
+  if(lsMobileView===view) return;
+  lsMobileView = view;
+  const body = lsPanelBody();
+  if(body) body.dataset.mobileView = view; // avoid a full re-render just to flip which half is visible; CSS reacts to the attribute
+}
+
 function lsToggleExpand(){
   lsExpanded ? lsCloseFullscreen() : lsOpenFullscreen();
 }
@@ -228,13 +236,19 @@ function renderLiveSessionPanel(){
         <div class="ls-public-list" id="lsPublicList" style="margin-top:10px;"><div class="ls-empty">Loading…</div></div>
       </div>`;
     body.classList.remove("ls-in-room");
+    delete body.dataset.mobileView;
     lsSubscribePublicRooms();
     return;
   }
 
   body.classList.add("ls-in-room");
+  body.dataset.mobileView = lsMobileView;
 
   body.innerHTML = `
+    <div class="ls-mobile-tabs">
+      <button class="ls-mobile-tab-btn" data-view="session" onclick="lsSetMobileView('session')">👥 Session</button>
+      <button class="ls-mobile-tab-btn" data-view="chat" onclick="lsSetMobileView('chat')">💬 Chat</button>
+    </div>
     <div class="ls-sidebar-col">
       <div class="ls-box ls-room-card ls-room-info-box">
         <div class="ls-status-chips">${lsStatusChipsHtml()}</div>
@@ -824,6 +838,7 @@ let lsCallRemoteStream = null;
 let lsCallMuted      = false;
 let lsCallHasVideo   = false;
 let lsCallCamOff     = false;
+let lsCallMinimized  = false; // lets someone keep coding with the video call still running, shrunk to a corner
 let lsCallLocalVideoEl  = null;
 let lsCallRemoteVideoEl = null;
 let lsCallStartedAt  = null;
@@ -1029,6 +1044,21 @@ function lsToggleCamera(){
   lsRenderCallWidget();
 }
 
+/* shrinks the fullscreen video call to a small corner widget so the editor
+   underneath becomes usable again — this only toggles a CSS class on the
+   existing widget element, it never rebuilds it, so the live <video>
+   elements (and the call itself) keep running untouched */
+function lsToggleMinimizeCall(){
+  if(!lsCallHasVideo || lsCallState!=="active") return;
+  lsCallMinimized = !lsCallMinimized;
+  document.getElementById("lsCallWidget")?.classList.toggle("ls-call-minimized", lsCallMinimized);
+  lsRenderCallWidget(); // just refreshes the action-button icons (mute/cam hidden, expand icon flips)
+  // minimizing is specifically so you can go back to coding, so do that in
+  // the same tap — but expanding back shouldn't force you into Live
+  // Session if you've since navigated elsewhere
+  if(lsCallMinimized && lsExpanded) lsExitFullscreenToEditor();
+}
+
 function lsCreatePeerConnection(role){
   const pc = new RTCPeerConnection({ iceServers: LS_ICE_SERVERS });
   pc.onicecandidate = async (ev) => {
@@ -1136,7 +1166,7 @@ function lsCleanupCall(){
     });
   }
   lsCallState = "idle"; lsCallId = null; lsCallOtherId = null; lsCallOtherName = "";
-  lsCallMuted = false; lsCallHasVideo = false; lsCallCamOff = false;
+  lsCallMuted = false; lsCallHasVideo = false; lsCallCamOff = false; lsCallMinimized = false;
   lsCallStartedAt = null; lsCallSeenCandIds = new Set();
   lsRenderCallWidget();
   lsRenderPresence(lsLastList);
@@ -1153,8 +1183,9 @@ function lsFmtCallDuration(){
    stays visible/controllable no matter which tab someone's looking at,
    same reasoning as putting the remote <audio> element on body */
 function lsCallVideoActionsHtml(){
-  return `<button class="ls-call-icon-btn ${lsCallMuted?'active':''}" onclick="lsToggleMute()" title="${lsCallMuted?'Unmute':'Mute'}">${lsCallMuted?'🔇':'🎙️'}</button>
-    <button class="ls-call-icon-btn ${lsCallCamOff?'active':''}" onclick="lsToggleCamera()" title="${lsCallCamOff?'Turn camera on':'Turn camera off'}">${lsCallCamOff?'📷':'🎥'}</button>
+  return `<button class="ls-call-icon-btn ls-mute-btn ${lsCallMuted?'active':''}" onclick="lsToggleMute()" title="${lsCallMuted?'Unmute':'Mute'}">${lsCallMuted?'🔇':'🎙️'}</button>
+    <button class="ls-call-icon-btn ls-cam-btn ${lsCallCamOff?'active':''}" onclick="lsToggleCamera()" title="${lsCallCamOff?'Turn camera on':'Turn camera off'}">${lsCallCamOff?'📷':'🎥'}</button>
+    <button class="ls-call-icon-btn ls-minimize-btn" onclick="lsToggleMinimizeCall()" title="${lsCallMinimized?'Expand':'Minimize — keep coding while on the call'}">${lsCallMinimized?'⛶':'—'}</button>
     <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Hang up">✕</button>`;
 }
 
@@ -1176,7 +1207,7 @@ function lsRenderCallWidget(){
       w.dataset.mode = "video";
       w.classList.add("ls-call-video-mode");
       w.innerHTML = `
-        <video id="lsCallRemoteVideo" class="ls-call-remote-video" autoplay playsinline></video>
+        <video id="lsCallRemoteVideo" class="ls-call-remote-video" autoplay playsinline onclick="if(lsCallMinimized) lsToggleMinimizeCall()"></video>
         <video id="lsCallLocalVideo" class="ls-call-local-video" autoplay playsinline muted></video>
         <div class="ls-call-video-overlay">
           <div class="ls-call-video-name">${lsEsc(lsCallOtherName)}</div>

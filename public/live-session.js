@@ -798,7 +798,8 @@ function lsRenderPresence(list){
         <div class="ls-member-name">${name}</div>
         <div class="ls-member-sub">${statusLabel}</div>
       </div>
-      ${p.id!==lsMyId ? `<button class="ls-call-btn" ${canCall?'':'disabled'} onclick="lsStartCall('${p.id}')" title="${canCall?'Call '+name:'Unavailable'}">📞</button>` : ''}
+      ${p.id!==lsMyId ? `<button class="ls-call-btn" ${canCall?'':'disabled'} onclick="lsStartCall('${p.id}',false)" title="${canCall?'Voice call '+name:'Unavailable'}">📞</button>` : ''}
+      ${p.id!==lsMyId ? `<button class="ls-call-btn ls-call-btn-video" ${canCall?'':'disabled'} onclick="lsStartCall('${p.id}',true)" title="${canCall?'Video call '+name:'Unavailable'}">🎥</button>` : ''}
     </div>`;
   }).join("");
 }
@@ -819,7 +820,12 @@ let lsCallOtherName  = "";
 let lsCallPC         = null;
 let lsCallLocalStream= null;
 let lsCallRemoteAudio= null;
+let lsCallRemoteStream = null;
 let lsCallMuted      = false;
+let lsCallHasVideo   = false;
+let lsCallCamOff     = false;
+let lsCallLocalVideoEl  = null;
+let lsCallRemoteVideoEl = null;
 let lsCallStartedAt  = null;
 let lsCallTimerInt   = null;
 let lsIncomingUnsub  = null;
@@ -904,6 +910,8 @@ async function lsSubscribeIncomingCalls(){
         lsCallId = ch.doc.id;
         lsCallOtherId = data.callerId;
         lsCallOtherName = data.callerName || "Someone";
+        lsCallHasVideo = !!data.hasVideo;
+        lsCallCamOff = false;
         lsCallState = "incoming";
         lsWatchCallDoc();
         lsRenderCallWidget();
@@ -915,19 +923,21 @@ async function lsSubscribeIncomingCalls(){
 
 function lsCallDocId(){ return lsCallId; }
 
-async function lsStartCall(calleeId){
+async function lsStartCall(calleeId, video){
   if(lsCallState!=="idle") return;
   const p = lsLastList.find(x=>x.id===calleeId);
   const calleeName = p?.name || "them";
   const db = await lsInitDb(); if(!db){ showToast("Firebase not connected","error"); return; }
   let stream;
   try{
-    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-  }catch(e){ showToast("Couldn't access microphone — "+(e.message||"permission denied"),"error"); return; }
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true, video: video ? { facingMode:"user" } : false });
+  }catch(e){ showToast(`Couldn't access ${video?"camera/microphone":"microphone"} — `+(e.message||"permission denied"),"error"); return; }
 
   lsCallLocalStream = stream;
   lsCallOtherId = calleeId;
   lsCallOtherName = calleeName;
+  lsCallHasVideo = !!video;
+  lsCallCamOff = false;
   lsCallState = "outgoing";
   lsRenderCallWidget();
   lsStartRingtone("outgoing");
@@ -945,6 +955,7 @@ async function lsStartCall(calleeId){
     callerId: lsMyId, callerName: lsMyName || "Someone",
     calleeId, calleeName,
     offer: { type: offer.type, sdp: offer.sdp },
+    hasVideo: !!video,
     status: "ringing", createdAt: Date.now()
   });
   lsWatchCallDoc();
@@ -956,9 +967,10 @@ async function lsAcceptCall(){
   const db = await lsInitDb(); if(!db) return;
   let stream;
   try{
-    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-  }catch(e){ showToast("Couldn't access microphone — "+(e.message||"permission denied"),"error"); lsDeclineCall(); return; }
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true, video: lsCallHasVideo ? { facingMode:"user" } : false });
+  }catch(e){ showToast(`Couldn't access ${lsCallHasVideo?"camera/microphone":"microphone"} — `+(e.message||"permission denied"),"error"); lsDeclineCall(); return; }
   lsCallLocalStream = stream;
+  lsCallCamOff = false;
 
   const {doc,getDoc,updateDoc} = await lsFirestoreFns();
   const callRef = doc(db,"liveRooms",lsRoomCode,"calls",lsCallId);
@@ -1010,6 +1022,13 @@ function lsToggleMute(){
   lsRenderCallWidget();
 }
 
+function lsToggleCamera(){
+  if(!lsCallLocalStream || !lsCallHasVideo) return;
+  lsCallCamOff = !lsCallCamOff;
+  lsCallLocalStream.getVideoTracks().forEach(t => t.enabled = !lsCallCamOff);
+  lsRenderCallWidget();
+}
+
 function lsCreatePeerConnection(role){
   const pc = new RTCPeerConnection({ iceServers: LS_ICE_SERVERS });
   pc.onicecandidate = async (ev) => {
@@ -1023,13 +1042,18 @@ function lsCreatePeerConnection(role){
     }catch{}
   };
   pc.ontrack = (ev) => {
+    lsCallRemoteStream = ev.streams[0];
+    if(lsCallHasVideo){
+      if(lsCallRemoteVideoEl) lsCallRemoteVideoEl.srcObject = lsCallRemoteStream; // else picked up on next render
+      return;
+    }
     if(!lsCallRemoteAudio){
       lsCallRemoteAudio = document.createElement("audio");
       lsCallRemoteAudio.autoplay = true;
       lsCallRemoteAudio.id = "lsCallRemoteAudio";
       document.body.appendChild(lsCallRemoteAudio);
     }
-    lsCallRemoteAudio.srcObject = ev.streams[0];
+    lsCallRemoteAudio.srcObject = lsCallRemoteStream;
   };
   pc.onconnectionstatechange = () => {
     if(["failed","disconnected","closed"].includes(pc.connectionState) && lsCallState!=="idle"){
@@ -1097,6 +1121,7 @@ function lsCleanupCall(){
   if(lsCallPC){ try{ lsCallPC.close(); }catch{} lsCallPC=null; }
   if(lsCallLocalStream){ lsCallLocalStream.getTracks().forEach(t=>t.stop()); lsCallLocalStream=null; }
   if(lsCallRemoteAudio){ lsCallRemoteAudio.srcObject=null; lsCallRemoteAudio.remove(); lsCallRemoteAudio=null; }
+  lsCallRemoteStream = null; lsCallLocalVideoEl = null; lsCallRemoteVideoEl = null;
   if(lsCallDocUnsub){ lsCallDocUnsub(); lsCallDocUnsub=null; }
   if(lsCallCandUnsub){ lsCallCandUnsub(); lsCallCandUnsub=null; }
   if(lsCallTimerInt){ clearInterval(lsCallTimerInt); lsCallTimerInt=null; }
@@ -1111,7 +1136,8 @@ function lsCleanupCall(){
     });
   }
   lsCallState = "idle"; lsCallId = null; lsCallOtherId = null; lsCallOtherName = "";
-  lsCallMuted = false; lsCallStartedAt = null; lsCallSeenCandIds = new Set();
+  lsCallMuted = false; lsCallHasVideo = false; lsCallCamOff = false;
+  lsCallStartedAt = null; lsCallSeenCandIds = new Set();
   lsRenderCallWidget();
   lsRenderPresence(lsLastList);
 }
@@ -1126,6 +1152,12 @@ function lsFmtCallDuration(){
 /* floating widget, appended straight to <body> (not the panel) so a call
    stays visible/controllable no matter which tab someone's looking at,
    same reasoning as putting the remote <audio> element on body */
+function lsCallVideoActionsHtml(){
+  return `<button class="ls-call-icon-btn ${lsCallMuted?'active':''}" onclick="lsToggleMute()" title="${lsCallMuted?'Unmute':'Mute'}">${lsCallMuted?'🔇':'🎙️'}</button>
+    <button class="ls-call-icon-btn ${lsCallCamOff?'active':''}" onclick="lsToggleCamera()" title="${lsCallCamOff?'Turn camera on':'Turn camera off'}">${lsCallCamOff?'📷':'🎥'}</button>
+    <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Hang up">✕</button>`;
+}
+
 function lsRenderCallWidget(){
   let w = document.getElementById("lsCallWidget");
   if(lsCallState==="idle"){ w?.remove(); return; }
@@ -1134,19 +1166,51 @@ function lsRenderCallWidget(){
     w.id = "lsCallWidget";
     document.body.appendChild(w);
   }
+
+  // active video call: build the video layout once, then on later ticks
+  // (the once-a-second timer redraw) just patch the duration text — full
+  // rebuilds would tear down and recreate the <video> elements every
+  // second, restarting/flickering the stream
+  if(lsCallState==="active" && lsCallHasVideo){
+    if(w.dataset.mode!=="video"){
+      w.dataset.mode = "video";
+      w.classList.add("ls-call-video-mode");
+      w.innerHTML = `
+        <video id="lsCallRemoteVideo" class="ls-call-remote-video" autoplay playsinline></video>
+        <video id="lsCallLocalVideo" class="ls-call-local-video" autoplay playsinline muted></video>
+        <div class="ls-call-video-overlay">
+          <div class="ls-call-video-name">${lsEsc(lsCallOtherName)}</div>
+          <span class="ls-call-video-timer" id="lsCallVideoTimer">${lsFmtCallDuration()}</span>
+        </div>
+        <div class="ls-call-actions ls-call-video-actions" id="lsCallVideoActions">${lsCallVideoActionsHtml()}</div>`;
+      lsCallLocalVideoEl = document.getElementById("lsCallLocalVideo");
+      lsCallRemoteVideoEl = document.getElementById("lsCallRemoteVideo");
+      if(lsCallLocalStream) lsCallLocalVideoEl.srcObject = lsCallLocalStream;
+      if(lsCallRemoteStream) lsCallRemoteVideoEl.srcObject = lsCallRemoteStream;
+    } else {
+      const t = document.getElementById("lsCallVideoTimer");
+      if(t) t.textContent = lsFmtCallDuration();
+      const actions = document.getElementById("lsCallVideoActions");
+      if(actions) actions.innerHTML = lsCallVideoActionsHtml();
+    }
+    return;
+  }
+  w.dataset.mode = "";
+  w.classList.remove("ls-call-video-mode");
+
   const initial = (lsCallOtherName||"?").trim().charAt(0).toUpperCase() || "?";
   const color = lsAvatarColor(lsCallOtherName);
   let body = "";
   if(lsCallState==="outgoing"){
-    body = `<div class="ls-call-status">Calling…</div>
+    body = `<div class="ls-call-status">Calling${lsCallHasVideo?' (video)':''}…</div>
       <div class="ls-call-actions">
         <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Cancel">✕</button>
       </div>`;
   } else if(lsCallState==="incoming"){
-    body = `<div class="ls-call-status">Incoming call…</div>
+    body = `<div class="ls-call-status">Incoming ${lsCallHasVideo?'video ':''}call…</div>
       <div class="ls-call-actions">
         <button class="ls-call-icon-btn danger" onclick="lsDeclineCall()" title="Decline">✕</button>
-        <button class="ls-call-icon-btn accept" onclick="lsAcceptCall()" title="Accept">📞</button>
+        <button class="ls-call-icon-btn accept" onclick="lsAcceptCall()" title="Accept">${lsCallHasVideo?'🎥':'📞'}</button>
       </div>`;
   } else if(lsCallState==="active"){
     body = `<div class="ls-call-status">${lsFmtCallDuration()}</div>

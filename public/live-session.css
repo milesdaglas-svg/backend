@@ -288,17 +288,26 @@
    whichever half is picked gets the full remaining height to itself. */
 .ls-mobile-tabs{display:none;}
 @media (max-width: 768px){
-  .ls-body-fullscreen{padding:12px 12px 0;gap:0;}
+  .ls-body-fullscreen{padding:8px 10px 0;gap:0;}
   .ls-body-fullscreen.ls-in-room{flex-direction:column;}
-  .ls-mobile-tabs{display:flex;gap:8px;flex-shrink:0;padding-bottom:10px;}
-  .ls-mobile-tab-btn{flex:1;padding:10px 0;border:none;border-radius:10px;font-size:13.5px;font-weight:700;
+  .ls-mobile-tabs{display:flex;gap:6px;flex-shrink:0;padding-bottom:6px;}
+  .ls-mobile-tab-btn{flex:1;padding:6px 0;border:none;border-radius:8px;font-size:11.5px;font-weight:700;
     background:rgba(255,255,255,.05);color:#8b93a1;cursor:pointer;transition:background .12s,color .12s;}
   .ls-body-fullscreen[data-mobile-view="session"] .ls-mobile-tab-btn[data-view="session"],
   .ls-body-fullscreen[data-mobile-view="chat"] .ls-mobile-tab-btn[data-view="chat"]{
     background:linear-gradient(135deg,#5865F2,#4752C4);color:#fff;}
-  .ls-body-fullscreen .ls-sidebar-col,.ls-body-fullscreen .ls-main-col{width:100%;height:100%;flex:1;min-height:0;overflow-y:auto;padding-right:0;padding-bottom:14px;gap:10px;}
+  /* sidebar-col stacks several boxes and needs its own scroll; main-col is
+     just the chat box, which already manages its own scroll internally
+     (ls-chat-log) — giving main-col a second outer scroll+padding on top
+     of that only ate into the room actually available for messages */
+  .ls-body-fullscreen .ls-sidebar-col{width:100%;height:100%;flex:1;min-height:0;overflow-y:auto;padding-right:0;padding-bottom:10px;gap:10px;}
+  .ls-body-fullscreen .ls-main-col{width:100%;height:100%;flex:1;min-height:0;}
   .ls-body-fullscreen[data-mobile-view="session"] .ls-main-col{display:none;}
   .ls-body-fullscreen[data-mobile-view="chat"] .ls-sidebar-col{display:none;}
+  .ls-body-fullscreen .ls-chat-box{border-radius:12px 12px 0 0;}
+  .ls-body-fullscreen .ls-chat-header{padding:12px 14px;}
+  .ls-body-fullscreen .ls-chat-log{padding:12px 14px;}
+  .ls-body-fullscreen .ls-chat-input-row{padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));}
   .ls-body-fullscreen .ls-box{padding:14px;}
   .ls-body-fullscreen .ls-code{font-size:22px;}
   .ls-body-fullscreen .ls-participants{grid-template-columns:1fr;}

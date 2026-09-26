@@ -20,7 +20,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest runners already ship a fully set-up Android SDK
+      # (ANDROID_HOME + licenses accepted) which is all Gradle needs here.
+      # android-actions/setup-android@v3 used to just double-check that,
+      # but it now insists on installing the legacy "tools" package —
+      # which Google discontinued years ago — and fails the whole build
+      # on that alone, before any app code is even touched. Dropping it.
 
       - name: Install Capacitor deps
         run: npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/app@6 @capacitor/browser@6

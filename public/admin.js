@@ -276,6 +276,14 @@ async function showAdminPanel() {
                 </div>
                 <div id="adm-avatar-status" style="font-size:11px;color:#6a7480;margin-top:4px;"></div>
               </div>
+              <div class="adm-field" style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.15);border-radius:8px;padding:10px;">
+                <label>✨ AI Changelog Assistant — paste rough notes, let it write the message</label>
+                <textarea id="aiChangelogNotes" class="adm-textarea" rows="3" placeholder="e.g. added whatsapp-style incoming call screen, fixed firestore rules, locked down security..."></textarea>
+                <div class="adm-form-actions" style="margin-top:8px;">
+                  <button class="adm-btn adm-btn-ghost" type="button" onclick="adminGenerateChangelog()" id="aiChangelogBtn">✨ Generate with AI</button>
+                </div>
+                <div id="aiChangelogStatus" style="font-size:11px;margin-top:4px;"></div>
+              </div>
               <div class="adm-field"><label>Title *</label><input id="adminTitle" class="adm-input" placeholder="e.g. 🚀 New Update Coming Soon"></div>
               <div class="adm-field"><label>Version</label><input id="announceVersion" class="adm-input" placeholder="e.g. v2.1.0"></div>
               <div class="adm-field">
@@ -1097,6 +1105,34 @@ async function adminDeleteBroadcast(id) {
     loadAdminHistory();
   } catch(e) { showToast("Failed: " + e.message, "error"); }
 }
+async function adminGenerateChangelog() {
+  const notes   = document.getElementById("aiChangelogNotes")?.value.trim();
+  const version = document.getElementById("announceVersion")?.value.trim();
+  const status  = document.getElementById("aiChangelogStatus");
+  const btn     = document.getElementById("aiChangelogBtn");
+  if (!notes) { if (status) { status.innerText = "// Type a few rough notes first"; status.style.color = "#ff4444"; } return; }
+  if (btn) { btn.disabled = true; btn.innerText = "✨ Writing..."; }
+  if (status) { status.innerText = "// Asking AI to draft it..."; status.style.color = "#ffaa00"; }
+  try {
+    const res = await fetch("https://backend-forz.onrender.com/api/admin/generate-changelog", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes, version })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.title) throw new Error(data.error || "AI didn't return a usable draft");
+    document.getElementById("adminTitle").value = data.title;
+    document.getElementById("adminMessage").value = data.message;
+    const typeSel = document.getElementById("adminType");
+    if (typeSel) typeSel.value = "update";
+    if (status) { status.innerText = "// ✓ Draft ready below — review & edit, then Broadcast"; status.style.color = "#00ff88"; }
+  } catch (e) {
+    if (status) { status.innerText = "// ✗ " + e.message; status.style.color = "#ff4444"; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "✨ Generate with AI"; }
+  }
+}
+
 async function sendBroadcast() {
   const title   = document.getElementById("adminTitle")?.value.trim();
   const message = document.getElementById("adminMessage")?.value.trim();

@@ -78,6 +78,113 @@ app.post("/api/admin/cleanup-live-rooms", async (req, res) => {
 });
 
 /* ══════════════════════
+   ANNOUNCEMENTS CLEANUP (server-side, admin-privileged)
+   Keeps the "what's new" feed from piling up forever: deletes an
+   announcement once it's older than maxAgeDays, OR once it's fallen
+   past the maxKeep most-recent ones — whichever happens first. Also
+   cleans up that announcement's replies so nothing orphans. Reuses the
+   same liveAdminDb (Firebase Admin) set up above; no-ops if that isn't
+   configured.
+══════════════════════ */
+async function cleanupOldAnnouncements(maxKeep = 20, maxAgeDays = 45) {
+  if (!liveAdminDb) return { skipped: true, reason: "Firebase Admin not configured" };
+  const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+  const snap = await liveAdminDb.collection("announcements").orderBy("timestamp", "desc").get();
+  const docs = snap.docs;
+  let deleted = 0;
+  for (let i = 0; i < docs.length; i++) {
+    const d = docs[i];
+    const data = d.data();
+    const tooOld = typeof data.timestamp === "number" && data.timestamp < cutoff;
+    const beyondKeepLimit = i >= maxKeep;
+    if (!tooOld && !beyondKeepLimit) continue;
+    try {
+      const repliesSnap = await liveAdminDb.collection("replies").where("announcementId", "==", d.id).get();
+      if (!repliesSnap.empty) {
+        const batch = liveAdminDb.batch();
+        repliesSnap.forEach(r => batch.delete(r.ref));
+        await batch.commit();
+      }
+      await d.ref.delete();
+      deleted++;
+    } catch (e) {
+      console.error("[announce-cleanup] failed to delete", d.id, e.message);
+    }
+  }
+  return { deleted, scanned: docs.length };
+}
+
+// runs once a day; no-ops if admin isn't configured
+try {
+  require("node-cron").schedule("30 3 * * *", async () => {
+    const r = await cleanupOldAnnouncements();
+    if (r.deleted) console.log(`[announce-cleanup] deleted ${r.deleted} old announcement(s)`);
+  });
+} catch (e) { console.error("[announce-cleanup] cron schedule failed:", e.message); }
+
+// manual trigger, same shared-secret pattern as the room cleanup above
+app.post("/api/admin/cleanup-announcements", async (req, res) => {
+  if (!process.env.ADMIN_CLEANUP_SECRET || req.headers["x-admin-secret"] !== process.env.ADMIN_CLEANUP_SECRET) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    const result = await cleanupOldAnnouncements();
+    res.json({ success: true, ...result });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ══════════════════════
+   AI CHANGELOG WRITER (admin-only)
+   Admin pastes rough, messy notes about what changed; this turns them
+   into a short, friendly "what's new" title + message the admin can
+   review/edit before broadcasting via the normal postAnnouncement flow.
+   Reuses the Groq key already configured for the in-editor AI assistant.
+══════════════════════ */
+app.post("/api/admin/generate-changelog", async (req, res) => {
+  try {
+    const { notes, version } = req.body;
+    if (!notes || !notes.trim()) return res.status(400).json({ error: "Missing notes" });
+    if (!process.env.GROQ_API_KEY) return res.status(500).json({ error: "AI not configured (GROQ_API_KEY missing on the server)" });
+
+    const sys = `You write short, friendly "what's new" changelog announcements for an app called VS Code God Mode / VS Code Mobile PRO.
+Given a rough list of changes/fixes from the developer (often messy shorthand), turn them into a punchy user-facing announcement.
+Respond ONLY with strict JSON, nothing else: {"title": "...", "message": "..."}
+- title: under 60 characters, one relevant emoji at the start (e.g. 🚀 ✨ 🐛), no quotes inside it.
+- message: 2-6 short lines separated by \\n, plain user-facing language (never dev jargon like "refactored", "commit", "API", "backend"), each change as its own line starting with a fitting emoji or dash, friendly upbeat tone, no filler intro like "we are excited to announce".
+Never invent a feature that wasn't in the notes.`;
+
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.6,
+        max_tokens: 500,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: `Rough developer notes:\n${notes}${version ? `\n\nVersion: ${version}` : ""}` }
+        ]
+      })
+    });
+    const data = await r.json();
+    const text = data?.choices?.[0]?.message?.content || "";
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch {
+      const s = text.indexOf("{"), e = text.lastIndexOf("}");
+      parsed = (s !== -1 && e > s) ? JSON.parse(text.slice(s, e + 1)) : null;
+    }
+    if (!parsed?.title || !parsed?.message) {
+      return res.status(500).json({ error: "AI returned an unusable response", raw: text });
+    }
+    res.json({ title: parsed.title, message: parsed.message });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/* ══════════════════════
    GITHUB OAUTH
 ══════════════════════ */
 app.get("/auth/github", (req, res) => {

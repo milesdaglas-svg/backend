@@ -831,6 +831,7 @@ let lsCallState      = "idle"; // idle | outgoing | incoming | active
 let lsCallId         = null;
 let lsCallOtherId    = null;
 let lsCallOtherName  = "";
+let lsCallOtherAvatar= null; // full-size profile picture (data URL) of whoever's on the other end, shown on the WhatsApp-style incoming screen
 let lsCallPC         = null;
 let lsCallLocalStream= null;
 let lsCallRemoteAudio= null;
@@ -925,6 +926,7 @@ async function lsSubscribeIncomingCalls(){
         lsCallId = ch.doc.id;
         lsCallOtherId = data.callerId;
         lsCallOtherName = data.callerName || "Someone";
+        lsCallOtherAvatar = data.callerAvatarImg || null;
         lsCallHasVideo = !!data.hasVideo;
         lsCallCamOff = false;
         lsCallState = "incoming";
@@ -951,6 +953,7 @@ async function lsStartCall(calleeId, video){
   lsCallLocalStream = stream;
   lsCallOtherId = calleeId;
   lsCallOtherName = calleeName;
+  lsCallOtherAvatar = p?.avatarImg || null;
   lsCallHasVideo = !!video;
   lsCallCamOff = false;
   lsCallState = "outgoing";
@@ -967,7 +970,7 @@ async function lsStartCall(calleeId, video){
   const callRef = doc(collection(db,"liveRooms",lsRoomCode,"calls"));
   lsCallId = callRef.id;
   await setDoc(callRef, {
-    callerId: lsMyId, callerName: lsMyName || "Someone",
+    callerId: lsMyId, callerName: lsMyName || "Someone", callerAvatarImg: lsMyAvatar || null,
     calleeId, calleeName,
     offer: { type: offer.type, sdp: offer.sdp },
     hasVideo: !!video,
@@ -1165,7 +1168,7 @@ function lsCleanupCall(){
       }catch{}
     });
   }
-  lsCallState = "idle"; lsCallId = null; lsCallOtherId = null; lsCallOtherName = "";
+  lsCallState = "idle"; lsCallId = null; lsCallOtherId = null; lsCallOtherName = ""; lsCallOtherAvatar = null;
   lsCallMuted = false; lsCallHasVideo = false; lsCallCamOff = false; lsCallMinimized = false;
   lsCallStartedAt = null; lsCallSeenCandIds = new Set();
   lsRenderCallWidget();
@@ -1191,7 +1194,18 @@ function lsCallVideoActionsHtml(){
 
 function lsRenderCallWidget(){
   let w = document.getElementById("lsCallWidget");
-  if(lsCallState==="idle"){ w?.remove(); return; }
+
+  if(lsCallState==="idle"){ w?.remove(); lsRemoveIncomingScreen(); return; }
+
+  // incoming calls get the full WhatsApp-style takeover screen instead of
+  // the small corner widget — that only kicks in once the call is accepted
+  if(lsCallState==="incoming"){
+    w?.remove();
+    lsRenderIncomingScreen();
+    return;
+  }
+  lsRemoveIncomingScreen();
+
   if(!w){
     w = document.createElement("div");
     w.id = "lsCallWidget";
@@ -1237,12 +1251,6 @@ function lsRenderCallWidget(){
       <div class="ls-call-actions">
         <button class="ls-call-icon-btn danger" onclick="lsHangupCall()" title="Cancel">✕</button>
       </div>`;
-  } else if(lsCallState==="incoming"){
-    body = `<div class="ls-call-status">Incoming ${lsCallHasVideo?'video ':''}call…</div>
-      <div class="ls-call-actions">
-        <button class="ls-call-icon-btn danger" onclick="lsDeclineCall()" title="Decline">✕</button>
-        <button class="ls-call-icon-btn accept" onclick="lsAcceptCall()" title="Accept">${lsCallHasVideo?'🎥':'📞'}</button>
-      </div>`;
   } else if(lsCallState==="active"){
     body = `<div class="ls-call-status">${lsFmtCallDuration()}</div>
       <div class="ls-call-actions">
@@ -1256,6 +1264,53 @@ function lsRenderCallWidget(){
       <div class="ls-call-name">${lsEsc(lsCallOtherName)}</div>
       ${body}
     </div>`;
+}
+
+/* WhatsApp-style full-screen incoming call: caller's photo (or a big
+   colored initial if they never set one), pulsing rings, and large
+   accept/decline buttons — replaces the small corner widget only while
+   lsCallState is "incoming"; accepting/declining hands straight back to
+   lsRenderCallWidget's normal active/idle rendering. */
+function lsRenderIncomingScreen(){
+  let s = document.getElementById("lsIncomingCall");
+  if(!s){
+    s = document.createElement("div");
+    s.id = "lsIncomingCall";
+    s.className = "ls-incoming-call";
+    document.body.appendChild(s);
+  }
+  const initial = (lsCallOtherName||"?").trim().charAt(0).toUpperCase() || "?";
+  const color = lsAvatarColor(lsCallOtherName);
+  const avatarInner = lsCallOtherAvatar
+    ? `style="background-image:url('${lsCallOtherAvatar}');background-size:cover;background-position:center;"`
+    : `style="background:${color};"`;
+  s.innerHTML = `
+    <div class="ls-incoming-bg" ${lsCallOtherAvatar ? `style="background-image:url('${lsCallOtherAvatar}');"` : `style="background:${color};"`}></div>
+    <div class="ls-incoming-scrim"></div>
+    <div class="ls-incoming-content">
+      <div class="ls-incoming-avatar-wrap">
+        <span class="ls-incoming-ring r1"></span>
+        <span class="ls-incoming-ring r2"></span>
+        <span class="ls-incoming-ring r3"></span>
+        <div class="ls-incoming-avatar" ${avatarInner}>${lsCallOtherAvatar ? '' : initial}</div>
+      </div>
+      <div class="ls-incoming-name">${lsEsc(lsCallOtherName)}</div>
+      <div class="ls-incoming-sub">Incoming ${lsCallHasVideo ? 'video ' : ''}call…</div>
+    </div>
+    <div class="ls-incoming-actions">
+      <div class="ls-incoming-action">
+        <button class="ls-incoming-btn decline" onclick="lsDeclineCall()" title="Decline">✕</button>
+        <span>Decline</span>
+      </div>
+      <div class="ls-incoming-action">
+        <button class="ls-incoming-btn accept" onclick="lsAcceptCall()" title="Accept">${lsCallHasVideo ? '🎥' : '📞'}</button>
+        <span>Accept</span>
+      </div>
+    </div>`;
+}
+
+function lsRemoveIncomingScreen(){
+  document.getElementById("lsIncomingCall")?.remove();
 }
 
 function lsEsc(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }

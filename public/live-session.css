@@ -385,3 +385,53 @@
 .ls-call-minimized .ls-call-video-actions .ls-call-icon-btn{width:26px;height:26px;font-size:11px;}
 .ls-call-minimized .ls-call-video-actions .ls-mute-btn,
 .ls-call-minimized .ls-call-video-actions .ls-cam-btn{display:none;}
+
+/* ── WhatsApp-style full-screen incoming call ───────────────────────── */
+.ls-incoming-call{position:fixed;inset:0;z-index:99997; /* above the room UI, below an active video call */
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:64px 24px 48px;overflow:hidden;animation:ls-incoming-in .25s ease-out;}
+@keyframes ls-incoming-in{from{opacity:0;}to{opacity:1;}}
+
+.ls-incoming-bg{position:absolute;inset:-20px;background-size:cover;background-position:center;
+  filter:blur(38px) brightness(.55) saturate(1.15);transform:scale(1.15);}
+.ls-incoming-scrim{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(10,12,16,.55) 0%,rgba(10,12,16,.72) 55%,rgba(6,7,10,.92) 100%);}
+
+.ls-incoming-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  gap:22px;margin-top:6vh;}
+.ls-incoming-avatar-wrap{position:relative;width:148px;height:148px;display:flex;align-items:center;justify-content:center;}
+.ls-incoming-avatar{width:148px;height:148px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:56px;font-weight:800;box-shadow:0 10px 40px rgba(0,0,0,.5);
+  border:3px solid rgba(255,255,255,.15);position:relative;z-index:2;}
+.ls-incoming-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.45);
+  animation:ls-incoming-pulse 2.2s ease-out infinite;}
+.ls-incoming-ring.r2{animation-delay:.7s;}
+.ls-incoming-ring.r3{animation-delay:1.4s;}
+@keyframes ls-incoming-pulse{
+  0%{transform:scale(1);opacity:.65;}
+  100%{transform:scale(1.9);opacity:0;}
+}
+.ls-incoming-name{font-size:26px;font-weight:800;color:#fff;text-align:center;
+  text-shadow:0 2px 10px rgba(0,0,0,.4);max-width:88vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ls-incoming-sub{font-size:14.5px;color:rgba(255,255,255,.75);letter-spacing:.2px;}
+
+.ls-incoming-actions{position:relative;z-index:1;display:flex;justify-content:center;gap:88px;width:100%;}
+.ls-incoming-action{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.ls-incoming-action span{font-size:13px;color:rgba(255,255,255,.8);font-weight:600;}
+.ls-incoming-btn{width:66px;height:66px;border-radius:50%;border:none;cursor:pointer;font-size:26px;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .12s;}
+.ls-incoming-btn:active{transform:scale(.92);}
+.ls-incoming-btn.decline{background:linear-gradient(135deg,#f0463f,#da3633);}
+.ls-incoming-btn.accept{background:linear-gradient(135deg,#2ea043,#238636);animation:ls-incoming-accept-pulse 1.6s ease-in-out infinite;}
+@keyframes ls-incoming-accept-pulse{
+  0%,100%{box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 0 0 rgba(46,160,67,.55);}
+  50%{box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 0 14px rgba(46,160,67,0);}
+}
+@media (max-width: 420px){
+  .ls-incoming-call{padding:48px 16px 40px;}
+  .ls-incoming-actions{gap:56px;}
+  .ls-incoming-avatar-wrap,.ls-incoming-avatar{width:120px;height:120px;}
+  .ls-incoming-avatar{font-size:46px;}
+  .ls-incoming-name{font-size:22px;}
+}

@@ -90,10 +90,11 @@ service cloud.firestore {
         allow read: if true;
         // caller creates the ringing doc with the SDP offer
         allow create: if request.resource.data.keys().hasOnly(
-                          ['callerId','callerName','calleeId','calleeName','offer','hasVideo','status','createdAt']
+                          ['callerId','callerName','callerAvatarImg','calleeId','calleeName','offer','hasVideo','status','createdAt']
                         )
                         && request.resource.data.callerId is string && request.resource.data.callerId.size() <= 64
                         && request.resource.data.callerName is string && request.resource.data.callerName.size() <= 60
+                        && (!('callerAvatarImg' in request.resource.data) || request.resource.data.callerAvatarImg == null || (request.resource.data.callerAvatarImg is string && request.resource.data.callerAvatarImg.size() <= 30000))
                         && request.resource.data.calleeId is string && request.resource.data.calleeId.size() <= 64
                         && request.resource.data.calleeName is string && request.resource.data.calleeName.size() <= 60
                         && request.resource.data.offer is map

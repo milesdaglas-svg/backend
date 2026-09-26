@@ -146,12 +146,12 @@ app.post("/api/admin/generate-changelog", async (req, res) => {
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Missing notes" });
     if (!process.env.GROQ_API_KEY) return res.status(500).json({ error: "AI not configured (GROQ_API_KEY missing on the server)" });
 
-    const sys = `You write short, friendly "what's new" changelog announcements for an app called VS Code God Mode / VS Code Mobile PRO.
-Given a rough list of changes/fixes from the developer (often messy shorthand), turn them into a punchy user-facing announcement.
+    const sys = `You write exciting, full-of-personality "what's new" changelog announcements for an app called VS Code God Mode / VS Code Mobile PRO.
+Given a rough list of changes/fixes from the developer (often messy shorthand), turn them into an announcement users actually enjoy reading — not a dry bullet dump.
 Respond ONLY with strict JSON, nothing else: {"title": "...", "message": "..."}
-- title: under 60 characters, one relevant emoji at the start (e.g. 🚀 ✨ 🐛), no quotes inside it.
-- message: 2-6 short lines separated by \\n, plain user-facing language (never dev jargon like "refactored", "commit", "API", "backend"), each change as its own line starting with a fitting emoji or dash, friendly upbeat tone, no filler intro like "we are excited to announce".
-Never invent a feature that wasn't in the notes.`;
+- title: under 60 characters, punchy and specific (not generic like "New Update"), one relevant emoji at the start (e.g. 🚀 ✨ 🐛 🔥), no quotes inside it.
+- message: 4-10 lines separated by \\n. For EACH change from the notes, write 1-2 full sentences (not a fragment) that sell why it's cool or useful to the user — paint a little picture of what they'll notice or feel, don't just name the feature. Start each change's line with a fitting emoji. Plain, warm, enthusiastic user-facing language — never dev jargon like "refactored", "commit", "API", "backend", "rules", "deploy". Open with one upbeat hook line before diving into the changes, and close with one short line of excitement or a call-to-action (e.g. "Go try it out! 🚀"). No stiff corporate phrasing like "we are pleased to announce".
+Never invent a feature that wasn't in the notes — expand HOW you describe each one, not WHAT happened.`;
 
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -159,7 +159,7 @@ Never invent a feature that wasn't in the notes.`;
       body: JSON.stringify({
         model: "openai/gpt-oss-120b", // llama-3.3-70b-versatile was decommissioned by Groq on 8/16/26
         temperature: 0.6,
-        max_tokens: 500,
+        max_tokens: 700,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: sys },

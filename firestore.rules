@@ -119,5 +119,23 @@ service cloud.firestore {
         }
       }
     }
+
+    /* ═══════════════════════════════════════
+       Everything else the app uses. This app has no Firebase Auth wired
+       up anywhere, so these stay open the way the whole database used to
+       be — only /liveRooms above got tightened, since that's the one
+       piece with real abuse risk (calls, chat, PIN-protected rooms).
+       Locking these down too would just break the app with no real gain
+       until proper auth exists.
+    ═══════════════════════════════════════ */
+    match /ai_users/{id}          { allow read, write: if true; } // AI chat panel logins
+    match /ai_chats/{id}          { allow read, write: if true; } // saved AI chat history
+    match /ai_usage/{id}          { allow read, write: if true; } // per-user AI usage counters
+    match /workspaces/{id}        { allow read, write: if true; } // AI panel workspace state
+    match /announcements/{id}     { allow read, write: if true; } // admin broadcast / what's new feed
+    match /replies/{id}           { allow read, write: if true; } // replies to announcements
+    match /global_settings/{id}   { allow read, write: if true; } // admin password + app-wide config
+    match /shares/{id}            { allow read, write: if true; } // shared file/session links
+    match /push_subscriptions/{id}{ allow read, write: if true; } // web push subscriptions
   }
 }

@@ -168,6 +168,11 @@ Never invent a feature that wasn't in the notes.`;
       })
     });
     const data = await r.json();
+    if (!r.ok || data?.error) {
+      // surface Groq's actual error instead of hiding it behind a generic message
+      const msg = data?.error?.message || data?.error || `Groq API returned HTTP ${r.status}`;
+      return res.status(500).json({ error: `AI provider error: ${msg}` });
+    }
     const text = data?.choices?.[0]?.message?.content || "";
     let parsed;
     try { parsed = JSON.parse(text); }

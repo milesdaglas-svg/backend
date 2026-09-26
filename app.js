@@ -1245,8 +1245,6 @@ app.post("/api/push/send", async (req, res) => {
 const { WebSocketServer } = require("ws");
 const pty = require("node-pty");
 
-const ptyProcesses = {};
-
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, "0.0.0.0", () => {
@@ -1256,13 +1254,70 @@ const server = app.listen(PORT, "0.0.0.0", () => {
 // WebSocket PTY server
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on("connection", (ws, req) => {
-  const sessionId = "pty_" + Date.now();
-  console.log(`PTY session started: ${sessionId}`);
+const ptyProcesses = {};
+// a disconnected shell isn't killed immediately anymore (that's what made
+// closing/reopening the terminal — or any brief network blip — nuke
+// whatever was running); it's kept alive for this long in case the same
+// browser tab reconnects with the same sessionId, then reaped if nobody does
+const PTY_IDLE_KILL_MS = 30 * 60 * 1000;
+// how much recent output to replay to a client that reconnects after an
+// actual disconnect, so the screen isn't blank even though the shell
+// kept running the whole time
+const PTY_BUFFER_MAX = 500;
 
+function schedulePtyIdleKill(sessionId) {
+  const session = ptyProcesses[sessionId];
+  if (!session) return;
+  clearTimeout(session.idleTimer);
+  session.idleTimer = setTimeout(() => {
+    try { session.proc.kill(); } catch {}
+    delete ptyProcesses[sessionId];
+    console.log(`PTY session idle-expired: ${sessionId}`);
+  }, PTY_IDLE_KILL_MS);
+}
+
+function bindPtyWs(sessionId, session, ws) {
+  clearTimeout(session.idleTimer);
+  session.ws = ws;
+  ws.on("message", msg => {
+    try {
+      const parsed = JSON.parse(msg.toString());
+      if (parsed.type === "input")  session.proc.write(parsed.data);
+      if (parsed.type === "resize") session.proc.resize(Math.max(1, parsed.cols), Math.max(1, parsed.rows));
+    } catch { session.proc.write(msg.toString()); }
+  });
+  ws.on("close", () => {
+    // don't kill the shell on disconnect — just detach and start the grace
+    // timer; reopening the terminal panel reconnects with the same
+    // sessionId and cancels this, so a running process just keeps going
+    if (ptyProcesses[sessionId]) {
+      ptyProcesses[sessionId].ws = null;
+      schedulePtyIdleKill(sessionId);
+    }
+  });
+}
+
+wss.on("connection", (ws, req) => {
   const urlParams = new URLSearchParams((req.url.split("?")[1]) || "");
   const initCols = Math.max(20, parseInt(urlParams.get("cols")) || 80);
   const initRows = Math.max(5, parseInt(urlParams.get("rows")) || 24);
+  const requestedId = urlParams.get("sessionId");
+
+  // reattach to a still-running shell instead of spawning a new one
+  if (requestedId && ptyProcesses[requestedId]) {
+    const sessionId = requestedId;
+    const session = ptyProcesses[sessionId];
+    console.log(`PTY session reattached: ${sessionId}`);
+    bindPtyWs(sessionId, session, ws);
+    try { session.proc.resize(initCols, initRows); } catch {}
+    ws.send(JSON.stringify({ type: "session", sessionId }));
+    ws.send(JSON.stringify({ type: "output", data: "\r\n\x1b[32m✓ Reconnected — your shell kept running\x1b[0m\r\n" }));
+    if (session.buffer.length) ws.send(JSON.stringify({ type: "output", data: session.buffer.join("") }));
+    return;
+  }
+
+  const sessionId = requestedId || ("pty_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8));
+  console.log(`PTY session started: ${sessionId}`);
 
   let ptyProcess;
   try {
@@ -1285,43 +1340,31 @@ wss.on("connection", (ws, req) => {
     return;
   }
 
-  ptyProcesses[sessionId] = ptyProcess;
+  const session = { proc: ptyProcess, ws, buffer: [], idleTimer: null };
+  ptyProcesses[sessionId] = session;
 
-  // terminal output → browser
+  // terminal output → browser (buffered too, so a reconnect can replay it)
   ptyProcess.onData(data => {
-    if (ws.readyState === ws.OPEN) {
-      ws.send(JSON.stringify({ type: "output", data }));
+    session.buffer.push(data);
+    if (session.buffer.length > PTY_BUFFER_MAX) session.buffer.shift();
+    if (session.ws && session.ws.readyState === session.ws.OPEN) {
+      session.ws.send(JSON.stringify({ type: "output", data }));
     }
   });
 
   ptyProcess.onExit(() => {
-    if (ws.readyState === ws.OPEN) {
-      ws.send(JSON.stringify({ type: "exit" }));
-      ws.close();
+    if (session.ws && session.ws.readyState === session.ws.OPEN) {
+      session.ws.send(JSON.stringify({ type: "exit" }));
+      session.ws.close();
     }
-    delete ptyProcesses[sessionId];
-  });
-
-  // browser input → terminal
-  ws.on("message", msg => {
-    try {
-      const parsed = JSON.parse(msg.toString());
-      if (parsed.type === "input")  ptyProcess.write(parsed.data);
-      if (parsed.type === "resize") ptyProcess.resize(
-        Math.max(1, parsed.cols),
-        Math.max(1, parsed.rows)
-      );
-    } catch {
-      ptyProcess.write(msg.toString());
-    }
-  });
-
-  ws.on("close", () => {
-    try { ptyProcess.kill(); } catch {}
+    clearTimeout(session.idleTimer);
     delete ptyProcesses[sessionId];
     console.log(`PTY session ended: ${sessionId}`);
   });
 
+  bindPtyWs(sessionId, session, ws);
+
+  ws.send(JSON.stringify({ type: "session", sessionId }));
   ws.send(JSON.stringify({ type: "output", data: "\r\n\x1b[32m✓ Real Linux shell connected\x1b[0m\r\n\r\n" }));
 });
 /* ══════════════════════

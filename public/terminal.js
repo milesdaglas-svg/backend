@@ -62,6 +62,7 @@ const TERM_ANSI_THEME = {
 };
 
 let termOpen      = false;
+let termBuilt     = false; // build the terminal DOM once; toggling only shows/hides it from here on
 let termCwd       = null;
 let termActiveTab = "bash";
 
@@ -83,6 +84,9 @@ let deviceMode       = false;
 let ptyTerm = null;
 let ptyWs   = null;
 let ptyFit  = null;
+// survives page reloads too — same id lets a real reconnect reattach to
+// the still-running shell instead of the server spawning a fresh one
+let ptySessionId = localStorage.getItem("pty_session_id") || null;
 
 let vmTerm  = null;
 let vmWs    = null;
@@ -690,13 +694,12 @@ async function initPtyTerminal() {
   const initCols = ptyTerm.cols || 80;
   const initRows = ptyTerm.rows || 24;
   const wsUrl = TERM_SERVER.replace("https://","wss://").replace("http://","ws://")
-    + `/pty?cols=${initCols}&rows=${initRows}`;
+    + `/pty?cols=${initCols}&rows=${initRows}${ptySessionId ? `&sessionId=${encodeURIComponent(ptySessionId)}` : ""}`;
   ptyTerm.writeln("\x1b[90mConnecting to real Linux shell...\x1b[0m");
 
   try {
     ptyWs = new WebSocket(wsUrl);
     ptyWs.onopen = () => {
-      ptyTerm.writeln("\x1b[32m✓ Connected — full bash shell\x1b[0m\r\n");
       try { ptyFit.fit(); } catch {}
       ptyWs.send(JSON.stringify({ type:"resize", cols: ptyTerm.cols, rows: ptyTerm.rows }));
     };
@@ -704,10 +707,11 @@ async function initPtyTerminal() {
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === "output") ptyTerm.write(msg.data);
-        if (msg.type === "exit")   ptyTerm.writeln("\r\n\x1b[31mShell exited\x1b[0m");
+        if (msg.type === "session") { ptySessionId = msg.sessionId; try { localStorage.setItem("pty_session_id", ptySessionId); } catch {} }
+        if (msg.type === "exit")   { ptyTerm.writeln("\r\n\x1b[31mShell exited\x1b[0m"); ptySessionId = null; try { localStorage.removeItem("pty_session_id"); } catch {} }
       } catch { ptyTerm.write(e.data); }
     };
-    ptyWs.onclose = () => ptyTerm.writeln("\r\n\x1b[31m⚠ Disconnected\x1b[0m");
+    ptyWs.onclose = () => ptyTerm.writeln("\r\n\x1b[33m⚠ Disconnected — your shell keeps running, reopen the terminal to reconnect\x1b[0m");
     ptyWs.onerror = () => ptyTerm.writeln("\r\n\x1b[31m✗ Connection error — is backend deployed with node-pty?\x1b[0m");
     ptyTerm.onData(data => {
       if (ptyWs?.readyState === WebSocket.OPEN) ptyWs.send(JSON.stringify({ type:"input", data }));
@@ -1569,9 +1573,18 @@ function toggleTerminal() {
   panel.style.height = termOpen ? (isMobile ? "55vh" : "280px") : "0px";
   panel.style.borderTopWidth = termOpen ? "2px" : "0px";
   if (termOpen) {
-    buildTerminal();
-    if (termActiveTab === "pty") setTimeout(() => initPtyTerminal(), 150);
-    else document.getElementById(`term-input-${termActiveTab}`)?.focus();
+    // only build the DOM the first time — rebuilding on every open used to
+    // wipe out the live xterm instance (and its still-running shell) even
+    // though the process itself kept going server-side, making it look
+    // like everything reset just from closing/reopening the panel
+    if (!termBuilt) { buildTerminal(); termBuilt = true; }
+    if (termActiveTab === "pty") {
+      setTimeout(() => { initPtyTerminal(); try { ptyFit?.fit(); } catch {} }, 150);
+    } else if (termActiveTab === "vm") {
+      setTimeout(() => { initVmTerminal(); }, 150);
+    } else {
+      document.getElementById(`term-input-${termActiveTab}`)?.focus();
+    }
   }
   const btn = document.getElementById("terminalToggleBtn");
   if (btn) btn.classList.toggle("active", termOpen);

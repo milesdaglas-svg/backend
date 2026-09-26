@@ -137,5 +137,12 @@ service cloud.firestore {
     match /global_settings/{id}   { allow read, write: if true; } // admin password + app-wide config
     match /shares/{id}            { allow read, write: if true; } // shared file/session links
     match /push_subscriptions/{id}{ allow read, write: if true; } // web push subscriptions
+    match /visitors/{id}          { allow read, write: if true; } // admin dashboard: all-time visitor log
+    match /sessions/{id}          { allow read, write: if true; } // admin dashboard: who's online now, by country/device
+    match /recyclebin/{id}        { allow read, write: if true; } // deleted-file recycle bin
+    match /extensions/{id}        { allow read, write: if true; } // extensions marketplace listings
+    match /extension_installs/{id}{ allow read, write: if true; } // extension install counts
+    match /ad_stats/{id}          { allow read, write: if true; } // ad impression/click stats
+    match /ad_daily/{id}          { allow read, write: if true; } // ad stats rolled up per day
   }
 }

@@ -21,6 +21,7 @@ let lsPublicUnsub   = null;
 let lsExpanded       = false;
 let lsMobileView     = "session"; // "session" | "chat" — which half shows on phones, where both can't fit at once
 let lsRoomPermanent  = false;
+let lsRoomPublic     = false;
 let lsRoomName       = "";
 let lsRoomIcon       = "";
 let lsPickedRoomIcon = "";
@@ -253,12 +254,17 @@ function renderLiveSessionPanel(){
       <div class="ls-box ls-room-card ls-room-info-box">
         <div class="ls-status-chips">${lsStatusChipsHtml()}</div>
         ${(lsRoomName||lsRoomIcon) ? `<div class="ls-room-title">${lsRoomIcon?lsEsc(lsRoomIcon)+' ':''}${lsEsc(lsRoomName||'Untitled server')}</div>` : ''}
+        ${lsRoomPublic ? `
+        <div class="ls-hint" style="text-align:center;margin-top:0;">🌐 Public — no code needed, anyone can find &amp; join it from Browse public sessions</div>
+        <div class="ls-row" style="margin-top:10px;">
+          <button class="ls-btn danger" style="width:100%;" onclick="lsLeaveRoom()">🚪 Leave</button>
+        </div>` : `
         <div class="ls-code">${lsRoomCode}</div>
         <div class="ls-hint" style="text-align:center;margin-top:0;">Share this code — tap to copy</div>
         <div class="ls-row" style="margin-top:10px;">
           <button class="ls-btn secondary" style="flex:1;" onclick="lsCopyCode()">📋 Copy Code</button>
           <button class="ls-btn danger" style="flex:1;" onclick="lsLeaveRoom()">🚪 Leave</button>
-        </div>
+        </div>`}
       </div>
 
       <div class="ls-box ls-room-info-box">
@@ -371,6 +377,7 @@ async function lsCreateRoom(){
   lsRoomCode = code;
   lsMyPinProof = pinHash;
   lsRoomPermanent = isPermanent;
+  lsRoomPublic = isPublic;
   lsRoomName = roomName;
   lsRoomIcon = roomIcon;
   await lsJoinAsParticipant();
@@ -401,6 +408,7 @@ async function lsJoinRoom(directCode){
   lsRoomCode = code;
   lsMyPinProof = roomData.pin || null;
   lsRoomPermanent = roomData.permanent === true;
+  lsRoomPublic = roomData.public === true;
   lsRoomName = roomData.roomName || "";
   lsRoomIcon = roomData.roomIcon || "";
   await lsJoinAsParticipant();
@@ -518,7 +526,7 @@ async function lsLeaveRoom(){
   if(lsStaleTimer){ clearInterval(lsStaleTimer); lsStaleTimer=null; }
   if(lsBroadcastTimer){ clearInterval(lsBroadcastTimer); lsBroadcastTimer=null; }
   if(lsHeartbeatTimer){ clearInterval(lsHeartbeatTimer); lsHeartbeatTimer=null; }
-  lsRoomCode = null; lsBroadcasting = false; lsRoomPermanent = false;
+  lsRoomCode = null; lsBroadcasting = false; lsRoomPermanent = false; lsRoomPublic = false;
   lsRoomName = ""; lsRoomIcon = ""; lsPickedRoomIcon = "";
   lsCoEditing = false; lsUnsubscribeCoEdit();
   lsReplyingTo = null; lsChatMsgsById = {};
@@ -1331,6 +1339,7 @@ function lsStatusChipsHtml(){
     ? `<span class="ls-chip ls-chip-live"><span class="ls-live-dot"></span>Broadcasting</span>`
     : `<span class="ls-chip">In session</span>`);
   if(lsRoomPermanent) chips.push(`<span class="ls-chip ls-chip-gold">📌 Permanent</span>`);
+  if(lsRoomPublic) chips.push(`<span class="ls-chip" style="background:rgba(88,101,242,.16);color:#5865F2;">🌐 Public</span>`);
   return chips.join("");
 }
 

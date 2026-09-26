@@ -138,29 +138,52 @@ async function postAnnouncement(title, message, type="info") {
   } catch(e) { alert("Error: " + e.message); return false; }
 }
 
+function renderReplyLine(r) {
+  if (r.fromAdmin) {
+    return `<div style="padding:5px 0;border-bottom:1px solid rgba(255,215,0,0.12);font-size:11px;background:rgba(255,215,0,0.05);border-radius:4px;padding-left:6px;margin:2px 0;">
+      <span style="color:#ffd166;font-weight:700;">👑 ${escHtml(ADMIN_NAME||"Admin")}${r.replyingTo?` → @${escHtml(r.replyingTo)}`:""}</span>
+      <span style="color:rgba(255,255,255,0.4);margin:0 6px;">${new Date(r.timestamp).toLocaleTimeString()}</span>
+      <div style="color:#ffe9b0;margin-top:2px;">${escHtml(r.message)}</div>
+    </div>`;
+  }
+  return `<div style="padding:4px 0;border-bottom:1px solid rgba(0,255,136,0.05);font-size:11px;">
+    <span style="color:#00ff88;">${escHtml(r.username||"anon")}</span>
+    <span style="color:rgba(255,255,255,0.4);margin:0 6px;">${new Date(r.timestamp).toLocaleTimeString()}</span>
+    <span style="color:#c0f0d0;">${escHtml(r.message)}</span>
+  </div>`;
+}
+
+// live-subscribes to a single announcement's reply thread so anyone who
+// opens the popup sees the full conversation immediately — including any
+// admin reply already sitting there, even if they never type anything
+// themselves and even if they were offline when it was sent
+let _replyThreadUnsub = null;
+async function subscribeReplyThread(announcementId) {
+  if (_replyThreadUnsub) { _replyThreadUnsub(); _replyThreadUnsub = null; }
+  const db = await initAnnounceDB(); if (!db) return;
+  const replyBox = document.getElementById("ap-replies-live");
+  if (!replyBox) return;
+  try {
+    const { collection, query, where, orderBy, onSnapshot } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const q = query(collection(db, REPLIES_COLLECTION), where("announcementId","==",announcementId), orderBy("timestamp","asc"));
+    _replyThreadUnsub = onSnapshot(q, snap => {
+      const replies = snap.docs.map(d => d.data());
+      replyBox.innerHTML = replies.map(renderReplyLine).join("")
+        || "<div style='color:rgba(0,255,136,0.2);font-size:11px;'>No replies yet.</div>";
+    });
+  } catch {}
+}
+
 async function postReply(announcementId, username, message) {
   const db = await initAnnounceDB(); if (!db) return false;
   try {
-    const { collection, addDoc, onSnapshot, query, where, orderBy } =
+    const { collection, addDoc } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
     await addDoc(collection(db, REPLIES_COLLECTION), {
       announcementId, username, message, timestamp: Date.now()
     });
-    // refresh replies in popup in real time
-    const replyBox = document.getElementById("ap-replies-live");
-    if (replyBox) {
-      const q = query(collection(db, REPLIES_COLLECTION), where("announcementId","==",announcementId), orderBy("timestamp","asc"));
-      onSnapshot(q, snap => {
-        const replies = snap.docs.map(d => d.data());
-        replyBox.innerHTML = replies.map(r =>
-          `<div style="padding:4px 0;border-bottom:1px solid rgba(0,255,136,0.05);font-size:11px;">
-            <span style="color:#00ff88;">${r.username||"anon"}</span>
-            <span style="color:rgba(255,255,255,0.4);margin:0 6px;">${new Date(r.timestamp).toLocaleTimeString()}</span>
-            <span style="color:#c0f0d0;">${r.message}</span>
-          </div>`
-        ).join("") || "<div style='color:rgba(0,255,136,0.2);font-size:11px;'>No replies yet.</div>";
-      });
-    }
+    // subscribeReplyThread (started when the popup opened) picks this up live
     return true;
   } catch(e) { return false; }
 }
@@ -260,6 +283,7 @@ async function showAnnouncementPopup(ann) {
     </div>`;
 
   document.body.appendChild(popup);
+  subscribeReplyThread(ann.id);
   popup.querySelectorAll(".gc-stat-value").forEach(el => {
     let size = 16;
     while (el.scrollWidth > el.clientWidth + 1 && size > 10) {
@@ -310,6 +334,7 @@ async function submitReply(annId) {
 function closeAnnouncementPopup() {
   const p = document.getElementById("announcePopup"); if (!p) return;
   p.querySelector(".ap-terminal")?.classList.remove("ap-in");
+  if (_replyThreadUnsub) { _replyThreadUnsub(); _replyThreadUnsub = null; }
   setTimeout(() => p.remove(), 400);
 }
 
@@ -376,9 +401,9 @@ async function loadUpdatesPage() {
       <div class="up-replies">
         <div class="up-replies-title">// ${replies.length} RESPONSE(S)</div>
         ${replies.map(r=>`
-          <div class="up-reply">
-            <span class="up-reply-user">${escHtml(r.username||"anon")}:~$</span>
-            <span class="up-reply-msg">${escHtml(r.message||"")}</span>
+          <div class="up-reply"${r.fromAdmin?' style="background:rgba(255,215,0,0.06);border-left:2px solid #ffd166;padding-left:6px;"':''}>
+            <span class="up-reply-user"${r.fromAdmin?' style="color:#ffd166;"':''}>${r.fromAdmin?`👑 ${escHtml(ADMIN_NAME||"Admin")}${r.replyingTo?` → @${escHtml(r.replyingTo)}`:""}`:escHtml(r.username||"anon")}:~$</span>
+            <span class="up-reply-msg"${r.fromAdmin?' style="color:#ffe9b0;"':''}>${escHtml(r.message||"")}</span>
             <span class="up-reply-date">${r.date||""}</span>
           </div>`).join("")}
         <div class="up-reply-form-inline">

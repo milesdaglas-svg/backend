@@ -1302,7 +1302,7 @@ async function loadAdminRepliesTab(){
 
     for(const ann of anns){
       const snap = await getDocs(query(collection(db,"replies"), orderBy("timestamp","asc")));
-      const replies = snap.docs.map(d=>d.data()).filter(r=>r.announcementId===ann.id);
+      const replies = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(r=>r.announcementId===ann.id);
       if(!replies.length) continue;
       totalReplies += replies.length;
       html += `
@@ -1313,11 +1313,23 @@ async function loadAdminRepliesTab(){
           </div>
           <div class="adm-hist-msg" style="margin-bottom:8px;">${escapeHtml((ann.message||"").slice(0,80))}</div>
           <div style="display:flex;flex-direction:column;gap:6px;">
-            ${replies.map(r=>`
+            ${replies.map(r=> r.fromAdmin ? `
+              <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.18);border-radius:6px;padding:8px 10px;">
+                <div style="font-size:11px;color:#ffd166;font-weight:700;">👑 You${r.replyingTo?` → @${escapeHtml(r.replyingTo)}`:""}</div>
+                <div style="font-size:12px;color:#ffe9b0;margin-top:2px;">${escapeHtml(r.message||"")}</div>
+                <div style="font-size:10px;color:#7a6a3a;margin-top:3px;">${new Date(r.timestamp||Date.now()).toLocaleString()}</div>
+              </div>` : `
               <div style="background:#010a08;border:1px solid rgba(0,255,136,0.08);border-radius:6px;padding:8px 10px;">
-                <div style="font-size:11px;color:#58a6ff;font-weight:700;">${escapeHtml(r.username||"anon")}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-size:11px;color:#58a6ff;font-weight:700;">${escapeHtml(r.username||"anon")}</div>
+                  <button class="adm-btn adm-btn-ghost" style="padding:2px 8px;font-size:10px;" onclick="adminToggleReplyBox('rb-${r.id}')">↩️ Reply</button>
+                </div>
                 <div style="font-size:12px;color:#c0f0d0;margin-top:2px;">${escapeHtml(r.message||"")}</div>
                 <div style="font-size:10px;color:#3a5a4a;margin-top:3px;">${new Date(r.timestamp||Date.now()).toLocaleString()}</div>
+                <div id="rb-${r.id}" style="display:none;margin-top:8px;gap:6px;flex-direction:column;">
+                  <textarea id="rb-input-${r.id}" class="adm-input" rows="2" style="resize:vertical;" placeholder="Reply to ${escapeHtml(r.username||"this user")}... they'll see it next time they open this broadcast, even if they're offline right now"></textarea>
+                  <button class="adm-btn adm-btn-primary" style="align-self:flex-start;padding:4px 12px;font-size:11px;" onclick="adminSendReplyToUser('${ann.id}','${(r.username||"").replace(/'/g,"\\'")}','rb-input-${r.id}','rb-${r.id}')">Send (one-way — they can't reply back to you here)</button>
+                </div>
               </div>`).join("")}
           </div>
         </div>`;
@@ -1325,6 +1337,30 @@ async function loadAdminRepliesTab(){
 
     el.innerHTML = totalReplies ? html : `<div class="adm-feed-empty">No replies yet</div>`;
   }catch(e){ el.innerHTML = `<div class="adm-feed-empty">Error: ${e.message}</div>`; }
+}
+function adminToggleReplyBox(id){
+  const box = document.getElementById(id);
+  if (box) box.style.display = box.style.display === "none" ? "flex" : "none";
+}
+async function adminSendReplyToUser(announcementId, toUsername, inputId, boxId){
+  const input = document.getElementById(inputId);
+  const msg = input?.value.trim();
+  if (!msg) return;
+  try {
+    const db = await initAnnounceDB(); if (!db) { showToast("Firebase not connected","error"); return; }
+    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    // posted into the same public reply thread as a marked, one-way admin
+    // message — it persists in Firestore so the targeted user sees it the
+    // next time they open this broadcast, whether or not they're online
+    // right now; there's no mechanism for them to reply back to it directly
+    await addDoc(collection(db, "replies"), {
+      announcementId, username: "👑 Admin", message: msg, timestamp: Date.now(),
+      fromAdmin: true, replyingTo: toUsername
+    });
+    showToast("Reply sent ✓", "success");
+    document.getElementById(boxId)?.style && (document.getElementById(boxId).style.display = "none");
+    loadAdminRepliesTab();
+  } catch(e) { showToast("Failed: " + e.message, "error"); }
 }
 /* ══════════════════════════════
    PUSH APK UPDATE
